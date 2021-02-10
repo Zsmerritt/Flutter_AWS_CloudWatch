@@ -25,7 +25,7 @@ Finally, send a log by calling `cloudWatch.log('STRING TO LOG');`
 
 ## Examples
 
-###Example 1
+### Example 1
 Here's an example of using aws_cloudwatch to send a CloudWatch PutLogEvent request:
 
 ~~~dart
@@ -46,7 +46,7 @@ void log(String logString){
   cloudWatch.log(logString);
 }
 ~~~
-###Example 2
+### Example 2
 Here is an example of how to capture all errors in flutter and send them to CloudWatch.
 First create this file and name it `errorLog.dart`
 ~~~dart
