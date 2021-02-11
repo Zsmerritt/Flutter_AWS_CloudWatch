@@ -1,5 +1,6 @@
 import 'dart:async';
 
+/// A promise class adapted from js for use with the SimpleLock
 class Promise<T> {
   bool active = true;
   Completer completer;
@@ -7,8 +8,8 @@ class Promise<T> {
     this.completer = new Completer<T>();
   }
 
+  /// return false if this promise is no longer active
   bool resolve(T val) {
-    /// return false if this promise is no longer active
     if (this.active) {
       this.completer.complete(val);
       this.active = false;
@@ -17,8 +18,8 @@ class Promise<T> {
     return false;
   }
 
+  /// cancel this promise
   void cancel() {
-    /// cancel this promise
     if (this.active) {
       this.active = false;
     }

@@ -12,6 +12,7 @@ class CloudWatchException implements Exception {
   CloudWatchException(this.cause);
 }
 
+/// An AWS CloudWatch class for sending logs more easily to AWS
 class CloudWatch {
   // AWS Variables
   String _awsAccessKey;

@@ -2,6 +2,7 @@ import 'dart:collection';
 
 import 'Promise.dart';
 
+/// A lock class to ensure that requests are made synchronously
 class SimpleLock {
   bool locked;
   Queue<Promise> awaitingLock;
@@ -22,7 +23,7 @@ class SimpleLock {
     return false;
   }
 
-  Future<bool> _acquire({asyncBlock: true}) async {
+  Future<bool> _acquire() async {
     /// ALWAYS release any lock ... or you will break everything!!!!!
     /// ALWAYS catch any exceptions in your code, and release the lock even if you get an exception
     if (this._acquireNoBlock()) {
@@ -46,6 +47,11 @@ class SimpleLock {
     }
   }
 
+  /// Allows a function to run in a locked state to force
+  /// synchronous calls.
+  ///
+  /// This is needed because AWS will reject cloudwatch calls
+  /// if the sequence token is wrong
   Future<T> protect<T>(Function() f) async {
     // note ONLY PROTECTS to this lock!!!!
     await this._acquire();
