@@ -29,7 +29,7 @@ Finally, send a log by calling `cloudWatch.log('STRING TO LOG');`
 Here's an example of using aws_cloudwatch to send a CloudWatch PutLogEvent request:
 
 ~~~dart
-import 'package:aws_request/aws_cloudwatch.dart';
+import 'package:aws_cloudwatch/aws_cloudwatch.dart';
 
 // AWS Variables
 const String AWS_ACCESS_KEY_ID = 'ExampleKey';
