@@ -11,7 +11,7 @@ dependencies:
   flutter:
     sdk: flutter
 
-  aws_request: ^0.0.3 # Making aws requests
+  aws_request: ^0.1.0 # Making aws requests
 
 
 dev_dependencies:
