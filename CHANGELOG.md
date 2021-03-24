@@ -20,3 +20,7 @@
 ## [0.1.1] - 2021/03/23
 
 * Removed two more references to ServiceInstance
+
+## [0.1.2] - 2021/03/24
+
+* Actually migrated to null safety
