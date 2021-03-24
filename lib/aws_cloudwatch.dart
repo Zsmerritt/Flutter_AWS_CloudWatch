@@ -79,7 +79,8 @@ class CloudWatch {
       );
 
       if (log.statusCode != 200) {
-        String reply = await log.transform(utf8.decoder).join();
+        Map<String, dynamic> reply =
+            jsonDecode(await log.transform(utf8.decoder).join());
         throw new CloudWatchException('CloudWatch ERROR: $reply');
       }
     }
@@ -120,10 +121,14 @@ class CloudWatch {
       target: '${this._serviceInstance}.PutLogEvents',
     );
     int statusCode = result.statusCode;
+    Map<String, dynamic> reply =
+        jsonDecode(await result.transform(utf8.decoder).join());
     if (statusCode == 200) {
-      String reply = await result.transform(utf8.decoder).join();
-      String newSequenceToken = json.decode(reply)['nextSequenceToken'];
+      String newSequenceToken = reply['nextSequenceToken'];
       this._sequenceToken = newSequenceToken;
+    } else {
+      throw new CloudWatchException(
+          'CloudWatch ERROR: StatusCode: $statusCode, CloudWatchResponse: $reply');
     }
   }
 }

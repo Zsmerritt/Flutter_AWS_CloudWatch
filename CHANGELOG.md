@@ -13,3 +13,4 @@
 ## [0.1.0] - 2021/03/23
 
 * Updated dependencies for null safety
+* Added exception if PutLogEvents returns a status code other than 200
