@@ -4,8 +4,8 @@ import 'Promise.dart';
 
 /// A lock class to ensure that requests are made synchronously
 class SimpleLock {
-  bool locked;
-  Queue<Promise> awaitingLock;
+  late bool locked;
+  late Queue<Promise> awaitingLock;
   final String name;
   SimpleLock({
     this.name = "<Unknown>",
@@ -23,7 +23,7 @@ class SimpleLock {
     return false;
   }
 
-  Future<bool> _acquire() async {
+  Future<bool?> _acquire() async {
     /// ALWAYS release any lock ... or you will break everything!!!!!
     /// ALWAYS catch any exceptions in your code, and release the lock even if you get an exception
     if (this._acquireNoBlock()) {

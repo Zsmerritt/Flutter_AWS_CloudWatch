@@ -3,7 +3,7 @@ import 'dart:async';
 /// A promise class adapted from js for use with the SimpleLock
 class Promise<T> {
   bool active = true;
-  Completer completer;
+  late Completer completer;
   Promise() {
     this.completer = new Completer<T>();
   }
@@ -25,7 +25,7 @@ class Promise<T> {
     }
   }
 
-  Future<T> get future {
-    return this.completer.future;
+  Future<T?> get future {
+    return this.completer.future as Future<T?>;
   }
 }
