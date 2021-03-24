@@ -19,7 +19,7 @@ Then import `import 'package:aws_request/aws_cloudwatch.dart';`
 
 Create a CloudWatch instance by calling   
 ~~~
-CloudWatch cloudWatch = new CloudWatch(AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, Region, ServiceInstance);
+CloudWatch cloudWatch = new CloudWatch(AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, Region);
 ~~~
 Finally, send a log by calling `cloudWatch.log('STRING TO LOG');`
 

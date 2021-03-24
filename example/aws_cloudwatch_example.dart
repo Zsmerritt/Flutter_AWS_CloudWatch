@@ -4,7 +4,6 @@ import 'package:aws_cloudwatch/aws_cloudwatch.dart';
 const String AWS_ACCESS_KEY_ID = 'ExampleKey';
 const String AWS_SECRET_ACCESS_KEY = 'ExampleSecret';
 const String Region = 'us-west-2';
-const String ServiceInstance = 'Logs_XXXXXXXX';
 
 // Logging Variables
 const String LogGroup = 'LogGroupExample';
