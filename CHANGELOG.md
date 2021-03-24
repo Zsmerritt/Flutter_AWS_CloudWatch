@@ -9,3 +9,10 @@
 ## [0.0.3] - 2021/02/10
 
 * Updated dependencies
+
+## [0.1.0] - 2021/03/23
+
+* Updated dependencies for null safety
+* Put deprecation warning on xAmzTarget (formerly serviceInstance
+    * Updated example and docs to reflect changes with xAmzTarget
+* Added exception if PutLogEvents returns a status code other than 200
