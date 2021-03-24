@@ -18,7 +18,6 @@ class CloudWatch {
   String _awsAccessKey;
   String _awsSecretKey;
   String _region;
-  String _serviceInstance;
 
   AwsRequest _awsRequest;
 
@@ -35,11 +34,15 @@ class CloudWatch {
   bool _logStreamCreated = false;
 
   CloudWatch(String awsAccessKey, String awsSecretKey, String region,
-      String serviceInstance) {
+      [String xAmzTarget]) {
     this._awsAccessKey = awsAccessKey;
     this._awsSecretKey = awsSecretKey;
     this._region = region;
-    this._serviceInstance = serviceInstance;
+    if (xAmzTarget != null) {
+      print(
+          'WARNING:CloudWatch - Deprecated: xAmzTarget (formerly serviceInstance) '
+          'is no longer required and will be removed in a future release.');
+    }
   }
 
   /// Performs a PutLogEvent to CloudWatch
@@ -75,7 +78,7 @@ class CloudWatch {
       HttpClientResponse log = await request.send(
         'POST',
         jsonBody: body,
-        target: '${this._serviceInstance}.CreateLogStream',
+        target: 'Logs_20140328.CreateLogStream',
       );
 
       if (log.statusCode != 200) {
@@ -118,7 +121,7 @@ class CloudWatch {
     HttpClientResponse result = await request.send(
       'POST',
       jsonBody: body,
-      target: '${this._serviceInstance}.PutLogEvents',
+      target: 'Logs_20140328.PutLogEvents',
     );
     int statusCode = result.statusCode;
     Map<String, dynamic> reply =
