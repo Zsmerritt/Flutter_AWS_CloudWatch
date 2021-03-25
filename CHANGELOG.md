@@ -24,3 +24,7 @@
 ## [0.1.2] - 2021/03/24
 
 * Actually migrated to null safety
+
+## [0.1.3] - 2021/03/24
+
+* Updated aws_request version to fix unicode error
