@@ -19,7 +19,7 @@ Then import `import 'package:aws_request/aws_cloudwatch.dart';`
 
 Create a CloudWatch instance by calling   
 ~~~
-CloudWatch cloudWatch = new CloudWatch(AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, Region, ServiceInstance);
+CloudWatch cloudWatch = new CloudWatch(AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, Region);
 ~~~
 Finally, send a log by calling `cloudWatch.log('STRING TO LOG');`
 
@@ -35,12 +35,11 @@ import 'package:aws_cloudwatch/aws_cloudwatch.dart';
 const String AWS_ACCESS_KEY_ID = 'ExampleKey';
 const String AWS_SECRET_ACCESS_KEY = 'ExampleSecret';
 const String Region = 'us-west-2';
-const String ServiceInstance = 'Logs_XXXXXXXX';
 
 // Logging Variables
 const String LogGroup = 'LogGroupExample';
 String logStreamName = 'LogStreamExample';
-CloudWatch cloudWatch = new CloudWatch(AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, Region, ServiceInstance);
+CloudWatch cloudWatch = new CloudWatch(AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, Region);
 
 void log(String logString){
   cloudWatch.log(logString);
@@ -56,12 +55,11 @@ import 'package:aws_request/aws_cloudwatch.dart';
 const String AWS_ACCESS_KEY_ID = 'ExampleKey';
 const String AWS_SECRET_ACCESS_KEY = 'ExampleSecret';
 const String Region = 'us-west-2';
-const String ServiceInstance = 'Logs_XXXXXXXX';
 
 // Logging Variables
 const String LogGroup = 'LogGroupExample';
 String logStreamName = 'LogStreamExample';
-CloudWatch cloudWatch = new CloudWatch(AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, Region, ServiceInstance);
+CloudWatch cloudWatch = new CloudWatch(AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, Region);
 
 void logFlutterSystemError(dynamic logString, dynamic stackTrace) async {
   cloudWatch.log('Auto Captured Error: ${logString.toString()}\n\n'
