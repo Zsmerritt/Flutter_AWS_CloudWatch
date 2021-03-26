@@ -18,7 +18,6 @@ class CloudWatch {
   String _awsAccessKey;
   String _awsSecretKey;
   String _region;
-  String _serviceInstance;
 
   AwsRequest _awsRequest;
 
@@ -35,11 +34,15 @@ class CloudWatch {
   bool _logStreamCreated = false;
 
   CloudWatch(String awsAccessKey, String awsSecretKey, String region,
-      String serviceInstance) {
+      [String xAmzTarget]) {
     this._awsAccessKey = awsAccessKey;
     this._awsSecretKey = awsSecretKey;
     this._region = region;
-    this._serviceInstance = serviceInstance;
+    if (xAmzTarget != null) {
+      print(
+          'WARNING:CloudWatch - Deprecated: xAmzTarget (formerly serviceInstance) '
+          'is no longer required and will be removed in a future release.');
+    }
   }
 
   /// Performs a PutLogEvent to CloudWatch
@@ -75,11 +78,12 @@ class CloudWatch {
       HttpClientResponse log = await request.send(
         'POST',
         jsonBody: body,
-        target: '${this._serviceInstance}.CreateLogStream',
+        target: 'Logs_20140328.CreateLogStream',
       );
 
       if (log.statusCode != 200) {
-        String reply = await log.transform(utf8.decoder).join();
+        Map<String, dynamic> reply =
+            jsonDecode(await log.transform(utf8.decoder).join());
         throw new CloudWatchException('CloudWatch ERROR: $reply');
       }
     }
@@ -108,7 +112,7 @@ class CloudWatch {
   }
 
   Future<void> _sendLogs() async {
-    if (this._logStack.length < 0) {
+    if (this._logStack.length <= 0) {
       // logs already sent while this request was waiting for lock
       return;
     }
@@ -117,13 +121,17 @@ class CloudWatch {
     HttpClientResponse result = await request.send(
       'POST',
       jsonBody: body,
-      target: '${this._serviceInstance}.PutLogEvents',
+      target: 'Logs_20140328.PutLogEvents',
     );
     int statusCode = result.statusCode;
+    Map<String, dynamic> reply =
+        jsonDecode(await result.transform(utf8.decoder).join());
     if (statusCode == 200) {
-      String reply = await result.transform(utf8.decoder).join();
-      String newSequenceToken = json.decode(reply)['nextSequenceToken'];
+      String newSequenceToken = reply['nextSequenceToken'];
       this._sequenceToken = newSequenceToken;
+    } else {
+      throw new CloudWatchException(
+          'CloudWatch ERROR: StatusCode: $statusCode, CloudWatchResponse: $reply');
     }
   }
 }
