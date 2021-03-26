@@ -112,7 +112,7 @@ class CloudWatch {
   }
 
   Future<void> _sendLogs() async {
-    if (this._logStack.length < 0) {
+    if (this._logStack.length <= 0) {
       // logs already sent while this request was waiting for lock
       return;
     }
