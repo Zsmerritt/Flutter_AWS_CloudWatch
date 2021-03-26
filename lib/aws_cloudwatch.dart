@@ -105,7 +105,7 @@ class CloudWatch {
   }
 
   Future<void> _log(String logString) async {
-    await _createLogStream();
+    _loggingLock.protect(() => _createLogStream());
     int time = DateTime.now().toUtc().millisecondsSinceEpoch;
     this._logStack.add({'timestamp': time, 'message': logString});
     _loggingLock.protect(() => _sendLogs());
