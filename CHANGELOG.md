@@ -1,3 +1,9 @@
+## [0.1.6] - 2021/03/26
+
+* Added console output logging with 4 verbosity levels
+* Added optional delay parameter to address possible rate limiting
+  * Updated readme with new rate limiting example
+
 ## [0.1.5] - 2021/03/26
 
 * Fixed issue with attempted logging before logstream creation finished
