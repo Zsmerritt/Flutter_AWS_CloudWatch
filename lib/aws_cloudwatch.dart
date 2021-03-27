@@ -2,6 +2,7 @@ library aws_cloudwatch;
 
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:aws_request/aws_request.dart';
 
@@ -18,6 +19,8 @@ class CloudWatch {
   late String _awsAccessKey;
   late String _awsSecretKey;
   late String _region;
+  late int _delay;
+  late int _verbosity;
 
   AwsRequest? _awsRequest;
 
@@ -33,15 +36,62 @@ class CloudWatch {
   SimpleLock _loggingLock = SimpleLock(name: 'CloudWatch Logging Lock');
   bool _logStreamCreated = false;
 
+  /// CloudWatch Constructor
+  /// awsAccessKey: Public AWS access key
+  /// awsSecretKey: Private AWS access key
+  /// region: AWS region
+  /// xAmzTarget: Deprecated and no longer used
   CloudWatch(String awsAccessKey, String awsSecretKey, String region,
       [String? xAmzTarget]) {
-    this._awsAccessKey = awsAccessKey;
-    this._awsSecretKey = awsSecretKey;
-    this._region = region;
+    _awsAccessKey = awsAccessKey;
+    _awsSecretKey = awsSecretKey;
+    _region = region;
+    _delay = 0;
+    _verbosity = 0;
     if (xAmzTarget != null) {
       print(
           'WARNING:CloudWatch - Deprecated: xAmzTarget (formerly serviceInstance) '
           'is no longer required and will be removed in a future release.');
+    }
+  }
+
+  /// CloudWatch Constructor
+  /// awsAccessKey: Public AWS access key
+  /// awsSecretKey: Private AWS access key
+  /// region: AWS region
+  /// delay: Seconds to wait for more logs to accumulate to avoid rate limiting.
+  CloudWatch.withDelay(
+      String awsAccessKey, String awsSecretKey, String region, int delay) {
+    _awsAccessKey = awsAccessKey;
+    _awsSecretKey = awsSecretKey;
+    _region = region;
+    _delay = max(0, delay);
+    _verbosity = 0;
+  }
+
+  /// Delays sending logs
+  /// Delays sending logs to allow more logs to accumulate to avoid rate limiting
+  /// delay: The amount of seconds to wait.
+  int setDelay(int delay) {
+    _delay = max(0, delay);
+    if (_verbosity > 2) {
+      print('CloudWatch INFO: Set delay to $_delay');
+    }
+    return _delay;
+  }
+
+  /// Sets console verbosity level. Default is 0.
+  /// 0 - No console logging.
+  /// 1 - Error console logging.
+  /// 2 - API response logging.
+  /// 3 - Verbose logging
+  /// level: The verbosity level. Valid values are 0 through 3
+  void setVerbosity(int level) {
+    level = level > 3 ? 3 : level;
+    level = level < 0 ? 0 : level;
+    _verbosity = level;
+    if (_verbosity > 2) {
+      print('CloudWatch INFO: Set verbosity to $_verbosity');
     }
   }
 
@@ -51,7 +101,14 @@ class CloudWatch {
   /// Throws CloudWatchException if logGroupName or logStreamName are not
   /// initialized or if aws returns an error.
   Future<void> log(String logString) async {
-    if (this.logGroupName == null || this.logStreamName == null) {
+    if (_verbosity > 2) {
+      print('CloudWatch INFO: Attempting to log $logString');
+    }
+    if (logGroupName == null || logStreamName == null) {
+      if (_verbosity > 0) {
+        print('CloudWatch ERROR: Please supply a Log Group and Stream names by '
+            'calling setLoggingParameters(String logGroup, String logStreamName)');
+      }
       throw new CloudWatchException(
           'CloudWatch ERROR: Please supply a Log Group and Stream names by '
           'calling setLoggingParameters(String logGroup, String logStreamName)');
@@ -61,59 +118,97 @@ class CloudWatch {
 
   // gets AwsRequest instance and instantiates if needed
   AwsRequest? _getAwsRequest() {
-    if (this._awsRequest == null) {
-      this._awsRequest =
-          new AwsRequest(this._awsAccessKey, this._awsSecretKey, this._region);
-      this._awsRequest!.service = 'logs';
+    if (_awsRequest == null) {
+      if (_verbosity > 2) {
+        print('CloudWatch INFO: Generating AwsRequest');
+      }
+      _awsRequest = new AwsRequest(_awsAccessKey, _awsSecretKey, _region);
+      _awsRequest!.service = 'logs';
     }
-    return this._awsRequest;
+    if (_verbosity > 2) {
+      print('CloudWatch INFO: Got AwsRequest');
+    }
+    return _awsRequest;
   }
 
   Future<void> _createLogStream() async {
-    if (!this._logStreamCreated) {
-      this._logStreamCreated = true;
+    if (!_logStreamCreated) {
+      if (_verbosity > 2) {
+        print('CloudWatch INFO: Generating LogStream');
+      }
+      _logStreamCreated = true;
       AwsRequest request = _getAwsRequest()!;
       String body =
-          '{"logGroupName": "${this.logGroupName}","logStreamName": "${this.logStreamName}"}';
+          '{"logGroupName": "$logGroupName","logStreamName": "$logStreamName"}';
       HttpClientResponse log = await request.send(
         'POST',
         jsonBody: body,
         target: 'Logs_20140328.CreateLogStream',
       );
+      int statusCode = log.statusCode;
 
-      if (log.statusCode != 200) {
+      if (_verbosity > 1) {
+        print('CloudWatch Info: LogStream creation status code: $statusCode');
+      }
+      if (statusCode != 200) {
         Map<String, dynamic>? reply =
             jsonDecode(await log.transform(utf8.decoder).join());
+        if (_verbosity > 0) {
+          print(
+              'CloudWatch ERROR: StatusCode: $statusCode, CloudWatchResponse: $reply');
+        }
         throw new CloudWatchException('CloudWatch ERROR: $reply');
       }
+    }
+    if (_verbosity > 2) {
+      print('CloudWatch INFO: Got LogStream');
     }
   }
 
   // turns a string into a cloudwatch event
   Future<String> _createBody() async {
-    Map<String, dynamic> body = {
-      'logEvents': this._logStack,
-      'logGroupName': this.logGroupName,
-      'logStreamName': this.logStreamName,
-    };
-    if (this._sequenceToken != null) {
-      body['sequenceToken'] = this._sequenceToken;
+    if (_verbosity > 2) {
+      print('CloudWatch INFO: Generating CloudWatch request body');
     }
+    Map<String, dynamic> body = {
+      'logEvents': _logStack,
+      'logGroupName': logGroupName,
+      'logStreamName': logStreamName,
+    };
+    if (_sequenceToken != null) {
+      body['sequenceToken'] = _sequenceToken;
+      if (_verbosity > 2) {
+        print('CloudWatch INFO: Adding sequence token');
+      }
+    }
+    int logLength = _logStack.length;
     String jsonBody = json.encode(body);
-    this._logStack = [];
+    _logStack = [];
+    if (_verbosity > 2) {
+      print(
+          'CloudWatch INFO: Generated jsonBody with $logLength logs: $jsonBody');
+    }
     return jsonBody;
   }
 
   Future<void> _log(String logString) async {
-    _loggingLock.protect(() => _createLogStream());
     int time = DateTime.now().toUtc().millisecondsSinceEpoch;
-    this._logStack.add({'timestamp': time, 'message': logString});
+    Map<String, dynamic> message = {'timestamp': time, 'message': logString};
+    _logStack.add(message);
+    if (_verbosity > 2) {
+      print('CloudWatch INFO: Added message to log stack: $message');
+    }
+    _loggingLock.protect(() => _createLogStream());
+    sleep(new Duration(seconds: _delay));
     _loggingLock.protect(() => _sendLogs());
   }
 
   Future<void> _sendLogs() async {
-    if (this._logStack.length <= 0) {
+    if (_logStack.length <= 0) {
       // logs already sent while this request was waiting for lock
+      if (_verbosity > 2) {
+        print('CloudWatch INFO: All logs have already been sent');
+      }
       return;
     }
     AwsRequest request = _getAwsRequest()!;
@@ -126,10 +221,19 @@ class CloudWatch {
     int statusCode = result.statusCode;
     Map<String, dynamic>? reply =
         jsonDecode(await result.transform(utf8.decoder).join());
+
+    if (_verbosity > 1) {
+      print(
+          'CloudWatch Info: StatusCode: $statusCode, CloudWatchResponse: $reply');
+    }
     if (statusCode == 200) {
       String? newSequenceToken = reply!['nextSequenceToken'];
-      this._sequenceToken = newSequenceToken;
+      _sequenceToken = newSequenceToken;
     } else {
+      if (_verbosity > 0) {
+        print(
+            'CloudWatch ERROR: StatusCode: $statusCode, CloudWatchResponse: $reply');
+      }
       throw new CloudWatchException(
           'CloudWatch ERROR: StatusCode: $statusCode, CloudWatchResponse: $reply');
     }
