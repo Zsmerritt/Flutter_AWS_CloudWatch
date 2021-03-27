@@ -59,7 +59,7 @@ class CloudWatch {
   /// awsAccessKey: Public AWS access key
   /// awsSecretKey: Private AWS access key
   /// region: AWS region
-  /// delay: Seconds to wait for more logs to accumulate to avoid rate limiting.
+  /// delay: Milliseconds to wait for more logs to accumulate to avoid rate limiting.
   CloudWatch.withDelay(
       String awsAccessKey, String awsSecretKey, String region, int delay) {
     _awsAccessKey = awsAccessKey;
@@ -71,7 +71,7 @@ class CloudWatch {
 
   /// Delays sending logs
   /// Delays sending logs to allow more logs to accumulate to avoid rate limiting
-  /// delay: The amount of seconds to wait.
+  /// delay: The amount of milliseconds to wait.
   int setDelay(int delay) {
     _delay = max(0, delay);
     if (_verbosity > 2) {
@@ -199,7 +199,7 @@ class CloudWatch {
       print('CloudWatch INFO: Added message to log stack: $message');
     }
     _loggingLock.protect(() => _createLogStream());
-    sleep(new Duration(seconds: _delay));
+    sleep(new Duration(milliseconds: _delay));
     _loggingLock.protect(() => _sendLogs());
   }
 
