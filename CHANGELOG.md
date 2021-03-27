@@ -1,8 +1,18 @@
-## [0.1.4] - 2021/03/24
+## [0.1.6] - 2021/03/26
+
+* Added console output logging with 4 verbosity levels
+* Added optional delay parameter to address possible rate limiting
+  * Updated readme with new rate limiting example
+
+## [0.1.5] - 2021/03/26
+
+* Fixed issue with attempted logging before logstream creation finished
+
+## [0.1.4] - 2021/03/25
 
 * Fixed issue with sending empty logs
 
-## [0.1.3] - 2021/03/24
+## [0.1.3] - 2021/03/25
 
 * Updated aws_request version to fix unicode error
 
@@ -20,6 +30,13 @@
 * Put deprecation warning on xAmzTarget (formerly serviceInstance
   * Updated example and docs to reflect changes with xAmzTarget
 * Added exception if PutLogEvents returns a status code other than 200
+
+## [0.0.7] - 2021/03/27
+
+Non-null Safety Update
+* Added console output logging with 4 verbosity levels
+* Added optional delay parameter to address possible rate limiting
+  * Updated readme with new rate limiting example
 
 ## [0.0.6] - 2021/03/26
 
