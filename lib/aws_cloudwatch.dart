@@ -10,29 +10,28 @@ import 'SimpleLock.dart';
 
 class CloudWatchException implements Exception {
   String cause;
-
   CloudWatchException(this.cause);
 }
 
 /// An AWS CloudWatch class for sending logs more easily to AWS
 class CloudWatch {
   // AWS Variables
-  String _awsAccessKey;
-  String _awsSecretKey;
-  String _region;
-  int _delay;
-  int _verbosity;
+  late String _awsAccessKey;
+  late String _awsSecretKey;
+  late String _region;
+  late int _delay;
+  late int _verbosity;
 
-  AwsRequest _awsRequest;
+  AwsRequest? _awsRequest;
 
   // Logging Variables
   /// The log group name for the log stream to go in
-  String logGroupName;
+  String? logGroupName;
 
   /// The log stream name for log events to be filed in
-  String logStreamName;
+  String? logStreamName;
 
-  String _sequenceToken;
+  String? _sequenceToken;
   List<Map<String, dynamic>> _logStack = [];
   SimpleLock _loggingLock = SimpleLock(name: 'CloudWatch Logging Lock');
   bool _logStreamCreated = false;
@@ -43,7 +42,7 @@ class CloudWatch {
   /// region: AWS region
   /// xAmzTarget: Deprecated and no longer used
   CloudWatch(String awsAccessKey, String awsSecretKey, String region,
-      [String xAmzTarget]) {
+      [String? xAmzTarget]) {
     _awsAccessKey = awsAccessKey;
     _awsSecretKey = awsSecretKey;
     _region = region;
@@ -60,7 +59,7 @@ class CloudWatch {
   /// awsAccessKey: Public AWS access key
   /// awsSecretKey: Private AWS access key
   /// region: AWS region
-  /// delay: Seconds to wait for more logs to accumulate to avoid rate limiting.
+  /// delay: Milliseconds to wait for more logs to accumulate to avoid rate limiting.
   CloudWatch.withDelay(
       String awsAccessKey, String awsSecretKey, String region, int delay) {
     _awsAccessKey = awsAccessKey;
@@ -72,7 +71,7 @@ class CloudWatch {
 
   /// Delays sending logs
   /// Delays sending logs to allow more logs to accumulate to avoid rate limiting
-  /// delay: The amount of seconds to wait.
+  /// delay: The amount of milliseconds to wait.
   int setDelay(int delay) {
     _delay = max(0, delay);
     if (_verbosity > 2) {
@@ -118,13 +117,13 @@ class CloudWatch {
   }
 
   // gets AwsRequest instance and instantiates if needed
-  AwsRequest _getAwsRequest() {
+  AwsRequest? _getAwsRequest() {
     if (_awsRequest == null) {
       if (_verbosity > 2) {
         print('CloudWatch INFO: Generating AwsRequest');
       }
       _awsRequest = new AwsRequest(_awsAccessKey, _awsSecretKey, _region);
-      _awsRequest.service = 'logs';
+      _awsRequest!.service = 'logs';
     }
     if (_verbosity > 2) {
       print('CloudWatch INFO: Got AwsRequest');
@@ -138,7 +137,7 @@ class CloudWatch {
         print('CloudWatch INFO: Generating LogStream');
       }
       _logStreamCreated = true;
-      AwsRequest request = _getAwsRequest();
+      AwsRequest request = _getAwsRequest()!;
       String body =
           '{"logGroupName": "$logGroupName","logStreamName": "$logStreamName"}';
       HttpClientResponse log = await request.send(
@@ -152,7 +151,7 @@ class CloudWatch {
         print('CloudWatch Info: LogStream creation status code: $statusCode');
       }
       if (statusCode != 200) {
-        Map<String, dynamic> reply =
+        Map<String, dynamic>? reply =
             jsonDecode(await log.transform(utf8.decoder).join());
         if (_verbosity > 0) {
           print(
@@ -199,13 +198,9 @@ class CloudWatch {
     if (_verbosity > 2) {
       print('CloudWatch INFO: Added message to log stack: $message');
     }
-    _loggingLock
-        .protect(() => _createLogStream())
-        .catchError((e) => {throw new CloudWatchException(e)});
-    sleep(new Duration(seconds: _delay));
-    _loggingLock
-        .protect(() => _sendLogs())
-        .catchError((e) => {throw new CloudWatchException(e)});
+    _loggingLock.protect(() => _createLogStream());
+    sleep(new Duration(milliseconds: _delay));
+    _loggingLock.protect(() => _sendLogs());
   }
 
   Future<void> _sendLogs() async {
@@ -216,7 +211,7 @@ class CloudWatch {
       }
       return;
     }
-    AwsRequest request = _getAwsRequest();
+    AwsRequest request = _getAwsRequest()!;
     String body = await _createBody();
     HttpClientResponse result = await request.send(
       'POST',
@@ -224,7 +219,7 @@ class CloudWatch {
       target: 'Logs_20140328.PutLogEvents',
     );
     int statusCode = result.statusCode;
-    Map<String, dynamic> reply =
+    Map<String, dynamic>? reply =
         jsonDecode(await result.transform(utf8.decoder).join());
 
     if (_verbosity > 1) {
@@ -232,7 +227,7 @@ class CloudWatch {
           'CloudWatch Info: StatusCode: $statusCode, CloudWatchResponse: $reply');
     }
     if (statusCode == 200) {
-      String newSequenceToken = reply['nextSequenceToken'];
+      String? newSequenceToken = reply!['nextSequenceToken'];
       _sequenceToken = newSequenceToken;
     } else {
       if (_verbosity > 0) {
