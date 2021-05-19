@@ -1,3 +1,12 @@
+## [0.1.8] - 2021/05/19
+
+* Fixed null safety issue with previous release
+
+## [0.1.7] - 2021/05/18
+
+* Moved to new version of aws_requests to fix hard coded region bug
+* Improved error handling 
+  
 ## [0.1.6] - 2021/03/26
 
 * Added console output logging with 4 verbosity levels
