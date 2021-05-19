@@ -34,6 +34,11 @@
 ## [0.0.7] - 2021/03/27
 
 Non-null Safety Update
+* Improved error handling
+
+## [0.0.7] - 2021/03/27
+
+Non-null Safety Update
 * Added console output logging with 4 verbosity levels
 * Added optional delay parameter to address possible rate limiting
   * Updated readme with new rate limiting example

@@ -10,6 +10,7 @@ import 'SimpleLock.dart';
 
 class CloudWatchException implements Exception {
   String cause;
+
   CloudWatchException(this.cause);
 }
 
@@ -198,9 +199,13 @@ class CloudWatch {
     if (_verbosity > 2) {
       print('CloudWatch INFO: Added message to log stack: $message');
     }
-    _loggingLock.protect(() => _createLogStream());
+    _loggingLock
+        .protect(() => _createLogStream())
+        .catchError((e) => {throw new CloudWatchException(e)});
     sleep(new Duration(seconds: _delay));
-    _loggingLock.protect(() => _sendLogs());
+    _loggingLock
+        .protect(() => _sendLogs())
+        .catchError((e) => {throw new CloudWatchException(e)});
   }
 
   Future<void> _sendLogs() async {
