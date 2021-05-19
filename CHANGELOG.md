@@ -31,7 +31,7 @@
   * Updated example and docs to reflect changes with xAmzTarget
 * Added exception if PutLogEvents returns a status code other than 200
 
-## [0.0.7] - 2021/03/27
+## [0.0.8] - 2021/03/27
 
 Non-null Safety Update
 * Improved error handling
