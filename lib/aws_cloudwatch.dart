@@ -51,7 +51,7 @@ class CloudWatch {
     if (xAmzTarget != null) {
       print(
           'WARNING:CloudWatch - Deprecated: xAmzTarget (formerly serviceInstance) '
-          'is no longer required and will be removed in a future release.');
+              'is no longer required and will be removed in a future release.');
     }
   }
 
@@ -111,7 +111,7 @@ class CloudWatch {
       }
       throw new CloudWatchException(
           'CloudWatch ERROR: Please supply a Log Group and Stream names by '
-          'calling setLoggingParameters(String logGroup, String logStreamName)');
+              'calling setLoggingParameters(String logGroup, String logStreamName)');
     }
     await _log(logString);
   }
@@ -152,7 +152,7 @@ class CloudWatch {
       }
       if (statusCode != 200) {
         Map<String, dynamic>? reply =
-            jsonDecode(await log.transform(utf8.decoder).join());
+        jsonDecode(await log.transform(utf8.decoder).join());
         if (_verbosity > 0) {
           print(
               'CloudWatch ERROR: StatusCode: $statusCode, CloudWatchResponse: $reply');
@@ -200,11 +200,11 @@ class CloudWatch {
     }
     _loggingLock
         .protect(() => _createLogStream())
-        .catchError((e) => {throw new CloudWatchException(e)});
+        .catchError((e) => {throw new CloudWatchException(e.cause)});
     sleep(new Duration(seconds: _delay));
     _loggingLock
         .protect(() => _sendLogs())
-        .catchError((e) => {throw new CloudWatchException(e)});
+        .catchError((e) => {throw new CloudWatchException(e.cause)});
   }
 
   Future<void> _sendLogs() async {
@@ -224,7 +224,7 @@ class CloudWatch {
     );
     int statusCode = result.statusCode;
     Map<String, dynamic>? reply =
-        jsonDecode(await result.transform(utf8.decoder).join());
+    jsonDecode(await result.transform(utf8.decoder).join());
 
     if (_verbosity > 1) {
       print(

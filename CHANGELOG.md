@@ -1,3 +1,8 @@
+## [0.1.9] - 2021/05/19
+
+* Updated aws_request version to fix null safety typing issue
+* Fixed issue with aws errors being rethrown incorrectly
+
 ## [0.1.8] - 2021/05/19
 
 * Fixed null safety issue with previous release
