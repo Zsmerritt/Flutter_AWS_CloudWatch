@@ -8,13 +8,20 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.6.1"
-  aws_request:
+  aws_cloudwatch:
     dependency: "direct main"
+    description:
+      name: aws_cloudwatch
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.1.9"
+  aws_request:
+    dependency: transitive
     description:
       name: aws_request
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.1.3"
+    version: "0.1.5"
   boolean_selector:
     dependency: transitive
     description:

@@ -1,3 +1,10 @@
+## [0.1.10] - 2021/07/01
+
+* Added web compatibility
+* Moved synchronous calls to synchronized package
+* Reformatted code to pass static analysis
+* Fixed issue with error catching for HttpExceptions
+
 ## [0.1.9] - 2021/05/19
 
 * Updated aws_request version to fix null safety typing issue
