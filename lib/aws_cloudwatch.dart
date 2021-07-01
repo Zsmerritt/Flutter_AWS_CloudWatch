@@ -1,16 +1,20 @@
 library aws_cloudwatch;
 
 import 'dart:convert';
-import 'dart:io';
+import 'package:synchronized/synchronized.dart';
+import 'package:universal_io/io.dart';
 import 'dart:math';
 
 import 'package:aws_request/aws_request.dart';
 
-import 'SimpleLock.dart';
-
 class CloudWatchException implements Exception {
+  String message;
   String cause;
-  CloudWatchException(this.cause);
+
+  /// deprecated
+  CloudWatchException(String message)
+      : this.cause = message,
+        this.message = message;
 }
 
 /// An AWS CloudWatch class for sending logs more easily to AWS
@@ -33,7 +37,7 @@ class CloudWatch {
 
   String? _sequenceToken;
   List<Map<String, dynamic>> _logStack = [];
-  SimpleLock _loggingLock = SimpleLock(name: 'CloudWatch Logging Lock');
+  var _loggingLock = Lock();
   bool _logStreamCreated = false;
 
   /// CloudWatch Constructor
@@ -51,7 +55,7 @@ class CloudWatch {
     if (xAmzTarget != null) {
       print(
           'WARNING:CloudWatch - Deprecated: xAmzTarget (formerly serviceInstance) '
-              'is no longer required and will be removed in a future release.');
+          'is no longer required and will be removed in a future release.');
     }
   }
 
@@ -111,7 +115,7 @@ class CloudWatch {
       }
       throw new CloudWatchException(
           'CloudWatch ERROR: Please supply a Log Group and Stream names by '
-              'calling setLoggingParameters(String logGroup, String logStreamName)');
+          'calling setLoggingParameters(String logGroup, String logStreamName)');
     }
     await _log(logString);
   }
@@ -152,7 +156,7 @@ class CloudWatch {
       }
       if (statusCode != 200) {
         Map<String, dynamic>? reply =
-        jsonDecode(await log.transform(utf8.decoder).join());
+            jsonDecode(await log.transform(utf8.decoder).join());
         if (_verbosity > 0) {
           print(
               'CloudWatch ERROR: StatusCode: $statusCode, CloudWatchResponse: $reply');
@@ -198,13 +202,13 @@ class CloudWatch {
     if (_verbosity > 2) {
       print('CloudWatch INFO: Added message to log stack: $message');
     }
-    _loggingLock
-        .protect(() => _createLogStream())
-        .catchError((e) => {throw new CloudWatchException(e.cause)});
+    await _loggingLock.synchronized(_createLogStream).catchError((e) {
+      return Future.error(CloudWatchException(e.message));
+    });
     sleep(new Duration(seconds: _delay));
-    _loggingLock
-        .protect(() => _sendLogs())
-        .catchError((e) => {throw new CloudWatchException(e.cause)});
+    await _loggingLock.synchronized(_sendLogs).catchError((e) {
+      return Future.error(CloudWatchException(e.message));
+    });
   }
 
   Future<void> _sendLogs() async {
@@ -224,7 +228,7 @@ class CloudWatch {
     );
     int statusCode = result.statusCode;
     Map<String, dynamic>? reply =
-    jsonDecode(await result.transform(utf8.decoder).join());
+        jsonDecode(await result.transform(utf8.decoder).join());
 
     if (_verbosity > 1) {
       print(
