@@ -11,8 +11,9 @@ dependencies:
     sdk: flutter
 
   aws_request:
-    git: https://github.com/Zsmerritt/Flutter_AWS_Request.git
-    branch: main
+    git:
+      url: https://github.com/Zsmerritt/Flutter_AWS_Request.git
+      ref: main
   synchronized: ^3.0.0 # Synchronize requests to ensure valid keys
   universal_io: ^2.0.0 # Web support
 
