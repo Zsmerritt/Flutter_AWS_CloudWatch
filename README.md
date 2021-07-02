@@ -15,7 +15,7 @@ If you have feedback or have a use case that isn't covered feel free to contact 
 
 To get start add `aws_cloudwatch: ^[CURRENT_VERION],` to your `pubspec.yaml`
 
-Then import `import 'package:aws_request/aws_cloudwatch.dart';`
+Then import `import 'package:aws_cloudwatch/aws_cloudwatch.dart';`
 
 Create a CloudWatch instance by calling   
 ~~~
