@@ -1,11 +1,11 @@
 library aws_cloudwatch;
 
 import 'dart:convert';
-import 'package:synchronized/synchronized.dart';
-import 'package:universal_io/io.dart';
 import 'dart:math';
 
 import 'package:aws_request/aws_request.dart';
+import 'package:synchronized/synchronized.dart';
+import 'package:universal_io/io.dart';
 
 class CloudWatchException implements Exception {
   String message;
@@ -24,7 +24,7 @@ class CloudWatch {
   late String _awsSecretKey;
   late String _region;
   late int _delay;
-  late int _verbosity;
+  int _verbosity = 0;
 
   AwsRequest? _awsRequest;
 
@@ -44,19 +44,17 @@ class CloudWatch {
   /// awsAccessKey: Public AWS access key
   /// awsSecretKey: Private AWS access key
   /// region: AWS region
-  /// xAmzTarget: Deprecated and no longer used
+  /// {groupName}: The log group the log stream will appear under
+  /// {streamName}: The name of this logging session
+  /// {delay}: Milliseconds to wait for more logs to accumulate to avoid rate limiting.
   CloudWatch(String awsAccessKey, String awsSecretKey, String region,
-      [String? xAmzTarget]) {
+      {groupName, streamName, delay = 0}) {
+    logGroupName = groupName;
+    logStreamName = streamName;
     _awsAccessKey = awsAccessKey;
     _awsSecretKey = awsSecretKey;
     _region = region;
-    _delay = 0;
-    _verbosity = 0;
-    if (xAmzTarget != null) {
-      print(
-          'WARNING:CloudWatch - Deprecated: xAmzTarget (formerly serviceInstance) '
-          'is no longer required and will be removed in a future release.');
-    }
+    _delay = delay;
   }
 
   /// CloudWatch Constructor
@@ -64,13 +62,19 @@ class CloudWatch {
   /// awsSecretKey: Private AWS access key
   /// region: AWS region
   /// delay: Milliseconds to wait for more logs to accumulate to avoid rate limiting.
+  /// {groupName}: The log group the log stream will appear under
+  /// {streamName}: The name of this logging session
   CloudWatch.withDelay(
-      String awsAccessKey, String awsSecretKey, String region, int delay) {
+      String awsAccessKey, String awsSecretKey, String region, int delay,
+      {groupName, streamName}) {
+    logGroupName = groupName;
+    logStreamName = streamName;
     _awsAccessKey = awsAccessKey;
     _awsSecretKey = awsSecretKey;
     _region = region;
     _delay = max(0, delay);
-    _verbosity = 0;
+    print('CloudWatch.withDelay is deprecated. Instead call the default '
+        'constructor and provide a value for the optional delay parameter');
   }
 
   /// Delays sending logs
@@ -82,6 +86,14 @@ class CloudWatch {
       print('CloudWatch INFO: Set delay to $_delay');
     }
     return _delay;
+  }
+
+  /// Sets log group name and log stream name
+  /// groupName: The log group you wish the log to appear under
+  /// streamName: The name for this logging session
+  void setLoggingParameters(String? groupName, String? streamName) {
+    logGroupName = groupName;
+    logStreamName = streamName;
   }
 
   /// Sets console verbosity level. Default is 0.
@@ -111,11 +123,11 @@ class CloudWatch {
     if (logGroupName == null || logStreamName == null) {
       if (_verbosity > 0) {
         print('CloudWatch ERROR: Please supply a Log Group and Stream names by '
-            'calling setLoggingParameters(String logGroup, String logStreamName)');
+            'calling setLoggingParameters(String? logGroupName, String? logStreamName)');
       }
       throw new CloudWatchException(
           'CloudWatch ERROR: Please supply a Log Group and Stream names by '
-          'calling setLoggingParameters(String logGroup, String logStreamName)');
+          'calling setLoggingParameters(String logGroupName, String logStreamName)');
     }
     await _log(logString);
   }

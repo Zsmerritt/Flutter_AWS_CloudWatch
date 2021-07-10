@@ -1,3 +1,14 @@
+## [0.1.11] - 2021/07/09
+
+QOL update
+
+* Fully removed optional deprecated xAmzTarget argument from main constructor (deprecated in 0.1.0) 
+* Added optional arguments for group / stream name to both constructors
+* Added missing method setLoggingParameters that was shown in error message when group / stream name was null
+* Updated all examples to show different group / stream name instantiations
+* Added optional delay argument to main constructor and deprecated withDelay constructor
+* Expanded readme
+
 ## [0.1.10] - 2021/07/01
 
 * Added web compatibility
