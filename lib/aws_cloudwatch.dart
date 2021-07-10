@@ -1,16 +1,20 @@
 library aws_cloudwatch;
 
 import 'dart:convert';
-import 'dart:io';
+import 'package:synchronized/synchronized.dart';
+import 'package:universal_io/io.dart';
 import 'dart:math';
 
 import 'package:aws_request/aws_request.dart';
 
-import 'SimpleLock.dart';
-
 class CloudWatchException implements Exception {
+  String message;
   String cause;
-  CloudWatchException(this.cause);
+
+  /// deprecated
+  CloudWatchException(String message)
+      : this.cause = message,
+        this.message = message;
 }
 
 /// An AWS CloudWatch class for sending logs more easily to AWS
@@ -33,7 +37,7 @@ class CloudWatch {
 
   String? _sequenceToken;
   List<Map<String, dynamic>> _logStack = [];
-  SimpleLock _loggingLock = SimpleLock(name: 'CloudWatch Logging Lock');
+  var _loggingLock = Lock();
   bool _logStreamCreated = false;
 
   /// CloudWatch Constructor
@@ -198,13 +202,13 @@ class CloudWatch {
     if (_verbosity > 2) {
       print('CloudWatch INFO: Added message to log stack: $message');
     }
-    _loggingLock
-        .protect(() => _createLogStream())
-        .catchError((e) => {throw new CloudWatchException(e.cause)});
+    await _loggingLock.synchronized(_createLogStream).catchError((e) {
+      return Future.error(CloudWatchException(e.message));
+    });
     sleep(new Duration(seconds: _delay));
-    _loggingLock
-        .protect(() => _sendLogs())
-        .catchError((e) => {throw new CloudWatchException(e.cause)});
+    await _loggingLock.synchronized(_sendLogs).catchError((e) {
+      return Future.error(CloudWatchException(e.message));
+    });
   }
 
   Future<void> _sendLogs() async {
