@@ -1,3 +1,7 @@
+## [0.1.12] - 2021/07/14
+
+* Fixed bug where delay was input in seconds instead of milliseconds
+
 ## [0.1.11] - 2021/07/09
 
 QOL update

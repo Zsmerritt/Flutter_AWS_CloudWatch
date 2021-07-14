@@ -54,7 +54,7 @@ class CloudWatch {
     _awsAccessKey = awsAccessKey;
     _awsSecretKey = awsSecretKey;
     _region = region;
-    _delay = delay;
+    _delay = max(0, delay);
   }
 
   /// CloudWatch Constructor
@@ -214,10 +214,12 @@ class CloudWatch {
     if (_verbosity > 2) {
       print('CloudWatch INFO: Added message to log stack: $message');
     }
-    await _loggingLock.synchronized(_createLogStream).catchError((e) {
-      return Future.error(CloudWatchException(e.message));
-    });
-    sleep(new Duration(seconds: _delay));
+    if (!_logStreamCreated) {
+      await _loggingLock.synchronized(_createLogStream).catchError((e) {
+        return Future.error(CloudWatchException(e.message));
+      });
+    }
+    sleep(new Duration(milliseconds: _delay));
     await _loggingLock.synchronized(_sendLogs).catchError((e) {
       return Future.error(CloudWatchException(e.message));
     });
