@@ -25,36 +25,59 @@ CloudWatch cloudWatch = new CloudWatch(AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY,
 
 Finally, send a log by calling `cloudWatch.log('STRING TO LOG');`
 
-## Important Notes:
-
-### Avoiding AWS Cloudwatch API Rate Limiting
-
-As of now (2021/07/09), AWS has a rate limit of 5 log requests per second per log stream. You may hit this limit rather
-quickly if you have a high volume of logs. It is highly recommended to include the optional delay parameter with a value
-of 200 (milliseconds) to avoid hitting this upper limit. With a delay, logs will continue to collect, but the api calls
-will be limited to 5 per second. At the moment there is no way around this limit.
-
-Example 2 below shows how to add a delay. The default delay is 0 milliseconds.
-
-### Log Groups and Log Streams
-
-Creating streams and uploading logs is the primary reason this package exists. Log groups must still be created
-manually. If you would like this feature let me know, and I will work on implementing it. With my use cases, I haven't
-felt the need for it.
-
-There are multiple ways to set the log group and log stream and all are roughly equivalent.
-
-Log stream names currently (2021/07/09) have the following limits:
-
-* Log stream names must be unique within the log group.
-* Log stream names can be between 1 and 512 characters long.
-* The ':' (colon) and '*' (asterisk) characters are not allowed.
-
-This package does not enforce or check log stream names with regard to these limits in case AWS decides to add or remove
-limitations. It is up to **you** to check the errors returned by the API to figure out if the problem is with the
-provided log stream name.
-
 ## Examples
+
+### Example - Quick Start
+
+This is the quick start file. It is also location in example/aws_cloudwatch.dart
+
+~~~dart
+import 'package:aws_cloudwatch/aws_cloudwatch.dart';
+import 'package:intl/intl.dart';
+
+/// QUICK START LOGGING FILE
+///
+/// PLEASE FILL OUT THE FOLLOWING VARIABLES:
+
+const String _AWS_ACCESS_KEY_ID = 'YOUR_ACCESS_KEY';
+const String _AWS_SECRET_ACCESS_KEY = 'YOUR_SECRET_ACCESS_KEY';
+const String _Region = 'YOUR_REGION_CODE'; // (us-west-1, us-east-2, etc)
+const String _LogGroup = 'DESIRED_LOG_GROUP_NAME';
+const String _ErrorGroup = 'DESIRED_ERROR_LOG_GROUP_NAME';
+
+/// END OF VARIABLES
+
+CloudWatchHandler logging = CloudWatchHandler(
+  awsAccessKey: _AWS_ACCESS_KEY_ID,
+  awsSecretKey: _AWS_SECRET_ACCESS_KEY,
+  region: _Region,
+);
+
+String logStreamName = '';
+
+// You may want to edit this function to suit your needs
+String _getLogStreamName() {
+  if (logStreamName == "") {
+    logStreamName = DateFormat("yyyy-MM-dd HH-mm-ss").format(
+      DateTime.now().toUtc(),
+    );
+  }
+  return logStreamName;
+}
+
+void log(String logString, {isError = false}) {
+  logging.log(
+    msg: logString,
+    logGroupName: isError ? _LogGroup : _ErrorGroup,
+    logStreamName: _getLogStreamName(),
+  );
+}
+~~~
+
+Then just import this file somewhere in your code and call `log('HELLO WORLD');`. The package will handle creating the
+log groups and log streams on its own. The way the quick start file is setup, you will end up with one log group for
+standard logging and another for errors. Both with have the same log stream name. To automatically send logs for all
+flutter errors see example 3.
 
 ### Example 1
 
@@ -115,6 +138,7 @@ it `errorLog.dart`
 
 ~~~dart
 import 'package:aws_request/aws_cloudwatch.dart';
+import 'package:intl/intl.dart';
 
 // AWS Variables
 const String AWS_ACCESS_KEY_ID = 'ExampleKey';
@@ -123,14 +147,40 @@ const String Region = 'us-west-2';
 
 // Logging Variables
 const String logGroupName = 'LogGroupExample';
-const String logStreamName = 'LogStreamExample';
-CloudWatch cloudWatch = new CloudWatch(AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY,
-    Region);
-cloudWatch.setLoggingParameters(logGroupName, logStreamName);
+const String logGroupNameError = 'LogGroupExample';
+
+CloudWatchHandler logging = CloudWatchHandler(
+  awsAccessKey: AWS_ACCESS_KEY_ID,
+  awsSecretKey: AWS_SECRET_ACCESS_KEY,
+  region: Region,
+);
+
+String logStreamName = '';
+
+// You may want to edit this function to suit your needs
+String _getLogStreamName() {
+  if (logStreamName == "") {
+    logStreamName = DateFormat("yyyy-MM-dd HH-mm-ss").format(
+      DateTime.now().toUtc(),
+    );
+  }
+  return logStreamName;
+}
+
+void log(String logString, {isError = false}) {
+  logging.log(
+    msg: logString,
+    logGroupName: isError ? logGroupName : logGroupNameError,
+    logStreamName: _getLogStreamName(),
+  );
+}
 
 void logFlutterSystemError(dynamic logString, dynamic stackTrace) async {
-  cloudWatch.log('Auto Captured Error: ${logString.toString()}\n\n'
-      'Auto Captured Stack Trace:\n${stackTrace.toString()}');
+  log(
+    'Auto Captured Error: ${logString.toString()}\n\n'
+        'Auto Captured Stack Trace:\n${stackTrace.toString()}',
+    isError: true,
+  );
 }
 ~~~
 
@@ -158,3 +208,30 @@ void main() {
   });
 }
 ~~~
+
+To send normal logs, import the logging file anywhere and call `log('Hello world!');`
+
+## Important Notes:
+
+### Avoiding AWS Cloudwatch API Rate Limiting
+
+As of now (2021/07/09), AWS has a rate limit of 5 log requests per second per log stream. You may hit this limit rather
+quickly if you have a high volume of logs. It is highly recommended to include the optional delay parameter with a value
+of 200 (milliseconds) to avoid hitting this upper limit. With a delay, logs will continue to collect, but the api calls
+will be limited to 5 per second. At the moment there is no way around this limit.
+
+Example 2 below shows how to add a delay. The default delay is 0 milliseconds.
+
+### Log Groups and Log Streams
+
+There are multiple ways to set the log group and log stream and all are roughly equivalent.
+
+Log stream names currently (2021/07/09) have the following limits:
+
+* Log stream names must be unique within the log group.
+* Log stream names can be between 1 and 512 characters long.
+* The ':' (colon) and '*' (asterisk) characters are not allowed.
+
+This package does not enforce or check log stream names with regard to these limits in case AWS decides to add or remove
+limitations. It is up to **you** to check the errors returned by the API to figure out if the problem is with the
+provided log stream name.

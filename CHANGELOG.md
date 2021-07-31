@@ -1,3 +1,13 @@
+## [0.2.0] - 2021/07/14
+
+* Added CloudWatchHandler class to easily manage multiple CloudWatch instances
+* Added quick start logging example file
+* Automatically creates Log Groups that don't exist
+* Updated the README with info on CloudWatchHandler and quick start
+* Improved code readability
+* Updated to new version of aws_request
+* Added min 0 delay in place it was missing
+
 ## [0.1.12] - 2021/07/14
 
 * Fixed bug where delay was input in seconds instead of milliseconds
@@ -6,7 +16,7 @@
 
 QOL update
 
-* Fully removed optional deprecated xAmzTarget argument from main constructor (deprecated in 0.1.0) 
+* Fully removed optional deprecated xAmzTarget argument from main constructor (deprecated in 0.1.0)
 * Added optional arguments for group / stream name to both constructors
 * Added missing method setLoggingParameters that was shown in error message when group / stream name was null
 * Updated all examples to show different group / stream name instantiations
@@ -32,13 +42,13 @@ QOL update
 ## [0.1.7] - 2021/05/18
 
 * Moved to new version of aws_requests to fix hard coded region bug
-* Improved error handling 
-  
+* Improved error handling
+
 ## [0.1.6] - 2021/03/26
 
 * Added console output logging with 4 verbosity levels
 * Added optional delay parameter to address possible rate limiting
-  * Updated readme with new rate limiting example
+    * Updated readme with new rate limiting example
 
 ## [0.1.5] - 2021/03/26
 
@@ -64,25 +74,28 @@ QOL update
 
 * Updated dependencies for null safety
 * Put deprecation warning on xAmzTarget (formerly serviceInstance
-  * Updated example and docs to reflect changes with xAmzTarget
+    * Updated example and docs to reflect changes with xAmzTarget
 * Added exception if PutLogEvents returns a status code other than 200
 
 ## [0.0.6] - 2021/03/26
 
 Non-null Safety Update
+
 * Updated examples
 * Fixed issue with attempted logging before logstream creation was finished
 
 ## [0.0.5] - 2021/03/25
 
 Non-null Safety Update
+
 * Fixed issue with sending empty logs
 
 ## [0.0.4] - 2021/03/25
 
 Non-null Safety Update
+
 * Put deprecation warning on xAmzTarget (formerly serviceInstance)
-  * Updated example and docs to reflect changes with xAmzTarget
+    * Updated example and docs to reflect changes with xAmzTarget
 * Added exception if PutLogEvents returns a status code other than 200
 * Updated aws_request version to fix unicode error
 

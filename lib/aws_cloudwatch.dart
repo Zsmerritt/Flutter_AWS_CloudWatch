@@ -11,22 +11,97 @@ class CloudWatchException implements Exception {
   String message;
   String cause;
 
-  /// deprecated
+  /// A custom error to identify CloudWatch errors more easily
+  ///
+  /// message: the cause of the error
   CloudWatchException(String message)
       : this.cause = message,
         this.message = message;
 }
 
+/// A CloudWatch handler class to easily manage multiple CloudWatch instances
+class CloudWatchHandler {
+  Map<String, CloudWatch> _logInstances = {};
+  String awsAccessKey;
+  String awsSecretKey;
+  String region;
+  int delay;
+
+  /// CloudWatchHandler Constructor
+  ///
+  /// awsAccessKey: Your AWS Access key.
+  /// awsSecretKey: Your AWS Secret key.
+  /// region: Your AWS region.
+  /// {delay}: Optional delay parameter to avoid rate limiting (suggested value is 200(ms))
+  CloudWatchHandler({
+    required this.awsAccessKey,
+    required this.awsSecretKey,
+    required this.region,
+    this.delay: 0,
+  });
+
+  /// Returns a specific instance of a CloudWatch class (or null if it doesnt
+  /// exist) based on group name and stream name
+  ///
+  /// logGroupName: the log group name of the instance you would like
+  /// logStreamName: the stream name of the instance you would like
+  CloudWatch? getInstance({
+    required String logGroupName,
+    required String logStreamName,
+  }) {
+    String instanceName = '$logGroupName.$logStreamName';
+    return _logInstances[instanceName];
+  }
+
+  /// Logs the provided message to the provided log group and log stream
+  /// Creates a new CloudWatch instance if needed
+  ///
+  /// msg: the message you would like to log
+  /// logGroupName: the log group the log stream will appear under
+  /// logStreamName: the name of the logging session
+  void log({
+    required String msg,
+    required String logGroupName,
+    required String logStreamName,
+  }) {
+    CloudWatch instance = getInstance(
+          logGroupName: logGroupName,
+          logStreamName: logStreamName,
+        ) ??
+        _createInstance(
+          logGroupName: logGroupName,
+          logStreamName: logStreamName,
+        );
+    instance.log(msg);
+  }
+
+  CloudWatch _createInstance({
+    required String logGroupName,
+    required String logStreamName,
+  }) {
+    String instanceName = '$logGroupName.$logStreamName';
+    CloudWatch instance = CloudWatch(
+      awsAccessKey,
+      awsSecretKey,
+      region,
+      logGroupName: logGroupName,
+      logStreamName: logStreamName,
+      delay: delay,
+    );
+    _logInstances[instanceName] = instance;
+    return instance;
+  }
+}
+
 /// An AWS CloudWatch class for sending logs more easily to AWS
 class CloudWatch {
   // AWS Variables
-  late String _awsAccessKey;
-  late String _awsSecretKey;
-  late String _region;
-  late int _delay;
+  String awsAccessKey;
+  String awsSecretKey;
+  String region;
+  int delay;
   int _verbosity = 0;
-
-  AwsRequest? _awsRequest;
+  late AwsRequest _awsRequest;
 
   // Logging Variables
   /// The log group name for the log stream to go in
@@ -39,56 +114,56 @@ class CloudWatch {
   List<Map<String, dynamic>> _logStack = [];
   var _loggingLock = Lock();
   bool _logStreamCreated = false;
+  bool _logGroupCreated = false;
 
   /// CloudWatch Constructor
+  ///
   /// awsAccessKey: Public AWS access key
   /// awsSecretKey: Private AWS access key
   /// region: AWS region
-  /// {groupName}: The log group the log stream will appear under
-  /// {streamName}: The name of this logging session
+  /// {logGroupName}: The log group the log stream will appear under
+  /// {logStreamName}: The name of this logging session
   /// {delay}: Milliseconds to wait for more logs to accumulate to avoid rate limiting.
-  CloudWatch(String awsAccessKey, String awsSecretKey, String region,
-      {groupName, streamName, delay = 0}) {
-    logGroupName = groupName;
-    logStreamName = streamName;
-    _awsAccessKey = awsAccessKey;
-    _awsSecretKey = awsSecretKey;
-    _region = region;
-    _delay = max(0, delay);
+  CloudWatch(
+    this.awsAccessKey,
+    this.awsSecretKey,
+    this.region, {
+    this.logGroupName,
+    this.logStreamName,
+    this.delay: 0,
+  }) {
+    delay = max(0, delay);
+    _awsRequest =
+        AwsRequest(awsAccessKey, awsSecretKey, region, service: 'logs');
   }
 
-  /// CloudWatch Constructor
-  /// awsAccessKey: Public AWS access key
-  /// awsSecretKey: Private AWS access key
-  /// region: AWS region
-  /// delay: Milliseconds to wait for more logs to accumulate to avoid rate limiting.
-  /// {groupName}: The log group the log stream will appear under
-  /// {streamName}: The name of this logging session
+  ///DEPRECATED
   CloudWatch.withDelay(
-      String awsAccessKey, String awsSecretKey, String region, int delay,
-      {groupName, streamName}) {
-    logGroupName = groupName;
-    logStreamName = streamName;
-    _awsAccessKey = awsAccessKey;
-    _awsSecretKey = awsSecretKey;
-    _region = region;
-    _delay = max(0, delay);
+    this.awsAccessKey,
+    this.awsSecretKey,
+    this.region,
+    this.delay, {
+    this.logGroupName,
+    this.logStreamName,
+  }) {
+    delay = max(0, delay);
+    _awsRequest =
+        AwsRequest(awsAccessKey, awsSecretKey, region, service: 'logs');
     print('CloudWatch.withDelay is deprecated. Instead call the default '
         'constructor and provide a value for the optional delay parameter');
   }
 
-  /// Delays sending logs
   /// Delays sending logs to allow more logs to accumulate to avoid rate limiting
+  ///
   /// delay: The amount of milliseconds to wait.
   int setDelay(int delay) {
-    _delay = max(0, delay);
-    if (_verbosity > 2) {
-      print('CloudWatch INFO: Set delay to $_delay');
-    }
-    return _delay;
+    delay = max(0, delay);
+    _debugPrint(2, 'CloudWatch INFO: Set delay to $delay');
+    return delay;
   }
 
   /// Sets log group name and log stream name
+  ///
   /// groupName: The log group you wish the log to appear under
   /// streamName: The name for this logging session
   void setLoggingParameters(String? groupName, String? streamName) {
@@ -97,34 +172,33 @@ class CloudWatch {
   }
 
   /// Sets console verbosity level. Default is 0.
+  ///
   /// 0 - No console logging.
   /// 1 - Error console logging.
   /// 2 - API response logging.
   /// 3 - Verbose logging
+  ///
   /// level: The verbosity level. Valid values are 0 through 3
   void setVerbosity(int level) {
-    level = level > 3 ? 3 : level;
-    level = level < 0 ? 0 : level;
+    level = min(level, 3);
+    level = max(level, 0);
     _verbosity = level;
-    if (_verbosity > 2) {
-      print('CloudWatch INFO: Set verbosity to $_verbosity');
-    }
+    _debugPrint(2, 'CloudWatch INFO: Set verbosity to $_verbosity');
   }
 
   /// Performs a PutLogEvent to CloudWatch
+  ///
   /// logString: the string you want to log in CloudWatch
   ///
   /// Throws CloudWatchException if logGroupName or logStreamName are not
   /// initialized or if aws returns an error.
   Future<void> log(String logString) async {
-    if (_verbosity > 2) {
-      print('CloudWatch INFO: Attempting to log $logString');
-    }
-    if (logGroupName == null || logStreamName == null) {
-      if (_verbosity > 0) {
-        print('CloudWatch ERROR: Please supply a Log Group and Stream names by '
-            'calling setLoggingParameters(String? logGroupName, String? logStreamName)');
-      }
+    _debugPrint(2, 'CloudWatch INFO: Attempting to log $logString');
+    if ([logGroupName, logStreamName].contains(null)) {
+      _debugPrint(
+          0,
+          'CloudWatch ERROR: Please supply a Log Group and Stream names by '
+          'calling setLoggingParameters(String? logGroupName, String? logStreamName)');
       throw new CloudWatchException(
           'CloudWatch ERROR: Please supply a Log Group and Stream names by '
           'calling setLoggingParameters(String logGroupName, String logStreamName)');
@@ -132,60 +206,84 @@ class CloudWatch {
     await _log(logString);
   }
 
-  // gets AwsRequest instance and instantiates if needed
-  AwsRequest? _getAwsRequest() {
-    if (_awsRequest == null) {
-      if (_verbosity > 2) {
-        print('CloudWatch INFO: Generating AwsRequest');
+  void _debugPrint(int v, String msg) {
+    if (_verbosity > v) {
+      print(msg);
+    }
+  }
+
+  Future<void> _createLogStreamAndLogGroup() async {
+    try {
+      await _createLogStream();
+    } on CloudWatchException catch (e) {
+      if (e.message == 'CloudWatch ERROR: ResourceNotFoundException') {
+        // Create a new log group and try stream creation again
+        await _createLogGroup();
+        await _createLogStream();
       }
-      _awsRequest = new AwsRequest(_awsAccessKey, _awsSecretKey, _region);
-      _awsRequest!.service = 'logs';
     }
-    if (_verbosity > 2) {
-      print('CloudWatch INFO: Got AwsRequest');
-    }
-    return _awsRequest;
   }
 
   Future<void> _createLogStream() async {
     if (!_logStreamCreated) {
-      if (_verbosity > 2) {
-        print('CloudWatch INFO: Generating LogStream');
-      }
+      _debugPrint(2, 'CloudWatch INFO: Generating LogStream');
       _logStreamCreated = true;
-      AwsRequest request = _getAwsRequest()!;
       String body =
           '{"logGroupName": "$logGroupName","logStreamName": "$logStreamName"}';
-      HttpClientResponse log = await request.send(
+      HttpClientResponse log = await _awsRequest.send(
         'POST',
         jsonBody: body,
         target: 'Logs_20140328.CreateLogStream',
       );
       int statusCode = log.statusCode;
-
-      if (_verbosity > 1) {
-        print('CloudWatch Info: LogStream creation status code: $statusCode');
-      }
+      _debugPrint(
+          1, 'CloudWatch Info: LogStream creation status code: $statusCode');
       if (statusCode != 200) {
         Map<String, dynamic>? reply =
             jsonDecode(await log.transform(utf8.decoder).join());
-        if (_verbosity > 0) {
-          print(
+        if (reply?['__type'] == 'ResourceNotFoundException') {
+          _logStreamCreated = false;
+          throw new CloudWatchException(
+              'CloudWatch ERROR: ResourceNotFoundException');
+        } else {
+          _debugPrint(0,
               'CloudWatch ERROR: StatusCode: $statusCode, CloudWatchResponse: $reply');
+          _logStreamCreated = false;
+          throw new CloudWatchException('CloudWatch ERROR: $reply');
         }
+      }
+    }
+    _debugPrint(2, 'CloudWatch INFO: Got LogStream');
+  }
+
+  Future<void> _createLogGroup() async {
+    if (!_logGroupCreated) {
+      _debugPrint(2, 'CloudWatch INFO: creating LogGroup Exists');
+      _logGroupCreated = true;
+      String body = '{"logGroupName": "$logGroupName"}';
+      HttpClientResponse log = await _awsRequest.send(
+        'POST',
+        jsonBody: body,
+        target: 'Logs_20140328.CreateLogGroup',
+      );
+      int statusCode = log.statusCode;
+      _debugPrint(
+          1, 'CloudWatch Info: LogGroup creation status code: $statusCode');
+      if (statusCode != 200) {
+        Map<String, dynamic>? reply =
+            jsonDecode(await log.transform(utf8.decoder).join());
+        _debugPrint(0,
+            'CloudWatch ERROR: StatusCode: $statusCode, CloudWatchResponse: $reply');
+        _logGroupCreated = false;
         throw new CloudWatchException('CloudWatch ERROR: $reply');
       }
     }
-    if (_verbosity > 2) {
-      print('CloudWatch INFO: Got LogStream');
-    }
+    _debugPrint(2, 'CloudWatch INFO: created LogGroup');
   }
 
   // turns a string into a cloudwatch event
   Future<String> _createBody() async {
-    if (_verbosity > 2) {
-      print('CloudWatch INFO: Generating CloudWatch request body');
-    }
+    _debugPrint(2, 'CloudWatch INFO: Generating CloudWatch request body');
     Map<String, dynamic> body = {
       'logEvents': _logStack,
       'logGroupName': logGroupName,
@@ -193,17 +291,13 @@ class CloudWatch {
     };
     if (_sequenceToken != null) {
       body['sequenceToken'] = _sequenceToken;
-      if (_verbosity > 2) {
-        print('CloudWatch INFO: Adding sequence token');
-      }
+      _debugPrint(2, 'CloudWatch INFO: Adding sequence token');
     }
     int logLength = _logStack.length;
     String jsonBody = json.encode(body);
     _logStack = [];
-    if (_verbosity > 2) {
-      print(
-          'CloudWatch INFO: Generated jsonBody with $logLength logs: $jsonBody');
-    }
+    _debugPrint(2,
+        'CloudWatch INFO: Generated jsonBody with $logLength logs: $jsonBody');
     return jsonBody;
   }
 
@@ -211,15 +305,13 @@ class CloudWatch {
     int time = DateTime.now().toUtc().millisecondsSinceEpoch;
     Map<String, dynamic> message = {'timestamp': time, 'message': logString};
     _logStack.add(message);
-    if (_verbosity > 2) {
-      print('CloudWatch INFO: Added message to log stack: $message');
-    }
-    if (!_logStreamCreated) {
-      await _loggingLock.synchronized(_createLogStream).catchError((e) {
-        return Future.error(CloudWatchException(e.message));
-      });
-    }
-    sleep(new Duration(milliseconds: _delay));
+    _debugPrint(2, 'CloudWatch INFO: Added message to log stack: $message');
+    await _loggingLock
+        .synchronized(_createLogStreamAndLogGroup)
+        .catchError((e) {
+      return Future.error(CloudWatchException(e.message));
+    });
+    sleep(new Duration(seconds: delay));
     await _loggingLock.synchronized(_sendLogs).catchError((e) {
       return Future.error(CloudWatchException(e.message));
     });
@@ -228,14 +320,11 @@ class CloudWatch {
   Future<void> _sendLogs() async {
     if (_logStack.length <= 0) {
       // logs already sent while this request was waiting for lock
-      if (_verbosity > 2) {
-        print('CloudWatch INFO: All logs have already been sent');
-      }
+      _debugPrint(2, 'CloudWatch INFO: All logs have already been sent');
       return;
     }
-    AwsRequest request = _getAwsRequest()!;
     String body = await _createBody();
-    HttpClientResponse result = await request.send(
+    HttpClientResponse result = await _awsRequest.send(
       'POST',
       jsonBody: body,
       target: 'Logs_20140328.PutLogEvents',
@@ -243,19 +332,14 @@ class CloudWatch {
     int statusCode = result.statusCode;
     Map<String, dynamic>? reply =
         jsonDecode(await result.transform(utf8.decoder).join());
-
-    if (_verbosity > 1) {
-      print(
-          'CloudWatch Info: StatusCode: $statusCode, CloudWatchResponse: $reply');
-    }
     if (statusCode == 200) {
+      _debugPrint(1,
+          'CloudWatch Info: StatusCode: $statusCode, CloudWatchResponse: $reply');
       String? newSequenceToken = reply!['nextSequenceToken'];
       _sequenceToken = newSequenceToken;
     } else {
-      if (_verbosity > 0) {
-        print(
-            'CloudWatch ERROR: StatusCode: $statusCode, CloudWatchResponse: $reply');
-      }
+      _debugPrint(0,
+          'CloudWatch ERROR: StatusCode: $statusCode, CloudWatchResponse: $reply');
       throw new CloudWatchException(
           'CloudWatch ERROR: StatusCode: $statusCode, CloudWatchResponse: $reply');
     }
