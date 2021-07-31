@@ -105,10 +105,18 @@ class CloudWatch {
 
   // Logging Variables
   /// The log group name for the log stream to go in
-  String? logGroupName;
+  String? groupName;
+
+  /// Synonym for groupName
+  String? get logGroupName => groupName;
+  set logGroupName(String? val) => groupName;
 
   /// The log stream name for log events to be filed in
-  String? logStreamName;
+  String? streamName;
+
+  /// Synonym for streamName
+  String? get logStreamName => streamName;
+  set logStreamName(String? val) => streamName;
 
   String? _sequenceToken;
   List<Map<String, dynamic>> _logStack = [];
@@ -128,8 +136,8 @@ class CloudWatch {
     this.awsAccessKey,
     this.awsSecretKey,
     this.region, {
-    this.logGroupName,
-    this.logStreamName,
+    this.groupName,
+    this.streamName,
     this.delay: 0,
   }) {
     delay = max(0, delay);
@@ -143,8 +151,8 @@ class CloudWatch {
     this.awsSecretKey,
     this.region,
     this.delay, {
-    this.logGroupName,
-    this.logStreamName,
+    this.groupName,
+    this.streamName,
   }) {
     delay = max(0, delay);
     _awsRequest =

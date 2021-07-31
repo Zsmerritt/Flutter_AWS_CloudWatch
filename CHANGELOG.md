@@ -1,4 +1,9 @@
-## [0.2.0] - 2021/07/14
+## [0.2.0+1] - 2021/07/31
+
+* Fixed naming scheme for optional variables in constructor
+* Added groupName and streamName as synonyms for logGroupName and logStreamName
+
+## [0.2.0] - 2021/07/30
 
 * Added CloudWatchHandler class to easily manage multiple CloudWatch instances
 * Added quick start logging example file
