@@ -59,11 +59,11 @@ class CloudWatchHandler {
   /// msg: the message you would like to log
   /// logGroupName: the log group the log stream will appear under
   /// logStreamName: the name of the logging session
-  void log({
+  Future<void> log({
     required String msg,
     required String logGroupName,
     required String logStreamName,
-  }) {
+  }) async {
     CloudWatch instance = getInstance(
           logGroupName: logGroupName,
           logStreamName: logStreamName,
@@ -72,7 +72,7 @@ class CloudWatchHandler {
           logGroupName: logGroupName,
           logStreamName: logStreamName,
         );
-    instance.log(msg);
+    await instance.log(msg);
   }
 
   CloudWatch _createInstance({
@@ -84,8 +84,8 @@ class CloudWatchHandler {
       awsAccessKey,
       awsSecretKey,
       region,
-      logGroupName: logGroupName,
-      logStreamName: logStreamName,
+      groupName: logGroupName,
+      streamName: logStreamName,
       delay: delay,
     );
     _logInstances[instanceName] = instance;
@@ -109,14 +109,14 @@ class CloudWatch {
 
   /// Synonym for groupName
   String? get logGroupName => groupName;
-  set logGroupName(String? val) => groupName;
+  set logGroupName(String? val) => groupName = val;
 
   /// The log stream name for log events to be filed in
   String? streamName;
 
   /// Synonym for streamName
   String? get logStreamName => streamName;
-  set logStreamName(String? val) => streamName;
+  set logStreamName(String? val) => streamName = val;
 
   String? _sequenceToken;
   List<Map<String, dynamic>> _logStack = [];

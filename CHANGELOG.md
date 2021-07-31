@@ -1,3 +1,9 @@
+## [0.2.0+2] - 2021/07/31
+
+* Applied naming fix to CloudWatchHandler instance constructor
+* Added test coverage for CloudWatchHandler
+* Fixed issue with synonym setters
+
 ## [0.2.0+1] - 2021/07/31
 
 * Fixed naming scheme for optional variables in constructor

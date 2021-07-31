@@ -1,6 +1,6 @@
 name: example
 description: An AWS CloudWatch wrapper package for easy Flutter cloud logging. Currently only logging is supported.
-version: 0.2.0
+version: 0.2.0+2
 homepage: https://github.com/Zsmerritt/Flutter_AWS_CloudWatch
 
 environment:

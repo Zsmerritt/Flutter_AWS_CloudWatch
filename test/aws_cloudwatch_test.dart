@@ -16,5 +16,24 @@ void main() {
     cloudWatch.setLoggingParameters('LogGroupName', 'LogStreamName');
     expect(cloudWatch.logStreamName == 'LogStreamName', true);
     expect(cloudWatch.logGroupName == 'LogGroupName', true);
+
+    final CloudWatchHandler cloudWatchHandler = CloudWatchHandler(
+      awsAccessKey: 'awsAccessKey',
+      awsSecretKey: 'awsSecretKey',
+      region: 'region',
+    );
+    CloudWatch? nullCloudWatch = cloudWatchHandler.getInstance(
+      logGroupName: 'logGroupName',
+      logStreamName: 'logStreamName',
+    );
+    expect(nullCloudWatch == null, true);
+
+    expect(
+        () async => await cloudWatchHandler.log(
+              msg: 'Hello World!',
+              logGroupName: 'logGroupName',
+              logStreamName: 'logGroupName',
+            ),
+        throwsA(isA<CloudWatchException>()));
   });
 }
