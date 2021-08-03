@@ -1,3 +1,8 @@
+## [0.2.0+3] - 2021/08/3
+
+* Added optimization to reduce lock clutter
+* Replaced sleep command with Future.delayed to avoid pausing app
+
 ## [0.2.0+2] - 2021/07/31
 
 * Applied naming fix to CloudWatchHandler instance constructor

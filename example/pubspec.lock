@@ -14,14 +14,14 @@ packages:
       name: aws_cloudwatch
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.1.10"
+    version: "0.2.0+2"
   aws_request:
     dependency: transitive
     description:
       name: aws_request
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.1.6"
+    version: "0.1.7"
   boolean_selector:
     dependency: transitive
     description:

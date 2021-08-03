@@ -109,6 +109,7 @@ class CloudWatch {
 
   /// Synonym for groupName
   String? get logGroupName => groupName;
+
   set logGroupName(String? val) => groupName = val;
 
   /// The log stream name for log events to be filed in
@@ -116,6 +117,7 @@ class CloudWatch {
 
   /// Synonym for streamName
   String? get logStreamName => streamName;
+
   set logStreamName(String? val) => streamName = val;
 
   String? _sequenceToken;
@@ -314,13 +316,15 @@ class CloudWatch {
     Map<String, dynamic> message = {'timestamp': time, 'message': logString};
     _logStack.add(message);
     _debugPrint(2, 'CloudWatch INFO: Added message to log stack: $message');
-    await _loggingLock
-        .synchronized(_createLogStreamAndLogGroup)
-        .catchError((e) {
-      return Future.error(CloudWatchException(e.message));
-    });
-    sleep(new Duration(seconds: delay));
-    await _loggingLock.synchronized(_sendLogs).catchError((e) {
+    if (!_logStreamCreated) {
+      await _loggingLock
+          .synchronized(_createLogStreamAndLogGroup)
+          .catchError((e) {
+        return Future.error(CloudWatchException(e.message));
+      });
+    }
+    Future.delayed(Duration(seconds: delay),
+        () => _loggingLock.synchronized(_sendLogs)).catchError((e) {
       return Future.error(CloudWatchException(e.message));
     });
   }
