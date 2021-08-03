@@ -1,3 +1,7 @@
+## [0.2.0+4] - 2021/08/3
+
+* Fixed delay from seconds to milliseconds
+
 ## [0.2.0+3] - 2021/08/3
 
 * Added optimization to reduce lock clutter

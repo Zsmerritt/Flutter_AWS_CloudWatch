@@ -323,7 +323,7 @@ class CloudWatch {
         return Future.error(CloudWatchException(e.message));
       });
     }
-    Future.delayed(Duration(seconds: delay),
+    Future.delayed(Duration(milliseconds: delay),
         () => _loggingLock.synchronized(_sendLogs)).catchError((e) {
       return Future.error(CloudWatchException(e.message));
     });
