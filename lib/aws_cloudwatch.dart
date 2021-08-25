@@ -8,15 +8,17 @@ import 'package:synchronized/synchronized.dart';
 import 'package:universal_io/io.dart';
 
 class CloudWatchException implements Exception {
-  String message;
-  String cause;
+  late String message;
+  late String cause;
+  StackTrace stackTrace;
 
   /// A custom error to identify CloudWatch errors more easily
   ///
   /// message: the cause of the error
-  CloudWatchException(String message)
-      : this.cause = message,
-        this.message = message;
+  CloudWatchException(String message, this.stackTrace) {
+    this.cause = message;
+    this.message = message;
+  }
 }
 
 /// A CloudWatch handler class to easily manage multiple CloudWatch instances
@@ -211,7 +213,8 @@ class CloudWatch {
           'calling setLoggingParameters(String? logGroupName, String? logStreamName)');
       throw new CloudWatchException(
           'CloudWatch ERROR: Please supply a Log Group and Stream names by '
-          'calling setLoggingParameters(String logGroupName, String logStreamName)');
+          'calling setLoggingParameters(String logGroupName, String logStreamName)',
+          StackTrace.current);
     }
     await _log(logString);
   }
@@ -254,12 +257,14 @@ class CloudWatch {
         if (reply?['__type'] == 'ResourceNotFoundException') {
           _logStreamCreated = false;
           throw new CloudWatchException(
-              'CloudWatch ERROR: ResourceNotFoundException');
+              'CloudWatch ERROR: ResourceNotFoundException',
+              StackTrace.current);
         } else {
           _debugPrint(0,
               'CloudWatch ERROR: StatusCode: $statusCode, CloudWatchResponse: $reply');
           _logStreamCreated = false;
-          throw new CloudWatchException('CloudWatch ERROR: $reply');
+          throw new CloudWatchException(
+              'CloudWatch ERROR: $reply', StackTrace.current);
         }
       }
     }
@@ -285,7 +290,8 @@ class CloudWatch {
         _debugPrint(0,
             'CloudWatch ERROR: StatusCode: $statusCode, CloudWatchResponse: $reply');
         _logGroupCreated = false;
-        throw new CloudWatchException('CloudWatch ERROR: $reply');
+        throw new CloudWatchException(
+            'CloudWatch ERROR: $reply', StackTrace.current);
       }
     }
     _debugPrint(2, 'CloudWatch INFO: created LogGroup');
@@ -319,13 +325,19 @@ class CloudWatch {
     if (!_logStreamCreated) {
       await _loggingLock
           .synchronized(_createLogStreamAndLogGroup)
-          .catchError((e) {
-        return Future.error(CloudWatchException(e.message));
+          .catchError((e, stackTrace) {
+        stackTrace =
+            stackTrace.toString() != '' ? stackTrace : StackTrace.current;
+        return Future.error(CloudWatchException(
+            e.toString(), stackTrace));
       });
     }
     Future.delayed(Duration(milliseconds: delay),
-        () => _loggingLock.synchronized(_sendLogs)).catchError((e) {
-      return Future.error(CloudWatchException(e.message));
+        () => _loggingLock.synchronized(_sendLogs)).catchError((e, stackTrace) {
+      stackTrace =
+          stackTrace.toString() != '' ? stackTrace : StackTrace.current;
+      return Future.error(CloudWatchException(
+          e.toString(), stackTrace));
     });
   }
 
@@ -353,7 +365,8 @@ class CloudWatch {
       _debugPrint(0,
           'CloudWatch ERROR: StatusCode: $statusCode, CloudWatchResponse: $reply');
       throw new CloudWatchException(
-          'CloudWatch ERROR: StatusCode: $statusCode, CloudWatchResponse: $reply');
+          'CloudWatch ERROR: StatusCode: $statusCode, CloudWatchResponse: $reply',
+          StackTrace.current);
     }
   }
 }
