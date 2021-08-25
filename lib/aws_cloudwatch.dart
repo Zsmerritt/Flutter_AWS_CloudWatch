@@ -2,6 +2,7 @@ library aws_cloudwatch;
 
 import 'dart:convert';
 import 'dart:math';
+import 'dart:async';
 
 import 'package:aws_request/aws_request.dart';
 import 'package:synchronized/synchronized.dart';
@@ -322,23 +323,30 @@ class CloudWatch {
     Map<String, dynamic> message = {'timestamp': time, 'message': logString};
     _logStack.add(message);
     _debugPrint(2, 'CloudWatch INFO: Added message to log stack: $message');
+    CloudWatchException? error;
     if (!_logStreamCreated) {
       await _loggingLock
           .synchronized(_createLogStreamAndLogGroup)
           .catchError((e, stackTrace) {
         stackTrace =
             stackTrace.toString() != '' ? stackTrace : StackTrace.current;
-        return Future.error(CloudWatchException(
-            e.toString(), stackTrace));
+        error = CloudWatchException(
+            e.toString(), stackTrace);
       });
     }
-    Future.delayed(Duration(milliseconds: delay),
-        () => _loggingLock.synchronized(_sendLogs)).catchError((e, stackTrace) {
+    if (error != null) {
+      return Future.error(error!);
+    }
+    await Future.delayed(Duration(milliseconds: delay),
+        () async => await _loggingLock.synchronized(_sendLogs)).catchError((e, stackTrace) {
       stackTrace =
           stackTrace.toString() != '' ? stackTrace : StackTrace.current;
-      return Future.error(CloudWatchException(
-          e.toString(), stackTrace));
+      error = CloudWatchException(
+          e.toString(), stackTrace);
     });
+    if (error != null) {
+      return Future.error(error!);
+    }
   }
 
   Future<void> _sendLogs() async {
