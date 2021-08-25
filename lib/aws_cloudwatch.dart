@@ -1,8 +1,8 @@
 library aws_cloudwatch;
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
-import 'dart:async';
 
 import 'package:aws_request/aws_request.dart';
 import 'package:synchronized/synchronized.dart';
@@ -28,7 +28,7 @@ class CloudWatchHandler {
   String awsAccessKey;
   String awsSecretKey;
   String region;
-  int delay;
+  Duration delay;
 
   /// CloudWatchHandler Constructor
   ///
@@ -40,7 +40,7 @@ class CloudWatchHandler {
     required this.awsAccessKey,
     required this.awsSecretKey,
     required this.region,
-    this.delay: 0,
+    this.delay: const Duration(milliseconds: 0),
   });
 
   /// Returns a specific instance of a CloudWatch class (or null if it doesnt
@@ -78,6 +78,30 @@ class CloudWatchHandler {
     await instance.log(msg);
   }
 
+  /// Logs the provided message to the provided log group and log stream
+  /// Creates a new CloudWatch instance if needed
+  ///
+  /// msg: the message you would like to log
+  /// logGroupName: the log group the log stream will appear under
+  /// logStreamName: the name of the logging session
+  ///
+  /// Note: using logMany will result in all logs having the same timestamp
+  Future<void> logMany({
+    required List<String> messages,
+    required String logGroupName,
+    required String logStreamName,
+  }) async {
+    CloudWatch instance = getInstance(
+          logGroupName: logGroupName,
+          logStreamName: logStreamName,
+        ) ??
+        _createInstance(
+          logGroupName: logGroupName,
+          logStreamName: logStreamName,
+        );
+    await instance.logMany(messages);
+  }
+
   CloudWatch _createInstance({
     required String logGroupName,
     required String logStreamName,
@@ -102,7 +126,7 @@ class CloudWatch {
   String awsAccessKey;
   String awsSecretKey;
   String region;
-  int delay;
+  Duration delay;
   int _verbosity = 0;
   late AwsRequest _awsRequest;
 
@@ -143,9 +167,9 @@ class CloudWatch {
     this.region, {
     this.groupName,
     this.streamName,
-    this.delay: 0,
+    this.delay: const Duration(milliseconds: 0),
   }) {
-    delay = max(0, delay);
+    delay = !delay.isNegative ? delay : Duration(milliseconds: 0);
     _awsRequest =
         AwsRequest(awsAccessKey, awsSecretKey, region, service: 'logs');
   }
@@ -159,7 +183,7 @@ class CloudWatch {
     this.groupName,
     this.streamName,
   }) {
-    delay = max(0, delay);
+    delay = !delay.isNegative ? delay : Duration(milliseconds: 0);
     _awsRequest =
         AwsRequest(awsAccessKey, awsSecretKey, region, service: 'logs');
     print('CloudWatch.withDelay is deprecated. Instead call the default '
@@ -184,21 +208,6 @@ class CloudWatch {
     logStreamName = streamName;
   }
 
-  /// Sets console verbosity level. Default is 0.
-  ///
-  /// 0 - No console logging.
-  /// 1 - Error console logging.
-  /// 2 - API response logging.
-  /// 3 - Verbose logging
-  ///
-  /// level: The verbosity level. Valid values are 0 through 3
-  void setVerbosity(int level) {
-    level = min(level, 3);
-    level = max(level, 0);
-    _verbosity = level;
-    _debugPrint(2, 'CloudWatch INFO: Set verbosity to $_verbosity');
-  }
-
   /// Performs a PutLogEvent to CloudWatch
   ///
   /// logString: the string you want to log in CloudWatch
@@ -217,7 +226,40 @@ class CloudWatch {
           'calling setLoggingParameters(String logGroupName, String logStreamName)',
           StackTrace.current);
     }
-    await _log(logString);
+    await _log([logString]);
+  }
+
+  /// Performs a PutLogEvent to CloudWatch
+  ///
+  /// logStrings: a list of strings you want to log in CloudWatch
+  ///
+  /// Note: using logMany will result in all logs having the same timestamp
+  ///
+  /// Throws CloudWatchException if logGroupName or logStreamName are not
+  /// initialized or if aws returns an error.
+  Future<void> logMany(List<String> logStrings) async {
+    _debugPrint(2, 'CloudWatch INFO: Attempting to log many');
+    if ([logGroupName, logStreamName].contains(null)) {
+      _debugPrint(
+          0,
+          'CloudWatch ERROR: Please supply a Log Group and Stream names by '
+          'calling setLoggingParameters(String? logGroupName, String? logStreamName)');
+      throw new CloudWatchException(
+          'CloudWatch ERROR: Please supply a Log Group and Stream names by '
+          'calling setLoggingParameters(String logGroupName, String logStreamName)',
+          StackTrace.current);
+    }
+    await _log(logStrings);
+  }
+
+  /// Sets console verbosity level.
+  /// Useful for debugging.
+  /// Hidden by default. Get here with a debugger ;)
+  void _setVerbosity(int level) {
+    level = min(level, 3);
+    level = max(level, 0);
+    _verbosity = level;
+    _debugPrint(2, 'CloudWatch INFO: Set verbosity to $_verbosity');
   }
 
   void _debugPrint(int v, String msg) {
@@ -255,7 +297,7 @@ class CloudWatch {
       if (statusCode != 200) {
         Map<String, dynamic>? reply =
             jsonDecode(await log.transform(utf8.decoder).join());
-        if (reply?['__type'] == 'ResourceNotFoundException') {
+        if (reply != null && reply['__type'] == 'ResourceNotFoundException') {
           _logStreamCreated = false;
           throw new CloudWatchException(
               'CloudWatch ERROR: ResourceNotFoundException',
@@ -318,11 +360,11 @@ class CloudWatch {
     return jsonBody;
   }
 
-  Future<void> _log(String logString) async {
+  Future<void> _log(List<String> logStrings) async {
     int time = DateTime.now().toUtc().millisecondsSinceEpoch;
-    Map<String, dynamic> message = {'timestamp': time, 'message': logString};
-    _logStack.add(message);
-    _debugPrint(2, 'CloudWatch INFO: Added message to log stack: $message');
+    _logStack.addAll(
+        logStrings.map((msg) => {'timestamp': time, 'message': msg}).toList());
+    _debugPrint(2, 'CloudWatch INFO: Added messages to log stack');
     CloudWatchException? error;
     if (!_logStreamCreated) {
       await _loggingLock
@@ -330,19 +372,18 @@ class CloudWatch {
           .catchError((e, stackTrace) {
         stackTrace =
             stackTrace.toString() != '' ? stackTrace : StackTrace.current;
-        error = CloudWatchException(
-            e.toString(), stackTrace);
+        error = CloudWatchException(e.toString(), stackTrace);
       });
     }
     if (error != null) {
       return Future.error(error!);
     }
-    await Future.delayed(Duration(milliseconds: delay),
-        () async => await _loggingLock.synchronized(_sendLogs)).catchError((e, stackTrace) {
+    await Future.delayed(
+            delay, () async => await _loggingLock.synchronized(_sendLogs))
+        .catchError((e, stackTrace) {
       stackTrace =
           stackTrace.toString() != '' ? stackTrace : StackTrace.current;
-      error = CloudWatchException(
-          e.toString(), stackTrace);
+      error = CloudWatchException(e.toString(), stackTrace);
     });
     if (error != null) {
       return Future.error(error!);
