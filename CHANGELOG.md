@@ -1,3 +1,7 @@
+## [0.3.0+1] - 2021/08/25
+
+* Switched to new aws_cloudwatch version
+
 ## [0.3.0] - 2021/08/25
 
 * Added stack trace to CloudWatchException class  
