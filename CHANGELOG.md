@@ -1,3 +1,12 @@
+## [0.3.0] - 2021/08/25
+
+* Added stack trace to CloudWatchException class  
+* Fixed area where empty CloudWatchException was created  
+* Fixed issue with error handling causing uncatchable exception  
+* Changed delay to a Duration  
+* Added logMany to both CloudWatch and CloudWatchHandler
+* Changed setVerbosity function to private
+
 ## [0.2.0+4] - 2021/08/3
 
 * Fixed delay from seconds to milliseconds
