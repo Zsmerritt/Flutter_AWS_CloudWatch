@@ -192,9 +192,9 @@ class CloudWatch {
 
   /// Delays sending logs to allow more logs to accumulate to avoid rate limiting
   ///
-  /// delay: The amount of milliseconds to wait.
-  int setDelay(int delay) {
-    delay = max(0, delay);
+  /// delay: the Duration to delay
+  Duration setDelay(Duration delay) {
+    this.delay = !delay.isNegative ? delay : Duration(milliseconds: 0);
     _debugPrint(2, 'CloudWatch INFO: Set delay to $delay');
     return delay;
   }

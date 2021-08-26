@@ -1,3 +1,7 @@
+## [0.3.0+3] - 2021/08/26
+
+* Updated setDelay to use Duration
+
 ## [0.3.0+2] - 2021/08/26
 
 * Updated readme and example with delay type change
