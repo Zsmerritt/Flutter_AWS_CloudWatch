@@ -1,3 +1,8 @@
+## [0.3.0+2] - 2021/08/26
+
+* Updated readme and example with delay type change
+* Updated function comments with updated wording referencing delay parameter
+
 ## [0.3.0+1] - 2021/08/25
 
 * Switched to new aws_cloudwatch version

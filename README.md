@@ -51,6 +51,7 @@ CloudWatchHandler logging = CloudWatchHandler(
   awsAccessKey: _AWS_ACCESS_KEY_ID,
   awsSecretKey: _AWS_SECRET_ACCESS_KEY,
   region: _Region,
+  delay: Duration(milliseconds: 200),
 );
 
 String logStreamName = '';
@@ -119,8 +120,8 @@ const String Region = 'us-west-2';
 const String logGroupName = 'LogGroupExample';
 const String logStreamName = 'LogStreamExample';
 CloudWatch cloudWatch = new CloudWatch(AWS_ACCESS_KEY_ID,
-    AWS_SECRET_ACCESS_KEY, Region, groupName: logGroupName,
-    streamName: logStreamName, delay: 200);
+  AWS_SECRET_ACCESS_KEY, Region, groupName: logGroupName,
+  streamName: logStreamName, delay: Duration(milliseconds: 200));
 
 void log(String logString) {
   cloudWatch.log(logString);
@@ -217,10 +218,11 @@ To send normal logs, import the logging file anywhere and call `log('Hello world
 
 As of now (2021/07/09), AWS has a rate limit of 5 log requests per second per log stream. You may hit this limit rather
 quickly if you have a high volume of logs. It is highly recommended to include the optional delay parameter with a value
-of 200 (milliseconds) to avoid hitting this upper limit. With a delay, logs will continue to collect, but the api calls
-will be limited to 5 per second. At the moment there is no way around this limit.
+of `Duration(milliseconds: 200)` to avoid hitting this upper limit. With a delay, logs will continue to collect, but 
+the api calls will be limited to `1 / delay` per second. For example, a delay of 200 milliseconds would result in a maximum 
+of 5 api requests per second. At the moment there is no way to increase this limit.
 
-Example 2 below shows how to add a delay. The default delay is 0 milliseconds.
+[Example 2](#Example 2) shows how to add a delay. The default delay is `Duration(milliseconds: 0)`.
 
 ### Log Groups and Log Streams
 

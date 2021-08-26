@@ -35,7 +35,7 @@ class CloudWatchHandler {
   /// awsAccessKey: Your AWS Access key.
   /// awsSecretKey: Your AWS Secret key.
   /// region: Your AWS region.
-  /// {delay}: Optional delay parameter to avoid rate limiting (suggested value is 200(ms))
+  /// {delay}: Optional delay parameter to avoid rate limiting (suggested value is Duration(milliseconds: 200))
   CloudWatchHandler({
     required this.awsAccessKey,
     required this.awsSecretKey,

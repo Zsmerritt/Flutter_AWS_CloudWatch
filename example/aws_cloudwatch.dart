@@ -17,6 +17,7 @@ CloudWatchHandler logging = CloudWatchHandler(
   awsAccessKey: _AWS_ACCESS_KEY_ID,
   awsSecretKey: _AWS_SECRET_ACCESS_KEY,
   region: _Region,
+  delay: Duration(milliseconds: 200),
 );
 
 String logStreamName = '';
