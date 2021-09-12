@@ -1,3 +1,16 @@
+## [0.3.1] - 2021/09/12
+
+* Refactored log stack into its own class for better readability
+* Added logGroupName and logStreamName validation
+* Added API retries functionality if request fails
+* Added splitLargeMessages functionality that automatically resizes out of spec messages
+* Improved error handling and recovery. When requests fail logs are now prepended and requeued
+* Added checks for AWS limits and adjust how messages are sent accordingly
+* Added optional API request timeout parameter
+* Updated aws_request version for improved functionality + bugfixes
+* Fixed an issue with empty errors being thrown / returned
+* Refactored code for better reusability
+
 ## [0.3.0+3] - 2021/08/26
 
 * Updated setDelay to use Duration
