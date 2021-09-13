@@ -1,3 +1,7 @@
+## [0.3.1+1] - 2021/09/13
+
+* Fixed issue with API requests not waiting delay when the log queue backed up
+
 ## [0.3.1] - 2021/09/12
 
 * Refactored log stack into its own class for better readability

@@ -478,10 +478,7 @@ class CloudWatch {
     if (error != null) {
       return Future.error(error!);
     }
-    await Future.delayed(
-      delay,
-      () async => await _loggingLock.synchronized(_sendAllLogs),
-    ).catchError((e) {
+    await _sendAllLogs().catchError((e) {
       error = e;
     });
     if (error != null) {
@@ -490,8 +487,17 @@ class CloudWatch {
   }
 
   Future<void> _sendAllLogs() async {
-    while (_logStack.length > 0) {
-      await _sendLogs();
+    dynamic error;
+    while (_logStack.length > 0 && error == null) {
+      await Future.delayed(
+        delay,
+            () async => await _loggingLock.synchronized(_sendLogs),
+      ).catchError((e){
+        error = e;
+      });
+    }
+    if (error != null){
+      return Future.error(error);
     }
   }
 
