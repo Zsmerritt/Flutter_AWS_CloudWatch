@@ -243,7 +243,7 @@ Log group names currently (2021/09/12) have the following limits:
 ### Message Size and Length Limits
 
 AWS has hard limits on the amount of messages, length of individual messages, and overall length of message data sent per
-request. Currently (2021/09/12) that limit is 10,000 messages per request, 262,118 UTF8 bytes per message, and 1,048,550 
-total message UTF8 bytes per request. If the optional parameter `splitLargeMessages` is set, messages larger than 262,118 
-UTF8 bytes will automatically be split up into 262,118 byte messages with one remainder message. All other hard limits 
-are handled automatically.
+request. Currently, (2021/09/12) that limit is 10,000 messages per request, 262,118 UTF8 bytes per message, and 1,048,550 
+total message UTF8 bytes per request. The optional parameter `largeMessageBehavior` specifies how messages larger than 
+262,118 UTF8 bytes will be handled. By default, the middle of the message will be replaced with `...` to reduce the size 
+to 262,118 UTF8 bytes. All other hard limits are handled automatically. 

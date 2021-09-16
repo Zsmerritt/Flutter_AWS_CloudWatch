@@ -1,3 +1,8 @@
+## [0.4.1] - 2021/09/16
+
+* Updated documentation to remove references to splitLargeMessages
+* Fixed issue where messages smaller than 262118 utf8 bytes were not sent
+
 ## [0.4.0] - 2021/09/15
 
 * Fixed issue with API requests not waiting delay when the log queue backed up

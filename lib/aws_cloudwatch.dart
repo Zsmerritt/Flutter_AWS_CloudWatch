@@ -597,7 +597,9 @@ class _LogStack {
     for (String msg in logStrings) {
       List<int> bytes = utf8.encode(msg);
       // AWS hard limit on message size
-      if (bytes.length > AWS_MAX_BYTE_MESSAGE_SIZE) {
+      if (bytes.length <= AWS_MAX_BYTE_MESSAGE_SIZE) {
+        _addToStack(time, bytes);
+      } else {
         switch (largeMessageBehavior) {
 
           /// Truncate message by replacing middle with "..."
