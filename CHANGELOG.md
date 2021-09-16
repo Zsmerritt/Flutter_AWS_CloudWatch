@@ -1,6 +1,11 @@
-## [0.3.1+1] - 2021/09/13
+## [0.4.0] - 2021/09/15
 
 * Fixed issue with API requests not waiting delay when the log queue backed up
+* Added CloudWatchLargeMessages to allow for multiple large message behaviors
+* Updated documentation to follow dart conventions and work better with Intellij 
+* Replaced splitLargeMessages with CloudWatchLargeMessages
+* Removed deprecated CloudWatch.withDelay constructor
+* Removed deprecated CloudWatchException cause field
 
 ## [0.3.1] - 2021/09/12
 

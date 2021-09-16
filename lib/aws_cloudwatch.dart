@@ -9,53 +9,75 @@ import 'package:synchronized/synchronized.dart';
 import 'package:universal_io/io.dart';
 
 // AWS Hard Limits
-const _AWS_LOG_GROUP_NAME_REGEX_PATTERN = r'^[\.\-_/#A-Za-z0-9]+$';
-const _AWS_LOG_STREAM_NAME_REGEX_PATTERN = r'^[^:*]*$';
+const _GROUP_NAME_REGEX_PATTERN = r'^[\.\-_/#A-Za-z0-9]+$';
+const _STREAM_NAME_REGEX_PATTERN = r'^[^:*]*$';
 const int AWS_MAX_BYTE_MESSAGE_SIZE = 262118;
 const int AWS_MAX_BYTE_BATCH_SIZE = 1048550;
 const int AWS_MAX_MESSAGES_PER_BATCH = 10000;
 
 class CloudWatchException implements Exception {
-  late String message;
-  late String cause;
+  String message;
   StackTrace stackTrace;
 
   /// A custom error to identify CloudWatch errors more easily
   ///
   /// message: the cause of the error
   /// stackTrace: the stack trace of the error
-  CloudWatchException(String message, this.stackTrace) {
-    this.cause = message;
-    this.message = message;
-  }
+  CloudWatchException(this.message, this.stackTrace);
+}
+
+/// An enum representing what should happen to messages that are too big
+/// to be sent as a single message. This limit is 262118 utf8 bytes
+///
+/// truncate: Replace the middle of the message with "...", making it 262118
+///           utf8 bytes long. This is the default value.
+///
+/// ignore: Ignore large messages. They will not be sent
+///
+/// split: Split large messages into multiple smaller messages and send them
+///
+/// error: Throw an error when a large message is encountered
+enum CloudWatchLargeMessages {
+  /// Replace the middle of the message with "...", making it 262118 utf8 bytes
+  /// long. This is the default value.
+  truncate,
+
+  /// Ignore large messages. They will not be sent
+  ignore,
+
+  /// Split large messages into multiple smaller messages and send them
+  split,
+
+  /// Throw an error when a large message is encountered
+  error,
 }
 
 /// A CloudWatch handler class to easily manage multiple CloudWatch instances
 class CloudWatchHandler {
   Map<String, CloudWatch> _logInstances = {};
+
+  /// Your AWS Access key.
   String awsAccessKey;
+
+  /// Your AWS Secret key.
   String awsSecretKey;
+
+  /// Your AWS region.
   String region;
+
+  /// How long to wait between requests to avoid rate limiting (suggested value is Duration(milliseconds: 200))
   Duration delay;
+
+  /// How long to wait for request before triggering a timeout
   Duration requestTimeout;
+
+  /// How many times an api request should be retired upon failure. Default is 3
   int retries;
-  bool splitLargeMessages;
+
+  /// How messages larger than AWS limit should be handled. Default is truncate.
+  CloudWatchLargeMessages largeMessageBehavior;
 
   /// CloudWatchHandler Constructor
-  ///
-  /// awsAccessKey: Your AWS Access key.
-  ///
-  /// awsSecretKey: Your AWS Secret key.
-  ///
-  /// region: Your AWS region.
-  ///
-  /// {delay}: Optional delay parameter to avoid rate limiting (suggested value is Duration(milliseconds: 200))
-  ///
-  /// {requestTimeout}: Duration to wait for request before triggering a timeout
-  ///
-  /// {retries}: Optional parameter specifying number of times to retry api request on failure. Default is 3
-  ///
-  /// {splitLargeMessages}: Optional parameter specifying whether messages too large to send should be split up into multiple messages. Default is false
   CloudWatchHandler({
     required this.awsAccessKey,
     required this.awsSecretKey,
@@ -63,7 +85,7 @@ class CloudWatchHandler {
     this.delay: const Duration(milliseconds: 0),
     this.requestTimeout: const Duration(seconds: 10),
     this.retries: 3,
-    this.splitLargeMessages: false,
+    this.largeMessageBehavior: CloudWatchLargeMessages.truncate,
   }) {
     this.retries = max(1, this.retries);
   }
@@ -71,8 +93,8 @@ class CloudWatchHandler {
   /// Returns a specific instance of a CloudWatch class (or null if it doesnt
   /// exist) based on group name and stream name
   ///
-  /// logGroupName: the log group name of the instance you would like
-  /// logStreamName: the stream name of the instance you would like
+  /// Uses the [logGroupName] and the [logStreamName] to find the correct
+  /// CloudWatch instance. Returns null if it doesnt exist
   CloudWatch? getInstance({
     required String logGroupName,
     required String logStreamName,
@@ -82,11 +104,8 @@ class CloudWatchHandler {
   }
 
   /// Logs the provided message to the provided log group and log stream
-  /// Creates a new CloudWatch instance if needed
   ///
-  /// msg: the message you would like to log
-  /// logGroupName: the log group the log stream will appear under
-  /// logStreamName: the name of the logging session
+  /// Logs a single [msg] to [logStreamName] under the group [logGroupName]
   Future<void> log({
     required String msg,
     required String logGroupName,
@@ -100,11 +119,8 @@ class CloudWatchHandler {
   }
 
   /// Logs the provided message to the provided log group and log stream
-  /// Creates a new CloudWatch instance if needed
   ///
-  /// msg: the message you would like to log
-  /// logGroupName: the log group the log stream will appear under
-  /// logStreamName: the name of the logging session
+  /// Logs a list of string [messages] to [logStreamName] under the group [logGroupName]
   ///
   /// Note: using logMany will result in all logs having the same timestamp
   Future<void> logMany({
@@ -137,7 +153,7 @@ class CloudWatchHandler {
       delay: delay,
       requestTimeout: requestTimeout,
       retries: retries,
-      splitLargeMessages: splitLargeMessages,
+      largeMessageBehavior: largeMessageBehavior,
     );
     _logInstances[instanceName] = instance;
     return instance;
@@ -147,18 +163,29 @@ class CloudWatchHandler {
 /// An AWS CloudWatch class for sending logs more easily to AWS
 class CloudWatch {
   // AWS Variables
+  /// Public AWS access key
   String awsAccessKey;
-  String awsSecretKey;
-  String region;
-  Duration delay;
-  Duration requestTimeout;
-  int retries;
-  bool splitLargeMessages;
 
-  int _verbosity = 0;
+  /// Private AWS access key
+  String awsSecretKey;
+
+  /// AWS region
+  String region;
+
+  /// How long to wait between requests to avoid rate limiting (suggested value is Duration(milliseconds: 200))
+  Duration delay;
+
+  /// How long to wait for request before triggering a timeout
+  Duration requestTimeout;
+
+  /// How many times an api request should be retired upon failure. Default is 3
+  int retries;
+
+  /// How messages larger than AWS limit should be handled. Default is truncate.
+  CloudWatchLargeMessages largeMessageBehavior;
 
   // Logging Variables
-  /// The log group name for the log stream to go in
+  /// The log group the log stream will appear under
   String? groupName;
 
   /// Synonym for groupName
@@ -174,6 +201,7 @@ class CloudWatch {
 
   set logStreamName(String? val) => streamName = val;
 
+  int _verbosity = 0;
   String? _sequenceToken;
   late _LogStack _logStack;
   var _loggingLock = Lock();
@@ -181,24 +209,6 @@ class CloudWatch {
   bool _logGroupCreated = false;
 
   /// CloudWatch Constructor
-  ///
-  /// awsAccessKey: Public AWS access key
-  ///
-  /// awsSecretKey: Private AWS access key
-  ///
-  /// region: AWS region
-  ///
-  /// {logGroupName}: The log group the log stream will appear under
-  ///
-  /// {logStreamName}: The name of this logging session
-  ///
-  /// {delay}: Duration to wait for more logs to accumulate to avoid rate limiting.
-  ///
-  /// {requestTimeout}: Duration to wait for request before triggering a timeout
-  ///
-  /// {retries}: Optional parameter specifying number of times to retry api request on failure. Default is 3
-  ///
-  /// {splitLargeMessages}: Optional parameter specifying whether messages too large to send should be split up into multiple messages. Default is false
   CloudWatch(
     this.awsAccessKey,
     this.awsSecretKey,
@@ -208,37 +218,16 @@ class CloudWatch {
     this.delay: const Duration(milliseconds: 0),
     this.requestTimeout: const Duration(seconds: 10),
     this.retries: 3,
-    this.splitLargeMessages: false,
+    this.largeMessageBehavior: CloudWatchLargeMessages.truncate,
   }) {
     delay = !delay.isNegative ? delay : Duration(milliseconds: 0);
     this.retries = max(1, this.retries);
-    this._logStack = _LogStack(splitLargeMessages: splitLargeMessages);
+    this._logStack = _LogStack(largeMessageBehavior: largeMessageBehavior);
   }
 
-  ///DEPRECATED
-  CloudWatch.withDelay(
-    this.awsAccessKey,
-    this.awsSecretKey,
-    this.region,
-    this.delay, {
-    this.groupName,
-    this.streamName,
-    this.requestTimeout: const Duration(seconds: 10),
-    this.retries: 3,
-    this.splitLargeMessages: false,
-  }) {
-    delay = !delay.isNegative ? delay : Duration(milliseconds: 0);
-    this.retries = max(1, this.retries);
-    this._logStack = _LogStack(splitLargeMessages: splitLargeMessages);
-    print(
-      'CloudWatch.withDelay is deprecated. Instead call the default '
-      'constructor and provide a value for the optional delay parameter',
-    );
-  }
-
-  /// Delays sending logs to allow more logs to accumulate to avoid rate limiting
+  /// Sets how long to wait between requests to avoid rate limiting
   ///
-  /// delay: the Duration to delay
+  /// Sets the delay to be [delay]
   Duration setDelay(Duration delay) {
     this.delay = !delay.isNegative ? delay : Duration(milliseconds: 0);
     _debugPrint(
@@ -250,56 +239,55 @@ class CloudWatch {
 
   /// Sets log group name and log stream name
   ///
-  /// groupName: The log group you wish the log to appear under
-  /// streamName: The name for this logging session
+  /// Sets the [groupName] and [streamName]
   void setLoggingParameters(String? groupName, String? streamName) {
-    logGroupName = groupName;
-    logStreamName = streamName;
+    groupName = groupName;
+    streamName = streamName;
   }
 
-  /// Performs a PutLogEvent to CloudWatch
+  /// Sends a log to AWS
   ///
-  /// logString: the string you want to log in CloudWatch
+  /// Sends the [logString] to AWS to be added to the CloudWatch logs
   ///
-  /// Throws CloudWatchException if logGroupName or logStreamName are not
+  /// Throws a [CloudWatchException] if [groupName] or [streamName] are not
   /// initialized or if aws returns an error.
   Future<void> log(String logString) async {
     await logMany([logString]);
   }
 
-  /// Performs a PutLogEvent to CloudWatch
+  /// Sends a log to AWS
   ///
-  /// logStrings: a list of strings you want to log in CloudWatch
+  /// Sends a list of strings [logStrings] to AWS to be added to the CloudWatch logs
   ///
   /// Note: using logMany will result in all logs having the same timestamp
   ///
-  /// Throws CloudWatchException if logGroupName or logStreamName are not
+  /// Throws a [CloudWatchException] if [groupName] or [streamName] are not
   /// initialized or if aws returns an error.
   Future<void> logMany(List<String> logStrings) async {
     _debugPrint(
       2,
       'CloudWatch INFO: Attempting to log many',
     );
-    if ([logGroupName, logStreamName].contains(null)) {
+    if ([groupName, streamName].contains(null)) {
       _debugPrint(
         0,
         'CloudWatch ERROR: Please supply a Log Group and Stream names by '
-        'calling setLoggingParameters(String? logGroupName, String? logStreamName)',
+        'calling setLoggingParameters(String? groupName, String? streamName)',
       );
       throw new CloudWatchException(
           'CloudWatch ERROR: Please supply a Log Group and Stream names by '
-          'calling setLoggingParameters(String logGroupName, String logStreamName)',
+          'calling setLoggingParameters(String groupName, String streamName)',
           StackTrace.current);
     }
     _validateName(
-      logGroupName!,
-      'logGroupName',
-      _AWS_LOG_GROUP_NAME_REGEX_PATTERN,
+      groupName!,
+      'groupName',
+      _GROUP_NAME_REGEX_PATTERN,
     );
     _validateName(
-      logStreamName!,
-      'logStreamName',
-      _AWS_LOG_STREAM_NAME_REGEX_PATTERN,
+      streamName!,
+      'streamName',
+      _STREAM_NAME_REGEX_PATTERN,
     );
     await _log(logStrings);
   }
@@ -356,7 +344,7 @@ class CloudWatch {
       );
       _logStreamCreated = true;
       String body =
-          '{"logGroupName": "$logGroupName","logStreamName": "$logStreamName"}';
+          '{"logGroupName": "$groupName","logStreamName": "$streamName"}';
       HttpClientResponse log = await AwsRequest(
         awsAccessKey,
         awsSecretKey,
@@ -399,7 +387,7 @@ class CloudWatch {
         'CloudWatch INFO: creating LogGroup Exists',
       );
       _logGroupCreated = true;
-      String body = '{"logGroupName": "$logGroupName"}';
+      String body = '{"logGroupName": "$groupName"}';
       HttpClientResponse log = await AwsRequest(
         awsAccessKey,
         awsSecretKey,
@@ -443,8 +431,8 @@ class CloudWatch {
     );
     Map<String, dynamic> body = {
       'logEvents': logsToSend,
-      'logGroupName': logGroupName,
-      'logStreamName': logStreamName,
+      'logGroupName': groupName,
+      'logStreamName': streamName,
     };
     if (_sequenceToken != null) {
       body['sequenceToken'] = _sequenceToken;
@@ -491,12 +479,12 @@ class CloudWatch {
     while (_logStack.length > 0 && error == null) {
       await Future.delayed(
         delay,
-            () async => await _loggingLock.synchronized(_sendLogs),
-      ).catchError((e){
+        () async => await _loggingLock.synchronized(_sendLogs),
+      ).catchError((e) {
         error = e;
       });
     }
-    if (error != null){
+    if (error != null) {
       return Future.error(error);
     }
   }
@@ -595,10 +583,10 @@ class __LogStack {
 
 class _LogStack {
   _LogStack({
-    required this.splitLargeMessages,
+    required this.largeMessageBehavior,
   });
 
-  bool splitLargeMessages;
+  CloudWatchLargeMessages largeMessageBehavior;
 
   List<__LogStack> _logStack = [];
 
@@ -610,23 +598,46 @@ class _LogStack {
       List<int> bytes = utf8.encode(msg);
       // AWS hard limit on message size
       if (bytes.length > AWS_MAX_BYTE_MESSAGE_SIZE) {
-        if (!splitLargeMessages) {
-          throw CloudWatchException(
-            'Provided log message is too long. Please enable splitLargeMessages'
-            ' or split the message yourself. Individual message size limit is '
-            '$AWS_MAX_BYTE_MESSAGE_SIZE. log message: $msg',
-            StackTrace.current,
-          );
-        }
-        while (bytes.length > AWS_MAX_BYTE_MESSAGE_SIZE) {
-          _addToStack(
-            time,
-            bytes.sublist(0, AWS_MAX_BYTE_MESSAGE_SIZE),
-          );
-          bytes = bytes.sublist(AWS_MAX_BYTE_MESSAGE_SIZE);
+        switch (largeMessageBehavior) {
+
+          /// Truncate message by replacing middle with "..."
+          case CloudWatchLargeMessages.truncate:
+            // plus 3 to account for "..."
+            int toRemove =
+                ((bytes.length - AWS_MAX_BYTE_MESSAGE_SIZE + 3) / 2).ceil();
+            int midPoint = (bytes.length / 2).floor();
+            List<int> newMessage = bytes.sublist(0, midPoint - toRemove) +
+                // "..." in bytes (2e)
+                [46, 46, 46] +
+                bytes.sublist(midPoint + toRemove);
+            _addToStack(time, newMessage);
+            break;
+
+          /// Split up large message into multiple smaller ones
+          case CloudWatchLargeMessages.split:
+            while (bytes.length > AWS_MAX_BYTE_MESSAGE_SIZE) {
+              _addToStack(
+                time,
+                bytes.sublist(0, AWS_MAX_BYTE_MESSAGE_SIZE),
+              );
+              bytes = bytes.sublist(AWS_MAX_BYTE_MESSAGE_SIZE);
+            }
+            _addToStack(time, bytes);
+            break;
+
+          /// Ignore the message
+          case CloudWatchLargeMessages.ignore:
+            continue;
+
+          /// Throw an error
+          case CloudWatchLargeMessages.error:
+            throw CloudWatchException(
+              'Provided log message is too long. Individual message size limit is '
+              '$AWS_MAX_BYTE_MESSAGE_SIZE. log message: $msg',
+              StackTrace.current,
+            );
         }
       }
-      _addToStack(time, bytes);
     }
   }
 
