@@ -1,5 +1,9 @@
 ## [0.4.1] - 2021/09/16
 
+* Fixed error in documentation
+
+## [0.4.1] - 2021/09/16
+
 * Updated documentation to remove references to splitLargeMessages
 * Fixed issue where messages smaller than 262118 utf8 bytes were not sent
 
