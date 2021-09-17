@@ -1,5 +1,5 @@
 import 'package:aws_cloudwatch/aws_cloudwatch.dart';
-import 'package:flutter_test/flutter_test.dart';
+import 'package:test/test.dart';
 
 void main() {
   test('tests getter / setter', () {
@@ -16,7 +16,9 @@ void main() {
     cloudWatch.setLoggingParameters('LogGroupName', 'LogStreamName');
     expect(cloudWatch.logStreamName == 'LogStreamName', true);
     expect(cloudWatch.logGroupName == 'LogGroupName', true);
+  });
 
+  test('CloudWatchHandler', () {
     final CloudWatchHandler cloudWatchHandler = CloudWatchHandler(
       awsAccessKey: 'awsAccessKey',
       awsSecretKey: 'awsSecretKey',

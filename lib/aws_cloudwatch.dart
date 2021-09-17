@@ -274,7 +274,7 @@ class CloudWatch {
         'CloudWatch ERROR: Please supply a Log Group and Stream names by '
         'calling setLoggingParameters(String? groupName, String? streamName)',
       );
-      throw new CloudWatchException(
+      throw CloudWatchException(
           'CloudWatch ERROR: Please supply a Log Group and Stream names by '
           'calling setLoggingParameters(String groupName, String streamName)',
           StackTrace.current);
@@ -295,6 +295,10 @@ class CloudWatch {
   /// Sets console verbosity level.
   /// Useful for debugging.
   /// Hidden by default. Get here with a debugger ;)
+  ///
+  /// 0 - Errors only
+  /// 1 - Status Codes
+  /// 2 - General Info
   void _setVerbosity(int level) {
     level = min(level, 3);
     level = max(level, 0);
@@ -333,7 +337,7 @@ class CloudWatch {
         );
       }
     }
-    return Future.error(error);
+    throw error;
   }
 
   Future<void> _createLogStream() async {
@@ -352,7 +356,7 @@ class CloudWatch {
         service: 'logs',
         timeout: requestTimeout,
       ).send(
-        'POST',
+        AwsRequestType.POST,
         jsonBody: body,
         target: 'Logs_20140328.CreateLogStream',
       );
@@ -370,7 +374,7 @@ class CloudWatch {
           'CloudWatch ERROR: StatusCode: $statusCode, CloudWatchResponse: $reply',
         );
         _logStreamCreated = false;
-        throw new CloudWatchException(
+        throw CloudWatchException(
             'CloudWatch ERROR: $reply', StackTrace.current);
       }
     }
@@ -395,7 +399,7 @@ class CloudWatch {
         service: 'logs',
         timeout: requestTimeout,
       ).send(
-        'POST',
+        AwsRequestType.POST,
         jsonBody: body,
         target: 'Logs_20140328.CreateLogGroup',
       );
@@ -413,7 +417,7 @@ class CloudWatch {
           'CloudWatch ERROR: StatusCode: $statusCode, AWS Response: $reply',
         );
         _logGroupCreated = false;
-        throw new CloudWatchException(
+        throw CloudWatchException(
             'CloudWatch ERROR: $reply', StackTrace.current);
       }
     }
@@ -464,13 +468,13 @@ class CloudWatch {
       });
     }
     if (error != null) {
-      return Future.error(error!);
+      throw error;
     }
     await _sendAllLogs().catchError((e) {
       error = e;
     });
     if (error != null) {
-      return Future.error(error);
+      throw error;
     }
   }
 
@@ -485,7 +489,7 @@ class CloudWatch {
       });
     }
     if (error != null) {
-      return Future.error(error);
+      throw error;
     }
   }
 
@@ -500,59 +504,92 @@ class CloudWatch {
     }
     // capture logs that are about to be sent in case the request fails
     __LogStack _logs = _logStack._pop();
-    String body = _createBody(_logs.logs);
-    HttpClientResponse? result;
+    bool success = false;
     dynamic error;
     for (int i = 0; i < retries; i++) {
       try {
-        result = await AwsRequest(
-          awsAccessKey,
-          awsSecretKey,
-          region,
-          service: 'logs',
-          timeout: requestTimeout,
-        ).send(
-          'POST',
-          jsonBody: body,
-          target: 'Logs_20140328.PutLogEvents',
-        );
+        HttpClientResponse? response = await _sendRequest(_logs);
+        success = await _handleResponse(response);
         break;
       } catch (e) {
-        error = e;
         _debugPrint(
           0,
           'CloudWatch ERROR: Failed making AwsRequest. Retrying ${i + 1}',
         );
+        error = e;
       }
     }
-    if (result == null) {
-      // request failed, prepend failed logs to _logStack
+    if (!success) {
+      // prepend logs in event of failure
       _logStack._prepend(_logs);
       _debugPrint(
         0,
-        'CloudWatch ERROR: Could not complete AWS request: $error',
+        'CloudWatch ERROR: Failed to send logs',
       );
-      return Future.error(error);
+      if (error != null) throw error;
     }
-    int statusCode = result.statusCode;
-    Map<String, dynamic>? reply = jsonDecode(
-      await result.transform(utf8.decoder).join(),
+  }
+
+  Future<HttpClientResponse?> _sendRequest(__LogStack _logs) async {
+    String body = _createBody(_logs.logs);
+    HttpClientResponse? result;
+    result = await AwsRequest(
+      awsAccessKey,
+      awsSecretKey,
+      region,
+      service: 'logs',
+      timeout: requestTimeout,
+    ).send(
+      AwsRequestType.POST,
+      jsonBody: body,
+      target: 'Logs_20140328.PutLogEvents',
+    );
+    return result;
+  }
+
+  /// Handles the [response] from the cloudwatch api.
+  ///
+  /// Returns whether or not the call was successful
+  Future<bool> _handleResponse(
+    HttpClientResponse? response,
+  ) async {
+    if (response == null) {
+      _debugPrint(
+        0,
+        'CloudWatch ERROR: Null response received from AWS',
+      );
+      throw CloudWatchException(
+          'CloudWatch ERROR: Null response received from AWS',
+          StackTrace.current);
+    }
+    int statusCode = response.statusCode;
+    Map<String, dynamic> reply = jsonDecode(
+      await response.transform(utf8.decoder).join(),
     );
     if (statusCode == 200) {
       _debugPrint(
         1,
         'CloudWatch Info: StatusCode: $statusCode, AWS Response: $reply',
       );
-      String? newSequenceToken = reply!['nextSequenceToken'];
-      _sequenceToken = newSequenceToken;
+      _sequenceToken = reply['nextSequenceToken'];
+      return true;
     } else {
-      // request failed, prepend failed logs to _logStack
-      _logStack._prepend(_logs);
+      // bad sequence token. Attempt to recover
+      if (reply.containsKey('__type') &&
+          reply['__type'] == 'InvalidSequenceTokenException' &&
+          reply['expectedSequenceToken'] != _sequenceToken) {
+        _sequenceToken = reply['expectedSequenceToken'];
+        _debugPrint(
+          0,
+          'Found incorrect sequence token. Attempting to fix.',
+        );
+      }
       _debugPrint(
         0,
         'CloudWatch ERROR: StatusCode: $statusCode, AWS Response: $reply',
       );
-      throw new CloudWatchException(
+      // failed for unknown reason. Throw error
+      throw CloudWatchException(
           'CloudWatch ERROR: StatusCode: $statusCode, AWS Response: $reply',
           StackTrace.current);
     }
@@ -561,7 +598,7 @@ class CloudWatch {
   void _validateName(String name, String type, String pattern) {
     if (name.length > 512 || name.length == 0) {
       throw CloudWatchException(
-        'Provided $type "$name" is too long. $type must be between 1 and 512 characters.',
+        'Provided $type "$name" is invalid. $type must be between 1 and 512 characters.',
         StackTrace.current,
       );
     }
@@ -677,6 +714,7 @@ class _LogStack {
   }
 
   void _prepend(__LogStack messages) {
-    _logStack = [messages] + _logStack;
+    // this is the fastest prepend until ~1700 items
+    _logStack = [messages, ..._logStack];
   }
 }

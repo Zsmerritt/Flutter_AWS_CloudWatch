@@ -1,5 +1,12 @@
-## [0.4.1] - 2021/09/16
+## [0.4.2] - 2021/09/16
 
+* Added ability to recover from InvalidSequenceTokenException
+* Updated prepend method to slightly faster one
+* Refactored code for better separation and readability
+* Removed unneeded flutter dependency to allow native and js compatibility
+* Updated README
+* Changed to MIT license
+* Fixed an error message
 * Fixed error in documentation
 
 ## [0.4.1] - 2021/09/16

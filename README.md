@@ -1,31 +1,79 @@
-# aws_cloudwatch
+<h1 align="center">
+  aws_cloudwatch
+</h1>
 
-A package that sends logs to AWS CloudWatch.
+<p align="center">
+    <a href="https://pub.dev/packages/aws_cloudwatch">
+        <img alt="Pub Package" src="https://img.shields.io/pub/v/aws_cloudwatch.svg?logo=dart&logoColor=00b9fc">
+    </a>
+    <a href="https://github.com/Zsmerritt/Flutter_AWS_CloudWatch/commits/main">
+        <img alt="Last Commit" src="https://img.shields.io/github/last-commit/Zsmerritt/Flutter_AWS_CloudWatch?logo=git&logoColor=white">
+    </a>
+    <a href="https://github.com/Zsmerritt/Flutter_AWS_CloudWatch/pulls">
+        <img alt="Pull Requests" src="https://img.shields.io/github/issues-pr/Zsmerritt/Flutter_AWS_CloudWatch?logo=github&logoColor=white">
+    </a>
+    <a href="https://github.com/Zsmerritt/Flutter_AWS_CloudWatch/issues">
+        <img alt="Open Issues" src="https://img.shields.io/github/issues/Zsmerritt/Flutter_AWS_CloudWatch?logo=github&logoColor=white">
+    </a>
+    <a href="https://github.com/Zsmerritt/Flutter_AWS_CloudWatch">
+        <img alt="Code size" src="https://img.shields.io/github/languages/code-size/Zsmerritt/Flutter_AWS_CloudWatch?logo=github&logoColor=white">
+    </a>
+    <a href="https://github.com/Zsmerritt/Flutter_AWS_CloudWatch/blob/main/LICENSE">
+        <img alt="License" src="https://img.shields.io/github/license/Zsmerritt/Flutter_AWS_CloudWatch?logo=open-source-initiative&logoColor=blue">
+    </a>
+</p>
 
-**Currently only logging is supported**
+<p align="center">
+  An easy, lightweight, and convenient way to reliably send logs to AWS CloudWatch.
+</p>
 
-The repository can be found [here](https://github.com/Zsmerritt/Flutter_AWS_CloudWatch)
+---
 
-If you have feedback or have a use case that isn't covered feel free to open an issue.
+<h3 align="center">
+  Resources
+</h3>
+
+<p align="center">
+    <a href="https://pub.dev/documentation/aws_cloudwatch/latest/aws_cloudwatch/aws_cloudwatch-library.html">
+        Documentation
+    </a>
+    &nbsp;
+    &nbsp;
+    &nbsp;
+    <a href="https://pub.dev/packages/aws_cloudwatch">
+        Pub Package
+    </a>
+    &nbsp;
+    &nbsp;
+    &nbsp;
+    <a href="https://github.com/Zsmerritt/Flutter_AWS_CloudWatch">
+        GitHub Repository
+    </a>
+</p>
+
+<p align="center">
+    If you have feedback or have a use case that isn't covered feel free to open an issue.
+</p>
 
 ## Getting Started
 
-To get started add `aws_cloudwatch: ^[CURRENT_VERION],` to your `pubspec.yaml`
+Create a CloudWatch instance and hen send a log
 
-Then add `import 'package:aws_cloudwatch/aws_cloudwatch.dart';` to the top of your file.
+~~~dart
+import 'package:aws_cloudwatch/aws_cloudwatch.dart';
 
-Create a CloudWatch instance by calling
+CloudWatch cloudWatch = CloudWatch(
+  _AWS_ACCESS_KEY_ID,
+  _AWS_SECRET_ACCESS_KEY,
+  _Region,
+  groupName: GROUP_NAME,
+  streamName: STREAM_NAME,
+);
 
+cloudWatch.log('Hello World');
 ~~~
-CloudWatch cloudWatch = new CloudWatch(AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, REGION, 
-    groupName:GROUP_NAME, streamName:STREAM NAME);
-~~~
 
-Finally, send a log by calling `cloudWatch.log('STRING TO LOG');`
-
-## Examples
-
-### Example - Quick Start
+### Quick Start
 
 This is the quick start file. It is also location in example/aws_cloudwatch.dart
 
@@ -74,9 +122,11 @@ void log(String logString, {isError = false}) {
 ~~~
 
 Then just import this file somewhere in your code and call `log('HELLO WORLD');`. The package will handle creating the
-log groups and log streams on its own. The way the quick start file is setup, you will end up with one log group for
+log groups and log streams on its own. The way the quick start file is set up, you will end up with one log group for
 standard logging and another for errors. Both with have the same log stream name. To automatically send logs for all
 flutter errors see example 3.
+
+## Examples
 
 ### Example 1
 
@@ -93,8 +143,13 @@ const String Region = 'us-west-2';
 // Logging Variables
 const String logGroupName = 'LogGroupExample';
 const String logStreamName = 'LogStreamExample';
-CloudWatch cloudWatch = new CloudWatch(AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY,
-    Region, groupName: logGroupName, streamName: logStreamName);
+CloudWatch cloudWatch = CloudWatch(
+  AWS_ACCESS_KEY_ID,
+  AWS_SECRET_ACCESS_KEY,
+  Region,
+  groupName: logGroupName,
+  streamName: logStreamName,
+);
 
 void log(String logString) {
   cloudWatch.log(logString);
@@ -118,8 +173,8 @@ const String Region = 'us-west-2';
 const String logGroupName = 'LogGroupExample';
 const String logStreamName = 'LogStreamExample';
 CloudWatch cloudWatch = new CloudWatch(AWS_ACCESS_KEY_ID,
-  AWS_SECRET_ACCESS_KEY, Region, groupName: logGroupName,
-  streamName: logStreamName, delay: Duration(milliseconds: 200));
+    AWS_SECRET_ACCESS_KEY, Region, groupName: logGroupName,
+    streamName: logStreamName, delay: Duration(milliseconds: 200));
 
 void log(String logString) {
   cloudWatch.log(logString);
@@ -216,17 +271,17 @@ To send normal logs, import the logging file anywhere and call `log('Hello world
 
 As of now (2021/09/12), AWS has a rate limit of 5 log requests per second per log stream. You may hit this limit rather
 quickly if you have a high volume of logs. It is highly recommended to include the optional delay parameter with a value
-of `Duration(milliseconds: 200)` to avoid hitting this upper limit. With a delay, logs will continue to collect, but 
-the api calls will be limited to `1 / delay` per second. For example, a delay of 200 milliseconds would result in a maximum 
+of `Duration(milliseconds: 200)` to avoid hitting this upper limit. With a delay, logs will continue to collect, but the
+api calls will be limited to `1 / delay` per second. For example, a delay of 200 milliseconds would result in a maximum
 of 5 api requests per second. At the moment there is no way to increase this limit.
 
 Example 2 shows how to add a delay. The default delay is `Duration(milliseconds: 0)`.
 
 ### Retrying Failed Requests
 
-Sometimes API requests can fail. This is especially true for mobile devices going in and out of cell service. Both 
-the CloudWatch constructor and the CloudWatchHandler constructor can take the optional parameter `retries` indicating
-how many times an api request will be attempted before giving up. The default retries value is 3.
+Sometimes API requests can fail. This is especially true for mobile devices going in and out of cell service. Both the
+CloudWatch constructor and the CloudWatchHandler constructor can take the optional parameter `retries` indicating how
+many times an api request will be attempted before giving up. The default retries value is 3.
 
 ### Log Groups and Log Streams
 
@@ -242,8 +297,32 @@ Log group names currently (2021/09/12) have the following limits:
 
 ### Message Size and Length Limits
 
-AWS has hard limits on the amount of messages, length of individual messages, and overall length of message data sent per
-request. Currently, (2021/09/12) that limit is 10,000 messages per request, 262,118 UTF8 bytes per message, and 1,048,550 
-total message UTF8 bytes per request. The optional parameter `largeMessageBehavior` specifies how messages larger than 
-262,118 UTF8 bytes will be handled. By default, the middle of the message will be replaced with `...` to reduce the size 
-to 262,118 UTF8 bytes. All other hard limits are handled automatically. 
+AWS has hard limits on the amount of messages, length of individual messages, and overall length of message data sent
+per request. Currently, (2021/09/12) that limit is 10,000 messages per request, 262,118 UTF8 bytes per message, and
+1,048,550 total message UTF8 bytes per request. The optional parameter `largeMessageBehavior` specifies how messages
+larger than 262,118 UTF8 bytes will be handled. By default, the middle of the message will be replaced with `...` to
+reduce the size to 262,118 UTF8 bytes. All other hard limits are handled automatically.
+
+## MIT License
+
+```
+Copyright (c) Zachary Merritt
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
