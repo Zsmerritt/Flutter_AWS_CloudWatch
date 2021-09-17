@@ -57,7 +57,7 @@
 
 ## Getting Started
 
-Create a CloudWatch instance and hen send a log
+Create a CloudWatch instance and then send a log
 
 ~~~dart
 import 'package:aws_cloudwatch/aws_cloudwatch.dart';
