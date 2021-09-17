@@ -35,7 +35,7 @@ String _getLogStreamName() {
 void log(String logString, {isError = false}) {
   logging.log(
     msg: logString,
-    logGroupName: isError ? _LogGroup : _ErrorGroup,
+    logGroupName: isError ? _ErrorGroup : _LogGroup,
     logStreamName: _getLogStreamName(),
   );
 }

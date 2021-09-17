@@ -169,7 +169,7 @@ String _getLogStreamName() {
 void log(String logString, {isError = false}) {
   logging.log(
     msg: logString,
-    logGroupName: isError ? logGroupName : logGroupNameError,
+    logGroupName: isError ? logGroupNameError : logGroupName,
     logStreamName: _getLogStreamName(),
   );
 }
