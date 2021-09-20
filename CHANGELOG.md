@@ -1,3 +1,7 @@
+## [0.4.3] - 2021/09/20
+
+* Added support for more automatic error recovery
+
 ## [0.4.2] - 2021/09/16
 
 * Added ability to recover from InvalidSequenceTokenException

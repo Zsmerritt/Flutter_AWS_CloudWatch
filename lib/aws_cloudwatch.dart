@@ -506,11 +506,10 @@ class CloudWatch {
     __LogStack _logs = _logStack._pop();
     bool success = false;
     dynamic error;
-    for (int i = 0; i < retries; i++) {
+    for (int i = 0; i < retries && !success; i++) {
       try {
         HttpClientResponse? response = await _sendRequest(_logs);
         success = await _handleResponse(response);
-        break;
       } catch (e) {
         _debugPrint(
           0,
@@ -574,15 +573,8 @@ class CloudWatch {
       _sequenceToken = reply['nextSequenceToken'];
       return true;
     } else {
-      // bad sequence token. Attempt to recover
-      if (reply.containsKey('__type') &&
-          reply['__type'] == 'InvalidSequenceTokenException' &&
-          reply['expectedSequenceToken'] != _sequenceToken) {
-        _sequenceToken = reply['expectedSequenceToken'];
-        _debugPrint(
-          0,
-          'Found incorrect sequence token. Attempting to fix.',
-        );
+      if (reply.containsKey('__type')) {
+        return await _handleError(reply);
       }
       _debugPrint(
         0,
@@ -593,6 +585,45 @@ class CloudWatch {
           'CloudWatch ERROR: StatusCode: $statusCode, AWS Response: $reply',
           StackTrace.current);
     }
+  }
+
+  Future<bool> _handleError(Map<String, dynamic> reply) async {
+    if (reply['__type'] == 'InvalidSequenceTokenException' &&
+        reply['expectedSequenceToken'] != _sequenceToken) {
+      // bad sequence token
+      // Sometimes happen when requests are sent in quick succession
+      // Attempt to recover
+      _sequenceToken = reply['expectedSequenceToken'];
+      _debugPrint(
+        0,
+        'Found incorrect sequence token. Attempting to fix.',
+      );
+      return false;
+    } else if (reply['__type'] == 'ResourceNotFoundException' &&
+        reply['message'] == "The specified log stream does not exist.") {
+      // LogStream not present
+      // Sometimes happens with debuggers / hot reloads
+      // Attempt to recover
+      _logStreamCreated = false;
+      await _createLogStream();
+      return false;
+    } else if (reply['__type'] == 'ResourceNotFoundException' &&
+        reply['message'] == "The specified log group does not exist.") {
+      // LogGroup not present
+      // Sometimes happens with debuggers / hot reloads
+      // Attempt to recover
+      _logGroupCreated = false;
+      await _createLogGroup();
+      return false;
+    } else if (reply['__type'] == 'DataAlreadyAcceptedException') {
+      // This log set has already been sent.
+      // Sometimes happens with debuggers / hot reloads
+      // Update the sequence token just in case.
+      // A previous request was already successful => return true
+      _sequenceToken = reply['expectedSequenceToken'];
+      return true;
+    }
+    return false;
   }
 
   void _validateName(String name, String type, String pattern) {
