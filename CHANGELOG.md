@@ -6,6 +6,7 @@
 * Added more debug logs
 * Added github CI
 * Fixed issue with setLoggingParameters found in tests
+* Added CI pipeline badge
 
 ## [0.4.2] - 2021/09/16
 

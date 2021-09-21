@@ -21,6 +21,9 @@
     <a href="https://github.com/Zsmerritt/Flutter_AWS_CloudWatch/blob/main/LICENSE">
         <img alt="License" src="https://img.shields.io/github/license/Zsmerritt/Flutter_AWS_CloudWatch?logo=open-source-initiative&logoColor=blue">
     </a>
+    <a href="https://github.com/Zsmerritt/Flutter_AWS_CloudWatch/actions/workflows/dart.yml">
+        <img alt="CI pipeline status" src="https://github.com/Zsmerritt/Flutter_AWS_CloudWatch/actions/workflows/dart.yml/badge.svg">
+    </a>
 </p>
 
 <p align="center">
