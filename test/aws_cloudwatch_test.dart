@@ -22,14 +22,13 @@ void main() {
     final CloudWatchHandler cloudWatchHandler = CloudWatchHandler(
       awsAccessKey: 'awsAccessKey',
       awsSecretKey: 'awsSecretKey',
-      region: 'region',
+      region: 'us-west-2',
     );
     CloudWatch? nullCloudWatch = cloudWatchHandler.getInstance(
       logGroupName: 'logGroupName',
       logStreamName: 'logStreamName',
     );
     expect(nullCloudWatch == null, true);
-
     expect(
         () async => await cloudWatchHandler.log(
               msg: 'Hello World!',

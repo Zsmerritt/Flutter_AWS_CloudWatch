@@ -237,10 +237,10 @@ class CloudWatch {
 
   /// Sets log group name and log stream name
   ///
-  /// Sets the [groupName] and [streamName]
-  void setLoggingParameters(String? groupName, String? streamName) {
-    groupName = groupName;
-    streamName = streamName;
+  /// Sets the [logGroupName] and [logStreamName]
+  void setLoggingParameters(String? logGroupName, String? logStreamName) {
+    groupName = logGroupName;
+    streamName = logStreamName;
   }
 
   /// Sends a log to AWS
