@@ -9,11 +9,8 @@ import 'package:synchronized/synchronized.dart';
 import 'package:universal_io/io.dart';
 
 // AWS Hard Limits
-const _GROUP_NAME_REGEX_PATTERN = r'^[\.\-_/#A-Za-z0-9]+$';
-const _STREAM_NAME_REGEX_PATTERN = r'^[^:*]*$';
-const int AWS_MAX_BYTE_MESSAGE_SIZE = 262118;
-const int AWS_MAX_BYTE_BATCH_SIZE = 1048550;
-const int AWS_MAX_MESSAGES_PER_BATCH = 10000;
+const String _GROUP_NAME_REGEX_PATTERN = r'^[\.\-_/#A-Za-z0-9]+$';
+const String _STREAM_NAME_REGEX_PATTERN = r'^[^:*]*$';
 
 class CloudWatchException implements Exception {
   String message;
@@ -203,7 +200,7 @@ class CloudWatch {
 
   int _verbosity = 0;
   String? _sequenceToken;
-  late _LogStack _logStack;
+  late CloudWatchLogStack _logStack;
   var _loggingLock = Lock();
   bool _logStreamCreated = false;
   bool _logGroupCreated = false;
@@ -222,7 +219,8 @@ class CloudWatch {
   }) {
     delay = !delay.isNegative ? delay : Duration(milliseconds: 0);
     this.retries = max(1, this.retries);
-    this._logStack = _LogStack(largeMessageBehavior: largeMessageBehavior);
+    this._logStack =
+        CloudWatchLogStack(largeMessageBehavior: largeMessageBehavior);
   }
 
   /// Sets how long to wait between requests to avoid rate limiting
@@ -454,7 +452,7 @@ class CloudWatch {
   }
 
   Future<void> _log(List<String> logStrings) async {
-    _logStack._addLogs(logStrings);
+    _logStack.addLogs(logStrings);
     _debugPrint(
       2,
       'CloudWatch INFO: Added messages to log stack',
@@ -503,7 +501,7 @@ class CloudWatch {
       return;
     }
     // capture logs that are about to be sent in case the request fails
-    __LogStack _logs = _logStack._pop();
+    CloudWatchLog _logs = _logStack.pop();
     bool success = false;
     dynamic error;
     for (int i = 0; i < retries && !success; i++) {
@@ -520,7 +518,7 @@ class CloudWatch {
     }
     if (!success) {
       // prepend logs in event of failure
-      _logStack._prepend(_logs);
+      _logStack.prepend(_logs);
       _debugPrint(
         0,
         'CloudWatch ERROR: Failed to send logs',
@@ -529,7 +527,7 @@ class CloudWatch {
     }
   }
 
-  Future<HttpClientResponse?> _sendRequest(__LogStack _logs) async {
+  Future<HttpClientResponse?> _sendRequest(CloudWatchLog _logs) async {
     String body = _createBody(_logs.logs);
     HttpClientResponse? result;
     result = await AwsRequest(
@@ -596,7 +594,7 @@ class CloudWatch {
       _sequenceToken = reply['expectedSequenceToken'];
       _debugPrint(
         0,
-        'Found incorrect sequence token. Attempting to fix.',
+        'CloudWatch Info: Found incorrect sequence token. Attempting to fix.',
       );
       return false;
     } else if (reply['__type'] == 'ResourceNotFoundException' &&
@@ -604,6 +602,10 @@ class CloudWatch {
       // LogStream not present
       // Sometimes happens with debuggers / hot reloads
       // Attempt to recover
+      _debugPrint(
+        0,
+        'CloudWatch Info: Log Stream doesnt Exist',
+      );
       _logStreamCreated = false;
       await _createLogStream();
       return false;
@@ -612,6 +614,10 @@ class CloudWatch {
       // LogGroup not present
       // Sometimes happens with debuggers / hot reloads
       // Attempt to recover
+      _debugPrint(
+        0,
+        'CloudWatch Info: Log Group doesnt Exist',
+      );
       _logGroupCreated = false;
       await _createLogGroup();
       return false;
@@ -620,6 +626,10 @@ class CloudWatch {
       // Sometimes happens with debuggers / hot reloads
       // Update the sequence token just in case.
       // A previous request was already successful => return true
+      _debugPrint(
+        0,
+        'CloudWatch Info: Data Already Sent',
+      );
       _sequenceToken = reply['expectedSequenceToken'];
       return true;
     }
@@ -642,31 +652,48 @@ class CloudWatch {
   }
 }
 
-class __LogStack {
+/// A class to hold logs and their metadata
+class CloudWatchLog {
+  /// The list of logs in json form. These are ready to be sent
   List<Map<String, dynamic>> logs = [];
+
+  /// The utf8 byte size of the logs contained within [logs]
   int messageSize = 0;
 
-  __LogStack({required this.logs, required this.messageSize});
+  /// Constructor for a LogObject
+  CloudWatchLog({required this.logs, required this.messageSize});
 }
 
-class _LogStack {
-  _LogStack({
+/// A class that automatically splits and handles logs according to AWS hard limits
+class CloudWatchLogStack {
+  /// An enum value that indicates how messages larger than the max size should be treated
+  CloudWatchLargeMessages largeMessageBehavior;
+
+  static const int _AWS_MAX_BYTE_MESSAGE_SIZE = 262118;
+  static const int _AWS_MAX_BYTE_BATCH_SIZE = 1048550;
+  static const int _AWS_MAX_MESSAGES_PER_BATCH = 10000;
+
+  CloudWatchLogStack({
     required this.largeMessageBehavior,
   });
 
-  CloudWatchLargeMessages largeMessageBehavior;
+  /// The stack of logs that holds presplt CloudWatchLogs
+  List<CloudWatchLog> logStack = [];
 
-  List<__LogStack> _logStack = [];
+  /// The length of the stack
+  int get length => logStack.length;
 
-  int get length => _logStack.length;
-
-  void _addLogs(List<String> logStrings) {
+  /// Splits up [logStrings] and processes them in prep to add them to the [logStack]
+  ///
+  /// Prepares [logStrings] using selected [largeMessageBehavior] as needed
+  /// taking care to mind aws hard limits.
+  void addLogs(List<String> logStrings) {
     int time = DateTime.now().toUtc().millisecondsSinceEpoch;
     for (String msg in logStrings) {
       List<int> bytes = utf8.encode(msg);
       // AWS hard limit on message size
-      if (bytes.length <= AWS_MAX_BYTE_MESSAGE_SIZE) {
-        _addToStack(time, bytes);
+      if (bytes.length <= _AWS_MAX_BYTE_MESSAGE_SIZE) {
+        addToStack(time, bytes);
       } else {
         switch (largeMessageBehavior) {
 
@@ -674,25 +701,25 @@ class _LogStack {
           case CloudWatchLargeMessages.truncate:
             // plus 3 to account for "..."
             int toRemove =
-                ((bytes.length - AWS_MAX_BYTE_MESSAGE_SIZE + 3) / 2).ceil();
+                ((bytes.length - _AWS_MAX_BYTE_MESSAGE_SIZE + 3) / 2).ceil();
             int midPoint = (bytes.length / 2).floor();
             List<int> newMessage = bytes.sublist(0, midPoint - toRemove) +
                 // "..." in bytes (2e)
                 [46, 46, 46] +
                 bytes.sublist(midPoint + toRemove);
-            _addToStack(time, newMessage);
+            addToStack(time, newMessage);
             break;
 
           /// Split up large message into multiple smaller ones
           case CloudWatchLargeMessages.split:
-            while (bytes.length > AWS_MAX_BYTE_MESSAGE_SIZE) {
-              _addToStack(
+            while (bytes.length > _AWS_MAX_BYTE_MESSAGE_SIZE) {
+              addToStack(
                 time,
-                bytes.sublist(0, AWS_MAX_BYTE_MESSAGE_SIZE),
+                bytes.sublist(0, _AWS_MAX_BYTE_MESSAGE_SIZE),
               );
-              bytes = bytes.sublist(AWS_MAX_BYTE_MESSAGE_SIZE);
+              bytes = bytes.sublist(_AWS_MAX_BYTE_MESSAGE_SIZE);
             }
-            _addToStack(time, bytes);
+            addToStack(time, bytes);
             break;
 
           /// Ignore the message
@@ -703,7 +730,7 @@ class _LogStack {
           case CloudWatchLargeMessages.error:
             throw CloudWatchException(
               'Provided log message is too long. Individual message size limit is '
-              '$AWS_MAX_BYTE_MESSAGE_SIZE. log message: $msg',
+              '$_AWS_MAX_BYTE_MESSAGE_SIZE. log message: $msg',
               StackTrace.current,
             );
         }
@@ -711,13 +738,17 @@ class _LogStack {
     }
   }
 
-  void _addToStack(int time, List<int> bytes) {
+  /// Adds logs to the last CloudWatchLog
+  ///
+  /// Adds a json object of [time] and decoded [bytes] to the last CloudWatchLog
+  /// on the last [logStack] Creates a new CloudWatchLog as needed.
+  void addToStack(int time, List<int> bytes) {
     // empty list / aws hard limits on batch sizes
-    if (_logStack.length == 0 ||
-        _logStack.last.logs.length >= AWS_MAX_MESSAGES_PER_BATCH ||
-        _logStack.last.messageSize + bytes.length > AWS_MAX_BYTE_BATCH_SIZE) {
-      _logStack.add(
-        __LogStack(
+    if (logStack.length == 0 ||
+        logStack.last.logs.length >= _AWS_MAX_MESSAGES_PER_BATCH ||
+        logStack.last.messageSize + bytes.length > _AWS_MAX_BYTE_BATCH_SIZE) {
+      logStack.add(
+        CloudWatchLog(
           logs: [
             {
               'timestamp': time,
@@ -728,24 +759,26 @@ class _LogStack {
         ),
       );
     } else {
-      _logStack.last.logs
+      logStack.last.logs
           .add({'timestamp': time, 'message': utf8.decode(bytes)});
-      _logStack.last.messageSize += bytes.length;
+      logStack.last.messageSize += bytes.length;
     }
   }
 
-  __LogStack _pop() {
-    __LogStack result = _logStack.first;
-    if (_logStack.length > 1) {
-      _logStack = _logStack.sublist(1);
+  /// Pops off first CloudWatchLog from the [logStack] and returns it
+  CloudWatchLog pop() {
+    CloudWatchLog result = logStack.first;
+    if (logStack.length > 1) {
+      logStack = logStack.sublist(1);
     } else {
-      _logStack.clear();
+      logStack.clear();
     }
     return result;
   }
 
-  void _prepend(__LogStack messages) {
+  /// Prepends a CloudWatchLog to the [logStack]
+  void prepend(CloudWatchLog messages) {
     // this is the fastest prepend until ~1700 items
-    _logStack = [messages, ..._logStack];
+    logStack = [messages, ...logStack];
   }
 }

@@ -1,6 +1,10 @@
 ## [0.4.3] - 2021/09/20
 
 * Added support for more automatic error recovery
+* Made CloudWatchLogStack & CloudWatchLog public classes
+* Added tests for CloudWatchLogStack
+* Added more debug logs
+* Added github CI
 
 ## [0.4.2] - 2021/09/16
 
