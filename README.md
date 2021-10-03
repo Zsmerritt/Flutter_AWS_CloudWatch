@@ -129,6 +129,51 @@ log groups and log streams on its own. The way the quick start file is set up, y
 standard logging and another for errors. Both with have the same log stream name. To automatically send logs for all
 flutter errors see example 3.
 
+## Important Notes:
+
+### Avoiding AWS Cloudwatch API Rate Limiting
+
+As of now (2021/09/12), AWS has a rate limit of 5 log requests per second per log stream. You may hit this limit rather
+quickly if you have a high volume of logs. It is highly recommended to include the optional delay parameter with a value
+of `Duration(milliseconds: 200)` to avoid hitting this upper limit. With a delay, logs will continue to collect, but the
+api calls will be limited to `1 / delay` per second. For example, a delay of 200 milliseconds would result in a maximum
+of 5 api requests per second. At the moment there is no way to increase this limit.
+
+Example 2 shows how to add a delay. The default delay is `Duration(milliseconds: 0)`.
+
+### Retrying Failed Requests
+
+Sometimes API requests can fail. This is especially true for mobile devices going in and out of cell service. Both the
+CloudWatch constructor and the CloudWatchHandler constructor can take the optional parameter `retries` indicating how
+many times an api request will be attempted before giving up. The default retries value is 3.
+
+### Failed DNS Lookups
+
+By default, failed DNS lookups are silenced. Generally it can be assumed that if the DNS lookup fails, internet is
+unavailable. This behaviour is controlled by the `raiseFailedLookups` flag and set to `false` by default. If internet
+is available and this case is getting hit, its possible there is an issue on the server level, but it is far more likely
+that the provided region has a typo.
+
+### Log Groups and Log Streams
+
+Log stream names currently (2021/09/12) have the following limits:
+
+* Log stream names must be unique within the log group.
+* Log stream names can be between 1 and 512 characters long.
+* The ':' (colon) and '*' (asterisk) characters are not allowed.
+
+Log group names currently (2021/09/12) have the following limits:
+
+* Log group names can be between 1 and 512 characters long and match to `^[\.\-_/#A-Za-z0-9]+$`.
+
+### Message Size and Length Limits
+
+AWS has hard limits on the amount of messages, length of individual messages, and overall length of message data sent
+per request. Currently, (2021/09/12) that limit is 10,000 messages per request, 262,118 UTF8 bytes per message, and
+1,048,550 total message UTF8 bytes per request. The optional parameter `largeMessageBehavior` specifies how messages
+larger than 262,118 UTF8 bytes will be handled. By default, the middle of the message will be replaced with `...` to
+reduce the size to 262,118 UTF8 bytes. All other hard limits are handled automatically.
+
 ## Examples
 
 ### Example 1
@@ -268,43 +313,6 @@ void main() {
 
 To send normal logs, import the logging file anywhere and call `log('Hello world!');`
 
-## Important Notes:
-
-### Avoiding AWS Cloudwatch API Rate Limiting
-
-As of now (2021/09/12), AWS has a rate limit of 5 log requests per second per log stream. You may hit this limit rather
-quickly if you have a high volume of logs. It is highly recommended to include the optional delay parameter with a value
-of `Duration(milliseconds: 200)` to avoid hitting this upper limit. With a delay, logs will continue to collect, but the
-api calls will be limited to `1 / delay` per second. For example, a delay of 200 milliseconds would result in a maximum
-of 5 api requests per second. At the moment there is no way to increase this limit.
-
-Example 2 shows how to add a delay. The default delay is `Duration(milliseconds: 0)`.
-
-### Retrying Failed Requests
-
-Sometimes API requests can fail. This is especially true for mobile devices going in and out of cell service. Both the
-CloudWatch constructor and the CloudWatchHandler constructor can take the optional parameter `retries` indicating how
-many times an api request will be attempted before giving up. The default retries value is 3.
-
-### Log Groups and Log Streams
-
-Log stream names currently (2021/09/12) have the following limits:
-
-* Log stream names must be unique within the log group.
-* Log stream names can be between 1 and 512 characters long.
-* The ':' (colon) and '*' (asterisk) characters are not allowed.
-
-Log group names currently (2021/09/12) have the following limits:
-
-* Log group names can be between 1 and 512 characters long and match to ^[\.\-_/#A-Za-z0-9]+$.
-
-### Message Size and Length Limits
-
-AWS has hard limits on the amount of messages, length of individual messages, and overall length of message data sent
-per request. Currently, (2021/09/12) that limit is 10,000 messages per request, 262,118 UTF8 bytes per message, and
-1,048,550 total message UTF8 bytes per request. The optional parameter `largeMessageBehavior` specifies how messages
-larger than 262,118 UTF8 bytes will be handled. By default, the middle of the message will be replaced with `...` to
-reduce the size to 262,118 UTF8 bytes. All other hard limits are handled automatically.
 
 ## MIT License
 

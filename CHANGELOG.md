@@ -1,3 +1,17 @@
+## [0.4.4] - 2021/10/03
+
+* DNS lookup failures are now silenced by default (raiseFailedLookups flag)
+* Added better comments throughout
+* Added tests for cloudwatch, handler, and logStack
+* Refactored existing tests into different files based on subject
+* Added AwsResponse class
+* Refactored classes into separate files for better readability
+* Updating attributes of a handler now updates its child instances
+* Made several more private classes / functions / attributes public for testing
+* Reorganized readme and added section for Failed DNS Lookups
+* Added toString to CloudWatchException for easier debugging in IDE
+* Added better recovery from failed group and stream creation
+
 ## [0.4.3] - 2021/09/20
 
 * Added support for more automatic error recovery

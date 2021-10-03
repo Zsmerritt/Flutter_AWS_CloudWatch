@@ -8,22 +8,11 @@ import 'package:aws_request/aws_request.dart';
 import 'package:synchronized/synchronized.dart';
 import 'package:universal_io/io.dart';
 
-// AWS Hard Limits
-const String _GROUP_NAME_REGEX_PATTERN = r'^[\.\-_/#A-Za-z0-9]+$';
-const String _STREAM_NAME_REGEX_PATTERN = r'^[^:*]*$';
+import 'aws_cloudwatch_cloudwatch_log.dart';
+import 'aws_cloudwatch_log_stack.dart';
+import 'aws_cloudwatch_util.dart';
 
-class CloudWatchException implements Exception {
-  String message;
-  StackTrace stackTrace;
-
-  /// A custom error to identify CloudWatch errors more easily
-  ///
-  /// message: the cause of the error
-  /// stackTrace: the stack trace of the error
-  CloudWatchException(this.message, this.stackTrace);
-}
-
-/// An enum representing what should happen to messages that are too big
+/// Enum representing what should happen to messages that are too big
 /// to be sent as a single message. This limit is 262118 utf8 bytes
 ///
 /// truncate: Replace the middle of the message with "...", making it 262118
@@ -53,39 +42,100 @@ enum CloudWatchLargeMessages {
 class CloudWatchHandler {
   Map<String, CloudWatch> _logInstances = {};
 
-  /// Your AWS Access key.
+  /// Your AWS Access key. Instances are not updated when this value is changed
   String awsAccessKey;
 
-  /// Your AWS Secret key.
+  /// Your AWS Secret key. Instances are not updated when this value is changed
   String awsSecretKey;
 
-  /// Your AWS region.
+  /// Your AWS region. Instances are not updated when this value is changed
   String region;
 
   /// How long to wait between requests to avoid rate limiting (suggested value is Duration(milliseconds: 200))
-  Duration delay;
+  Duration get delay => _delay;
+
+  /// How long to wait between requests to avoid rate limiting (suggested value is Duration(milliseconds: 200))
+  set delay(Duration val) {
+    for (CloudWatch cw in _logInstances.values) {
+      cw.delay = val;
+      _delay = val;
+    }
+  }
+
+  /// private version of [delay]
+  Duration _delay;
 
   /// How long to wait for request before triggering a timeout
-  Duration requestTimeout;
+  Duration get requestTimeout => _requestTimeout;
+
+  /// How long to wait for request before triggering a timeout
+  set requestTimeout(Duration val) {
+    for (CloudWatch cw in _logInstances.values) {
+      cw.requestTimeout = val;
+      _requestTimeout = val;
+    }
+  }
+
+  /// private version of [requestTimeout]
+  Duration _requestTimeout;
 
   /// How many times an api request should be retired upon failure. Default is 3
-  int retries;
+  int get retries => _retries;
+
+  /// How many times an api request should be retired upon failure. Default is 3
+  set retries(int val) {
+    for (CloudWatch cw in _logInstances.values) {
+      cw.retries = val;
+      _retries = val;
+    }
+  }
+
+  /// private version of [largeMessageBehavior]
+  int _retries;
 
   /// How messages larger than AWS limit should be handled. Default is truncate.
-  CloudWatchLargeMessages largeMessageBehavior;
+  CloudWatchLargeMessages get largeMessageBehavior => _largeMessageBehavior;
+
+  /// How messages larger than AWS limit should be handled. Default is truncate.
+  set largeMessageBehavior(CloudWatchLargeMessages val) {
+    for (CloudWatch cw in _logInstances.values) {
+      cw.largeMessageBehavior = val;
+    }
+    _largeMessageBehavior = val;
+  }
+
+  /// private version of [largeMessageBehavior]
+  CloudWatchLargeMessages _largeMessageBehavior;
+
+  /// Whether exceptions should be raised on failed lookups (usually no internet)
+  bool get raiseFailedLookups => _raiseFailedLookups;
+
+  /// Whether exceptions should be raised on failed lookups (usually no internet)
+  set raiseFailedLookups(bool val) {
+    for (CloudWatch cw in _logInstances.values) {
+      cw.raiseFailedLookups = val;
+    }
+    _raiseFailedLookups = val;
+  }
+
+  /// private version of [raiseFailedLookups]
+  bool _raiseFailedLookups;
 
   /// CloudWatchHandler Constructor
   CloudWatchHandler({
     required this.awsAccessKey,
     required this.awsSecretKey,
     required this.region,
-    this.delay: const Duration(milliseconds: 0),
-    this.requestTimeout: const Duration(seconds: 10),
-    this.retries: 3,
-    this.largeMessageBehavior: CloudWatchLargeMessages.truncate,
-  }) {
-    this.retries = max(1, this.retries);
-  }
+    delay: const Duration(),
+    requestTimeout: const Duration(seconds: 10),
+    retries: 3,
+    largeMessageBehavior: CloudWatchLargeMessages.truncate,
+    raiseFailedLookups: false,
+  })  : this._delay = delay,
+        this._requestTimeout = requestTimeout,
+        this._retries = max(0, retries),
+        this._largeMessageBehavior = largeMessageBehavior,
+        this._raiseFailedLookups = raiseFailedLookups;
 
   /// Returns a specific instance of a CloudWatch class (or null if it doesnt
   /// exist) based on group name and stream name
@@ -129,17 +179,22 @@ class CloudWatchHandler {
           logGroupName: logGroupName,
           logStreamName: logStreamName,
         ) ??
-        _createInstance(
+        createInstance(
           logGroupName: logGroupName,
           logStreamName: logStreamName,
         );
     await instance.logMany(messages);
   }
 
-  CloudWatch _createInstance({
+  /// Creates a CloudWatch instance.
+  ///
+  /// Calling any log function will call this as needed automatically
+  CloudWatch createInstance({
     required String logGroupName,
     required String logStreamName,
   }) {
+    validateLogGroupName(logGroupName);
+    validateLogStreamName(logStreamName);
     String instanceName = '$logGroupName.$logStreamName';
     CloudWatch instance = CloudWatch(
       awsAccessKey,
@@ -151,6 +206,7 @@ class CloudWatchHandler {
       requestTimeout: requestTimeout,
       retries: retries,
       largeMessageBehavior: largeMessageBehavior,
+      raiseFailedLookups: raiseFailedLookups,
     );
     _logInstances[instanceName] = instance;
     return instance;
@@ -179,7 +235,19 @@ class CloudWatch {
   int retries;
 
   /// How messages larger than AWS limit should be handled. Default is truncate.
-  CloudWatchLargeMessages largeMessageBehavior;
+  CloudWatchLargeMessages get largeMessageBehavior => _largeMessageBehavior;
+
+  /// How messages larger than AWS limit should be handled. Default is truncate.
+  set largeMessageBehavior(CloudWatchLargeMessages val) {
+    _largeMessageBehavior = val;
+    logStack.largeMessageBehavior = val;
+  }
+
+  /// Private version of largeMessageBehavior to set _logStack
+  CloudWatchLargeMessages _largeMessageBehavior;
+
+  /// Whether exceptions should be raised on failed lookups (usually no internet)
+  bool raiseFailedLookups;
 
   // Logging Variables
   /// The log group the log stream will appear under
@@ -188,6 +256,7 @@ class CloudWatch {
   /// Synonym for groupName
   String? get logGroupName => groupName;
 
+  /// Synonym for groupName
   set logGroupName(String? val) => groupName = val;
 
   /// The log stream name for log events to be filed in
@@ -196,14 +265,26 @@ class CloudWatch {
   /// Synonym for streamName
   String? get logStreamName => streamName;
 
+  /// Synonym for streamName
   set logStreamName(String? val) => streamName = val;
 
+  /// Bool to skip log stream creation
+  bool logStreamCreated = false;
+
+  /// Bool to skip log group creation
+  bool logGroupCreated = false;
+
+  /// A log stack that holds queued logs ready to be sent
+  CloudWatchLogStack logStack;
+
+  /// Verbosity for debugging
   int _verbosity = 0;
+
+  /// Token provided by aws to ensure logs are received in the correct order
   String? _sequenceToken;
-  late CloudWatchLogStack _logStack;
-  var _loggingLock = Lock();
-  bool _logStreamCreated = false;
-  bool _logGroupCreated = false;
+
+  /// Synchronous lock to enforce synchronous request order
+  Lock _loggingLock = Lock();
 
   /// CloudWatch Constructor
   CloudWatch(
@@ -212,22 +293,22 @@ class CloudWatch {
     this.region, {
     this.groupName,
     this.streamName,
-    this.delay: const Duration(milliseconds: 0),
+    delay: const Duration(),
     this.requestTimeout: const Duration(seconds: 10),
-    this.retries: 3,
-    this.largeMessageBehavior: CloudWatchLargeMessages.truncate,
-  }) {
-    delay = !delay.isNegative ? delay : Duration(milliseconds: 0);
-    this.retries = max(1, this.retries);
-    this._logStack =
-        CloudWatchLogStack(largeMessageBehavior: largeMessageBehavior);
-  }
+    retries: 3,
+    largeMessageBehavior: CloudWatchLargeMessages.truncate,
+    this.raiseFailedLookups: false,
+  })  : this._largeMessageBehavior = largeMessageBehavior,
+        this.delay = !delay.isNegative ? delay : Duration(),
+        this.retries = max(0, retries),
+        this.logStack =
+            CloudWatchLogStack(largeMessageBehavior: largeMessageBehavior);
 
   /// Sets how long to wait between requests to avoid rate limiting
   ///
   /// Sets the delay to be [delay]
   Duration setDelay(Duration delay) {
-    this.delay = !delay.isNegative ? delay : Duration(milliseconds: 0);
+    this.delay = !delay.isNegative ? delay : Duration();
     _debugPrint(
       2,
       'CloudWatch INFO: Set delay to $delay',
@@ -266,27 +347,8 @@ class CloudWatch {
       2,
       'CloudWatch INFO: Attempting to log many',
     );
-    if ([groupName, streamName].contains(null)) {
-      _debugPrint(
-        0,
-        'CloudWatch ERROR: Please supply a Log Group and Stream names by '
-        'calling setLoggingParameters(String? groupName, String? streamName)',
-      );
-      throw CloudWatchException(
-          'CloudWatch ERROR: Please supply a Log Group and Stream names by '
-          'calling setLoggingParameters(String groupName, String streamName)',
-          StackTrace.current);
-    }
-    _validateName(
-      groupName!,
-      'groupName',
-      _GROUP_NAME_REGEX_PATTERN,
-    );
-    _validateName(
-      streamName!,
-      'streamName',
-      _STREAM_NAME_REGEX_PATTERN,
-    );
+    validateLogGroupName(groupName);
+    validateLogStreamName(streamName);
     await _log(logStrings);
   }
 
@@ -307,20 +369,25 @@ class CloudWatch {
     );
   }
 
+  /// prints [msg] if [v] is greater than the verbosity level
   void _debugPrint(int v, String msg) {
     if (_verbosity > v) {
       print(msg);
     }
   }
 
+  /// Creates a log stream and log group if needed
+  ///
+  /// rethrows any caught errors if ultimately unsuccessful
   Future<void> _createLogStreamAndLogGroup() async {
     dynamic error;
-    for (int i = 0; i < retries; i++) {
+    // retries + 1 to account for first try with 0 retries
+    for (int i = 0; i < retries + 1; i++) {
       try {
         await _createLogStream();
         return;
       } on CloudWatchException catch (e) {
-        if (e.message.contains('ResourceNotFoundException')) {
+        if (e.type == 'ResourceNotFoundException') {
           // Create a new log group and try stream creation again
           await _createLogGroup();
           await _createLogStream();
@@ -338,42 +405,53 @@ class CloudWatch {
     throw error;
   }
 
+  /// Creates a log stream if one hasnt been created yet
+  ///
+  /// Throws [CloudWatchException] if API returns something other than 200
   Future<void> _createLogStream() async {
-    if (!_logStreamCreated) {
+    if (!logStreamCreated) {
       _debugPrint(
         2,
         'CloudWatch INFO: Generating LogStream',
       );
-      _logStreamCreated = true;
+      logStreamCreated = true;
       String body =
           '{"logGroupName": "$groupName","logStreamName": "$streamName"}';
-      HttpClientResponse log = await AwsRequest(
-        awsAccessKey,
-        awsSecretKey,
-        region,
-        service: 'logs',
-        timeout: requestTimeout,
-      ).send(
-        AwsRequestType.POST,
-        jsonBody: body,
-        target: 'Logs_20140328.CreateLogStream',
-      );
+      HttpClientResponse log;
+      try {
+        log = await AwsRequest(
+          awsAccessKey,
+          awsSecretKey,
+          region,
+          service: 'logs',
+          timeout: requestTimeout,
+        ).send(
+          AwsRequestType.POST,
+          jsonBody: body,
+          target: 'Logs_20140328.CreateLogStream',
+        );
+      } catch (e) {
+        logStreamCreated = false;
+        rethrow;
+      }
       int statusCode = log.statusCode;
       _debugPrint(
         1,
         'CloudWatch Info: LogStream creation status code: $statusCode',
       );
       if (statusCode != 200) {
-        Map<String, dynamic>? reply = jsonDecode(
-          await log.transform(utf8.decoder).join(),
-        );
+        AwsResponse response = await AwsResponse.parseResponse(log);
         _debugPrint(
           0,
-          'CloudWatch ERROR: StatusCode: $statusCode, CloudWatchResponse: $reply',
+          'CloudWatch ERROR: $response',
         );
-        _logStreamCreated = false;
+        logStreamCreated = false;
         throw CloudWatchException(
-            'CloudWatch ERROR: $reply', StackTrace.current);
+          message: response.message,
+          type: response.type,
+          stackTrace: StackTrace.current,
+          raw: response.raw,
+        );
       }
     }
     _debugPrint(
@@ -382,41 +460,52 @@ class CloudWatch {
     );
   }
 
+  /// Creates a log group if one hasnt been created yet
+  ///
+  /// Throws [CloudWatchException] if API returns something other than 200
   Future<void> _createLogGroup() async {
-    if (!_logGroupCreated) {
+    if (!logGroupCreated) {
       _debugPrint(
         2,
         'CloudWatch INFO: creating LogGroup Exists',
       );
-      _logGroupCreated = true;
+      logGroupCreated = true;
       String body = '{"logGroupName": "$groupName"}';
-      HttpClientResponse log = await AwsRequest(
-        awsAccessKey,
-        awsSecretKey,
-        region,
-        service: 'logs',
-        timeout: requestTimeout,
-      ).send(
-        AwsRequestType.POST,
-        jsonBody: body,
-        target: 'Logs_20140328.CreateLogGroup',
-      );
+      HttpClientResponse log;
+      try {
+        log = await AwsRequest(
+          awsAccessKey,
+          awsSecretKey,
+          region,
+          service: 'logs',
+          timeout: requestTimeout,
+        ).send(
+          AwsRequestType.POST,
+          jsonBody: body,
+          target: 'Logs_20140328.CreateLogGroup',
+        );
+      } catch (e) {
+        logGroupCreated = false;
+        rethrow;
+      }
       int statusCode = log.statusCode;
       _debugPrint(
         1,
         'CloudWatch Info: LogGroup creation status code: $statusCode',
       );
       if (statusCode != 200) {
-        Map<String, dynamic>? reply = jsonDecode(
-          await log.transform(utf8.decoder).join(),
-        );
+        AwsResponse response = await AwsResponse.parseResponse(log);
         _debugPrint(
           0,
-          'CloudWatch ERROR: StatusCode: $statusCode, AWS Response: $reply',
+          'CloudWatch ERROR: $response',
         );
-        _logGroupCreated = false;
+        logGroupCreated = false;
         throw CloudWatchException(
-            'CloudWatch ERROR: $reply', StackTrace.current);
+          message: response.message,
+          type: response.type,
+          stackTrace: StackTrace.current,
+          raw: response.raw,
+        );
       }
     }
     _debugPrint(
@@ -425,7 +514,7 @@ class CloudWatch {
     );
   }
 
-  // turns a string into a cloudwatch event
+  /// Creates a json log events string and adds the sequence token if available
   String _createBody(List<Map<String, dynamic>> logsToSend) {
     _debugPrint(
       2,
@@ -451,34 +540,51 @@ class CloudWatch {
     return jsonBody;
   }
 
+  /// Sets up log stream / group and then queues logs to be sent
   Future<void> _log(List<String> logStrings) async {
-    _logStack.addLogs(logStrings);
+    logStack.addLogs(logStrings);
     _debugPrint(
       2,
       'CloudWatch INFO: Added messages to log stack',
     );
     dynamic error;
-    if (!_logStreamCreated) {
+    if (!logStreamCreated) {
       await _loggingLock
           .synchronized(_createLogStreamAndLogGroup)
           .catchError((e) {
         error = e;
       });
     }
-    if (error != null) {
-      throw error;
-    }
+    if (_checkError(error)) return;
     await _sendAllLogs().catchError((e) {
       error = e;
     });
-    if (error != null) {
-      throw error;
-    }
+    if (_checkError(error)) return;
   }
 
+  /// Checks info about [error] and returns whether execution should stop
+  bool _checkError(dynamic error) {
+    if (error != null) {
+      if (!raiseFailedLookups &&
+          error is SocketException &&
+          error.message.startsWith('Failed host lookup')) {
+        print(
+          'CloudWatch: Failed host lookup! This usually means internet '
+          'is unavailable but could also indicate a problem with the '
+          'region $region.',
+        );
+        return true; // stop execution
+      } else {
+        throw error;
+      }
+    }
+    return false; // continue execution
+  }
+
+  /// Queues [_sendLogs] until all logs are sent or error occurs
   Future<void> _sendAllLogs() async {
     dynamic error;
-    while (_logStack.length > 0 && error == null) {
+    while (logStack.length > 0 && error == null) {
       await Future.delayed(
         delay,
         () async => await _loggingLock.synchronized(_sendLogs),
@@ -491,8 +597,9 @@ class CloudWatch {
     }
   }
 
+  /// Calls functions to send logs and gracefully handle errors and retries
   Future<void> _sendLogs() async {
-    if (_logStack.length <= 0) {
+    if (logStack.length <= 0) {
       // logs already sent while this request was waiting for lock
       _debugPrint(
         2,
@@ -501,7 +608,7 @@ class CloudWatch {
       return;
     }
     // capture logs that are about to be sent in case the request fails
-    CloudWatchLog _logs = _logStack.pop();
+    CloudWatchLog _logs = logStack.pop();
     bool success = false;
     dynamic error;
     for (int i = 0; i < retries && !success; i++) {
@@ -518,7 +625,7 @@ class CloudWatch {
     }
     if (!success) {
       // prepend logs in event of failure
-      _logStack.prepend(_logs);
+      logStack.prepend(_logs);
       _debugPrint(
         0,
         'CloudWatch ERROR: Failed to send logs',
@@ -527,6 +634,7 @@ class CloudWatch {
     }
   }
 
+  /// Creates an AwsRequest and sends request
   Future<HttpClientResponse?> _sendRequest(CloudWatchLog _logs) async {
     String body = _createBody(_logs.logs);
     HttpClientResponse? result;
@@ -556,49 +664,53 @@ class CloudWatch {
         'CloudWatch ERROR: Null response received from AWS',
       );
       throw CloudWatchException(
-          'CloudWatch ERROR: Null response received from AWS',
-          StackTrace.current);
+        message: 'CloudWatch ERROR: Null response received from AWS',
+        stackTrace: StackTrace.current,
+      );
     }
-    int statusCode = response.statusCode;
-    Map<String, dynamic> reply = jsonDecode(
-      await response.transform(utf8.decoder).join(),
-    );
-    if (statusCode == 200) {
+    AwsResponse awsResponse = await AwsResponse.parseResponse(response);
+    if (awsResponse.statusCode == 200) {
       _debugPrint(
         1,
-        'CloudWatch Info: StatusCode: $statusCode, AWS Response: $reply',
+        'CloudWatch Info: $awsResponse',
       );
-      _sequenceToken = reply['nextSequenceToken'];
+      _sequenceToken = awsResponse.nextSequenceToken;
       return true;
     } else {
-      if (reply.containsKey('__type')) {
-        return await _handleError(reply);
+      if (awsResponse.type != null) {
+        return await _handleError(awsResponse);
       }
       _debugPrint(
         0,
-        'CloudWatch ERROR: StatusCode: $statusCode, AWS Response: $reply',
+        'CloudWatch ERROR: $awsResponse',
       );
       // failed for unknown reason. Throw error
       throw CloudWatchException(
-          'CloudWatch ERROR: StatusCode: $statusCode, AWS Response: $reply',
-          StackTrace.current);
+        message: awsResponse.message,
+        type: awsResponse.type,
+        stackTrace: StackTrace.current,
+        raw: awsResponse.raw,
+      );
     }
   }
 
-  Future<bool> _handleError(Map<String, dynamic> reply) async {
-    if (reply['__type'] == 'InvalidSequenceTokenException' &&
-        reply['expectedSequenceToken'] != _sequenceToken) {
+  /// Gracefully manage and recover from errors as best as possible
+  ///
+  /// returns whether the error was recovered from or not
+  Future<bool> _handleError(AwsResponse awsResponse) async {
+    if (awsResponse.type == 'InvalidSequenceTokenException' &&
+        awsResponse.expectedSequenceToken != _sequenceToken) {
       // bad sequence token
       // Sometimes happen when requests are sent in quick succession
       // Attempt to recover
-      _sequenceToken = reply['expectedSequenceToken'];
+      _sequenceToken = awsResponse.expectedSequenceToken;
       _debugPrint(
         0,
         'CloudWatch Info: Found incorrect sequence token. Attempting to fix.',
       );
       return false;
-    } else if (reply['__type'] == 'ResourceNotFoundException' &&
-        reply['message'] == "The specified log stream does not exist.") {
+    } else if (awsResponse.type == 'ResourceNotFoundException' &&
+        awsResponse.message == "The specified log stream does not exist.") {
       // LogStream not present
       // Sometimes happens with debuggers / hot reloads
       // Attempt to recover
@@ -606,11 +718,11 @@ class CloudWatch {
         0,
         'CloudWatch Info: Log Stream doesnt Exist',
       );
-      _logStreamCreated = false;
+      logStreamCreated = false;
       await _createLogStream();
       return false;
-    } else if (reply['__type'] == 'ResourceNotFoundException' &&
-        reply['message'] == "The specified log group does not exist.") {
+    } else if (awsResponse.type == 'ResourceNotFoundException' &&
+        awsResponse.message == "The specified log group does not exist.") {
       // LogGroup not present
       // Sometimes happens with debuggers / hot reloads
       // Attempt to recover
@@ -618,10 +730,10 @@ class CloudWatch {
         0,
         'CloudWatch Info: Log Group doesnt Exist',
       );
-      _logGroupCreated = false;
+      logGroupCreated = false;
       await _createLogGroup();
       return false;
-    } else if (reply['__type'] == 'DataAlreadyAcceptedException') {
+    } else if (awsResponse.type == 'DataAlreadyAcceptedException') {
       // This log set has already been sent.
       // Sometimes happens with debuggers / hot reloads
       // Update the sequence token just in case.
@@ -630,155 +742,9 @@ class CloudWatch {
         0,
         'CloudWatch Info: Data Already Sent',
       );
-      _sequenceToken = reply['expectedSequenceToken'];
+      _sequenceToken = awsResponse.expectedSequenceToken;
       return true;
     }
     return false;
-  }
-
-  void _validateName(String name, String type, String pattern) {
-    if (name.length > 512 || name.length == 0) {
-      throw CloudWatchException(
-        'Provided $type "$name" is invalid. $type must be between 1 and 512 characters.',
-        StackTrace.current,
-      );
-    }
-    if (!RegExp(pattern).hasMatch(name)) {
-      throw CloudWatchException(
-        'Provided $type "$name" doesnt match pattern $pattern required of $type',
-        StackTrace.current,
-      );
-    }
-  }
-}
-
-/// A class to hold logs and their metadata
-class CloudWatchLog {
-  /// The list of logs in json form. These are ready to be sent
-  List<Map<String, dynamic>> logs = [];
-
-  /// The utf8 byte size of the logs contained within [logs]
-  int messageSize = 0;
-
-  /// Constructor for a LogObject
-  CloudWatchLog({required this.logs, required this.messageSize});
-}
-
-/// A class that automatically splits and handles logs according to AWS hard limits
-class CloudWatchLogStack {
-  /// An enum value that indicates how messages larger than the max size should be treated
-  CloudWatchLargeMessages largeMessageBehavior;
-
-  static const int _AWS_MAX_BYTE_MESSAGE_SIZE = 262118;
-  static const int _AWS_MAX_BYTE_BATCH_SIZE = 1048550;
-  static const int _AWS_MAX_MESSAGES_PER_BATCH = 10000;
-
-  CloudWatchLogStack({
-    required this.largeMessageBehavior,
-  });
-
-  /// The stack of logs that holds presplt CloudWatchLogs
-  List<CloudWatchLog> logStack = [];
-
-  /// The length of the stack
-  int get length => logStack.length;
-
-  /// Splits up [logStrings] and processes them in prep to add them to the [logStack]
-  ///
-  /// Prepares [logStrings] using selected [largeMessageBehavior] as needed
-  /// taking care to mind aws hard limits.
-  void addLogs(List<String> logStrings) {
-    int time = DateTime.now().toUtc().millisecondsSinceEpoch;
-    for (String msg in logStrings) {
-      List<int> bytes = utf8.encode(msg);
-      // AWS hard limit on message size
-      if (bytes.length <= _AWS_MAX_BYTE_MESSAGE_SIZE) {
-        addToStack(time, bytes);
-      } else {
-        switch (largeMessageBehavior) {
-
-          /// Truncate message by replacing middle with "..."
-          case CloudWatchLargeMessages.truncate:
-            // plus 3 to account for "..."
-            int toRemove =
-                ((bytes.length - _AWS_MAX_BYTE_MESSAGE_SIZE + 3) / 2).ceil();
-            int midPoint = (bytes.length / 2).floor();
-            List<int> newMessage = bytes.sublist(0, midPoint - toRemove) +
-                // "..." in bytes (2e)
-                [46, 46, 46] +
-                bytes.sublist(midPoint + toRemove);
-            addToStack(time, newMessage);
-            break;
-
-          /// Split up large message into multiple smaller ones
-          case CloudWatchLargeMessages.split:
-            while (bytes.length > _AWS_MAX_BYTE_MESSAGE_SIZE) {
-              addToStack(
-                time,
-                bytes.sublist(0, _AWS_MAX_BYTE_MESSAGE_SIZE),
-              );
-              bytes = bytes.sublist(_AWS_MAX_BYTE_MESSAGE_SIZE);
-            }
-            addToStack(time, bytes);
-            break;
-
-          /// Ignore the message
-          case CloudWatchLargeMessages.ignore:
-            continue;
-
-          /// Throw an error
-          case CloudWatchLargeMessages.error:
-            throw CloudWatchException(
-              'Provided log message is too long. Individual message size limit is '
-              '$_AWS_MAX_BYTE_MESSAGE_SIZE. log message: $msg',
-              StackTrace.current,
-            );
-        }
-      }
-    }
-  }
-
-  /// Adds logs to the last CloudWatchLog
-  ///
-  /// Adds a json object of [time] and decoded [bytes] to the last CloudWatchLog
-  /// on the last [logStack] Creates a new CloudWatchLog as needed.
-  void addToStack(int time, List<int> bytes) {
-    // empty list / aws hard limits on batch sizes
-    if (logStack.length == 0 ||
-        logStack.last.logs.length >= _AWS_MAX_MESSAGES_PER_BATCH ||
-        logStack.last.messageSize + bytes.length > _AWS_MAX_BYTE_BATCH_SIZE) {
-      logStack.add(
-        CloudWatchLog(
-          logs: [
-            {
-              'timestamp': time,
-              'message': utf8.decode(bytes),
-            },
-          ],
-          messageSize: bytes.length,
-        ),
-      );
-    } else {
-      logStack.last.logs
-          .add({'timestamp': time, 'message': utf8.decode(bytes)});
-      logStack.last.messageSize += bytes.length;
-    }
-  }
-
-  /// Pops off first CloudWatchLog from the [logStack] and returns it
-  CloudWatchLog pop() {
-    CloudWatchLog result = logStack.first;
-    if (logStack.length > 1) {
-      logStack = logStack.sublist(1);
-    } else {
-      logStack.clear();
-    }
-    return result;
-  }
-
-  /// Prepends a CloudWatchLog to the [logStack]
-  void prepend(CloudWatchLog messages) {
-    // this is the fastest prepend until ~1700 items
-    logStack = [messages, ...logStack];
   }
 }
