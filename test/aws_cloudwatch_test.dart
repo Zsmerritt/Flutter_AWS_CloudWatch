@@ -1,5 +1,4 @@
 import 'package:aws_cloudwatch/aws_cloudwatch.dart';
-import 'package:aws_cloudwatch/aws_cloudwatch_util.dart';
 import 'package:test/test.dart';
 
 void main() {

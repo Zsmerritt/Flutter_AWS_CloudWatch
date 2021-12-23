@@ -13,3 +13,4 @@ dependencies:
 
 dev_dependencies:
   test: ^1.16.0
+  http: ^0.13.3
