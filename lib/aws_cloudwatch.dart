@@ -445,13 +445,16 @@ class CloudWatch {
           0,
           'CloudWatch ERROR: $response',
         );
-        logStreamCreated = false;
-        throw CloudWatchException(
-          message: response.message,
-          type: response.type,
-          stackTrace: StackTrace.current,
-          raw: response.raw,
-        );
+        // Just move on if the resource already exists
+        if (response.type != 'ResourceAlreadyExistsException') {
+          logStreamCreated = false;
+          throw CloudWatchException(
+            message: response.message,
+            type: response.type,
+            stackTrace: StackTrace.current,
+            raw: response.raw,
+          );
+        }
       }
     }
     _debugPrint(
@@ -499,13 +502,16 @@ class CloudWatch {
           0,
           'CloudWatch ERROR: $response',
         );
-        logGroupCreated = false;
-        throw CloudWatchException(
-          message: response.message,
-          type: response.type,
-          stackTrace: StackTrace.current,
-          raw: response.raw,
-        );
+        // Just move on if the resource already exists
+        if (response.type != 'ResourceAlreadyExistsException') {
+          logGroupCreated = false;
+          throw CloudWatchException(
+            message: response.message,
+            type: response.type,
+            stackTrace: StackTrace.current,
+            raw: response.raw,
+          );
+        }
       }
     }
     _debugPrint(

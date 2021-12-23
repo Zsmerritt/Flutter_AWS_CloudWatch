@@ -1,3 +1,7 @@
+## [0.4.5] - 2021/12/22
+
+* Fixed issue related to using static logStreamName and logGroupName [SomeoneAndNoone]
+
 ## [0.4.4] - 2021/10/03
 
 * DNS lookup failures are now silenced by default (raiseFailedLookups flag)
