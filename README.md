@@ -19,7 +19,7 @@
         <img alt="Code size" src="https://img.shields.io/github/languages/code-size/Zsmerritt/Flutter_AWS_CloudWatch?logo=github&logoColor=white">
     </a>
     <a href="https://github.com/Zsmerritt/Flutter_AWS_CloudWatch/blob/main/LICENSE">
-        <img alt="License" src="https://img.shields.io/github/license/Zsmerritt/Flutter_AWS_CloudWatch?logo=open-source-initiative&logoColor=blue">
+        <img alt="License" src="https://img.shields.io/github/license/Zsmerritt/Flutter_AWS_CloudWatch?logo=open-source-initiative&logoColor=white">
     </a>
     <a href="https://github.com/Zsmerritt/Flutter_AWS_CloudWatch/actions/workflows/dart.yml">
         <img alt="CI pipeline status" src="https://github.com/Zsmerritt/Flutter_AWS_CloudWatch/actions/workflows/dart.yml/badge.svg">
@@ -130,6 +130,12 @@ standard logging and another for errors. Both with have the same log stream name
 flutter errors see example 3.
 
 ## Important Notes:
+
+### Using Temporary Credentials
+
+Temporary credentials are supported as of version 0.4.6. Use the optional parameter sessionToken to specify your session
+token. Expired credentials can be updated by setting the CloudWatch instance sessionToken variable. Setting the 
+sessionToken on a CloudWatchHandler will update the sessionToken on all CloudWatch instances it manages.
 
 ### Avoiding AWS Cloudwatch API Rate Limiting
 
@@ -249,7 +255,7 @@ const String Region = 'us-west-2';
 
 // Logging Variables
 const String logGroupName = 'LogGroupExample';
-const String logGroupNameError = 'LogGroupExample';
+const String logGroupNameError = 'ErrorLogGroupExample';
 
 CloudWatchHandler logging = CloudWatchHandler(
   awsAccessKey: AWS_ACCESS_KEY_ID,

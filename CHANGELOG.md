@@ -1,6 +1,14 @@
+## [0.4.6] - 2022/01/05
+
+* Added support for AWS temporary credentials with session tokens (#7)
+* Set X-Amz-Expires with requestTimeout for improved security
+* Fixed some spelling mistakes
+* Updated readme with information about using session tokens
+* Updated readme example 3 to log errors to different log group
+
 ## [0.4.5] - 2021/12/22
 
-* Fixed issue related to using static logStreamName and logGroupName [SomeoneAndNoone]
+* Fixed issue related to using static logStreamName and logGroupName (#6)
 
 ## [0.4.4] - 2021/10/03
 

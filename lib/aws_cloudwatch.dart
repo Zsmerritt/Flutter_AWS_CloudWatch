@@ -42,11 +42,50 @@ enum CloudWatchLargeMessages {
 class CloudWatchHandler {
   Map<String, CloudWatch> _logInstances = {};
 
-  /// Your AWS Access key. Instances are not updated when this value is changed
-  String awsAccessKey;
+  /// Private version of access key
+  String _awsAccessKey;
 
-  /// Your AWS Secret key. Instances are not updated when this value is changed
-  String awsSecretKey;
+  /// Your AWS access key
+  set awsAccessKey(String awsAccessKey) {
+    // Updates all instances with new key. Useful for temp credentials
+    for (CloudWatch cw in _logInstances.values) {
+      cw.awsAccessKey = awsAccessKey;
+      _awsAccessKey = awsAccessKey;
+    }
+  }
+
+  /// Your AWS access key
+  String get awsAccessKey => _awsAccessKey;
+
+  /// Private version of secret key
+  String _awsSecretKey;
+
+  /// Your AWS secret key
+  set awsSecretKey(String awsSecretKey) {
+    // Updates all instances with new key. Useful for temp credentials
+    for (CloudWatch cw in _logInstances.values) {
+      cw.awsSecretKey = awsSecretKey;
+      _awsSecretKey = awsSecretKey;
+    }
+  }
+
+  /// Your AWS secret key
+  String get awsSecretKey => _awsSecretKey;
+
+  /// Private version of session token
+  String? _awsSessionToken;
+
+  /// Your AWS session token
+  set awsSessionToken(String? awsSessionToken) {
+    // Updates all instances with new key. Useful for temp credentials
+    for (CloudWatch cw in _logInstances.values) {
+      cw.awsSessionToken = awsSessionToken;
+      _awsSessionToken = awsSessionToken;
+    }
+  }
+
+  /// Your AWS session token
+  String? get awsSessionToken => _awsSessionToken;
 
   /// Your AWS region. Instances are not updated when this value is changed
   String region;
@@ -123,25 +162,29 @@ class CloudWatchHandler {
 
   /// CloudWatchHandler Constructor
   CloudWatchHandler({
-    required this.awsAccessKey,
-    required this.awsSecretKey,
+    required awsAccessKey,
+    required awsSecretKey,
     required this.region,
+    awsSessionToken: null,
     delay: const Duration(),
     requestTimeout: const Duration(seconds: 10),
     retries: 3,
     largeMessageBehavior: CloudWatchLargeMessages.truncate,
     raiseFailedLookups: false,
-  })  : this._delay = delay,
+  })  : this._awsAccessKey = awsAccessKey,
+        this._awsSecretKey = awsSecretKey,
+        this._awsSessionToken = awsSessionToken,
+        this._delay = delay,
         this._requestTimeout = requestTimeout,
         this._retries = max(0, retries),
         this._largeMessageBehavior = largeMessageBehavior,
         this._raiseFailedLookups = raiseFailedLookups;
 
-  /// Returns a specific instance of a CloudWatch class (or null if it doesnt
+  /// Returns a specific instance of a CloudWatch class (or null if it doesn't
   /// exist) based on group name and stream name
   ///
   /// Uses the [logGroupName] and the [logStreamName] to find the correct
-  /// CloudWatch instance. Returns null if it doesnt exist
+  /// CloudWatch instance. Returns null if it doesn't exist
   CloudWatch? getInstance({
     required String logGroupName,
     required String logStreamName,
@@ -224,6 +267,9 @@ class CloudWatch {
 
   /// AWS region
   String region;
+
+  /// AWS session token (temporary credentials)
+  String? awsSessionToken;
 
   /// How long to wait between requests to avoid rate limiting (suggested value is Duration(milliseconds: 200))
   Duration delay;
@@ -405,7 +451,7 @@ class CloudWatch {
     throw error;
   }
 
-  /// Creates a log stream if one hasnt been created yet
+  /// Creates a log stream if one hasn't been created yet
   ///
   /// Throws [CloudWatchException] if API returns something other than 200
   Future<void> _createLogStream() async {
@@ -463,7 +509,7 @@ class CloudWatch {
     );
   }
 
-  /// Creates a log group if one hasnt been created yet
+  /// Creates a log group if one hasn't been created yet
   ///
   /// Throws [CloudWatchException] if API returns something other than 200
   Future<void> _createLogGroup() async {
@@ -644,6 +690,14 @@ class CloudWatch {
   Future<HttpClientResponse?> _sendRequest(CloudWatchLog _logs) async {
     String body = _createBody(_logs.logs);
     HttpClientResponse? result;
+    Map<String, String> headers = {};
+    Map<String, String> queryString = {};
+    if (awsSessionToken != null) {
+      headers['X-Amz-Security-Token'] = awsSessionToken!;
+    }
+    if (requestTimeout.inSeconds > 0 && requestTimeout.inSeconds < 604800) {
+      queryString['X-Amz-Expires'] = requestTimeout.inSeconds.toString();
+    }
     result = await AwsRequest(
       awsAccessKey,
       awsSecretKey,
@@ -654,6 +708,8 @@ class CloudWatch {
       AwsRequestType.POST,
       jsonBody: body,
       target: 'Logs_20140328.PutLogEvents',
+      headers: headers,
+      queryString: queryString,
     );
     return result;
   }
@@ -722,7 +778,7 @@ class CloudWatch {
       // Attempt to recover
       _debugPrint(
         0,
-        'CloudWatch Info: Log Stream doesnt Exist',
+        "CloudWatch Info: Log Stream doesn't Exist",
       );
       logStreamCreated = false;
       await _createLogStream();
@@ -734,7 +790,7 @@ class CloudWatch {
       // Attempt to recover
       _debugPrint(
         0,
-        'CloudWatch Info: Log Group doesnt Exist',
+        "CloudWatch Info: Log Group doesn't Exist",
       );
       logGroupCreated = false;
       await _createLogGroup();
