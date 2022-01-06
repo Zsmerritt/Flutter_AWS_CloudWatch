@@ -245,6 +245,7 @@ class CloudWatchHandler {
       region,
       groupName: logGroupName,
       streamName: logStreamName,
+      awsSessionToken: awsSessionToken,
       delay: delay,
       requestTimeout: requestTimeout,
       retries: retries,
