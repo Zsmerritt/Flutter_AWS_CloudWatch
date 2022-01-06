@@ -339,6 +339,7 @@ class CloudWatch {
     this.region, {
     this.groupName,
     this.streamName,
+    this.awsSessionToken,
     delay: const Duration(),
     this.requestTimeout: const Duration(seconds: 10),
     retries: 3,
