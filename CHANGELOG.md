@@ -1,3 +1,8 @@
+## [0.4.6+1] - 2022/01/06
+
+* Added session tokens to CloudWatch constructor [khurram72] (#8)
+* Fixed issue where session token wasn't sent with some requests [khurram72] (#8)
+
 ## [0.4.6] - 2022/01/05
 
 * Added support for AWS temporary credentials with session tokens (#7)
