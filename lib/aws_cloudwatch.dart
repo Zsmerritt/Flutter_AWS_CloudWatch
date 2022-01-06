@@ -465,6 +465,14 @@ class CloudWatch {
       String body =
           '{"logGroupName": "$groupName","logStreamName": "$streamName"}';
       HttpClientResponse log;
+      Map<String, String> headers = {};
+      Map<String, String> queryString = {};
+      if (awsSessionToken != null) {
+        headers['X-Amz-Security-Token'] = awsSessionToken!;
+      }
+      if (requestTimeout.inSeconds > 0 && requestTimeout.inSeconds < 604800) {
+        queryString['X-Amz-Expires'] = requestTimeout.inSeconds.toString();
+      }
       try {
         log = await AwsRequest(
           awsAccessKey,
@@ -476,6 +484,8 @@ class CloudWatch {
           AwsRequestType.POST,
           jsonBody: body,
           target: 'Logs_20140328.CreateLogStream',
+          headers: headers,
+          queryString: queryString,
         );
       } catch (e) {
         logStreamCreated = false;
@@ -522,6 +532,14 @@ class CloudWatch {
       logGroupCreated = true;
       String body = '{"logGroupName": "$groupName"}';
       HttpClientResponse log;
+      Map<String, String> headers = {};
+      Map<String, String> queryString = {};
+      if (awsSessionToken != null) {
+        headers['X-Amz-Security-Token'] = awsSessionToken!;
+      }
+      if (requestTimeout.inSeconds > 0 && requestTimeout.inSeconds < 604800) {
+        queryString['X-Amz-Expires'] = requestTimeout.inSeconds.toString();
+      }
       try {
         log = await AwsRequest(
           awsAccessKey,
@@ -533,6 +551,8 @@ class CloudWatch {
           AwsRequestType.POST,
           jsonBody: body,
           target: 'Logs_20140328.CreateLogGroup',
+          headers: headers,
+          queryString: queryString,
         );
       } catch (e) {
         logGroupCreated = false;
