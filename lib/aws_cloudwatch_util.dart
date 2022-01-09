@@ -1,6 +1,5 @@
 import 'dart:convert';
-
-import 'package:universal_io/io.dart';
+import 'package:http/http.dart' as http;
 
 /// AWS Hard Limits
 const String _GROUP_NAME_REGEX_PATTERN = r'^[\.\-_/#A-Za-z0-9]+$';
@@ -87,11 +86,11 @@ class AwsResponse {
   AwsResponse._(this.statusCode);
 
   /// Attempts to parse aws response into its type and message parts
-  static Future<AwsResponse> parseResponse(HttpClientResponse response) async {
+  static Future<AwsResponse> parseResponse(http.Response response) async {
     AwsResponse result = AwsResponse._(response.statusCode);
-    if (response.contentLength > 0) {
+    if (response.contentLength != null && response.contentLength! > 0) {
       Map<String, dynamic>? reply = jsonDecode(
-        await response.transform(utf8.decoder).join(),
+        response.body,
       );
       result.raw = reply.toString();
       if (reply != null) {
