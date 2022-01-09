@@ -1,3 +1,7 @@
+## [0.4.6+2] - 2022/01/08
+
+* Updated aws_request version to fix issue related to web requests
+
 ## [0.4.6+1] - 2022/01/06
 
 * Added session tokens to CloudWatch constructor [khurram72] (#8)
