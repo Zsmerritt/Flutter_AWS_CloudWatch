@@ -273,13 +273,28 @@ class CloudWatch {
   String? awsSessionToken;
 
   /// How long to wait between requests to avoid rate limiting (suggested value is Duration(milliseconds: 200))
-  Duration delay;
+  Duration get delay => _delay;
+
+  /// How long to wait between requests to avoid rate limiting (suggested value is Duration(milliseconds: 200))
+  void set delay(Duration d) {
+    _delay = !d.isNegative ? d : Duration();
+  }
 
   /// How long to wait for request before triggering a timeout
-  Duration requestTimeout;
+  Duration get requestTimeout => _requestTimeout;
+
+  /// How long to wait for request before triggering a timeout
+  void set requestTimeout(Duration d) {
+    _requestTimeout = !d.isNegative ? d : Duration();
+  }
 
   /// How many times an api request should be retired upon failure. Default is 3
-  int retries;
+  int get retries => _retries;
+
+  /// How many times an api request should be retired upon failure. Default is 3
+  void set retries(int d) {
+    _retries = d >= 0 ? d : 0;
+  }
 
   /// How messages larger than AWS limit should be handled. Default is truncate.
   CloudWatchLargeMessages get largeMessageBehavior => _largeMessageBehavior;
@@ -333,6 +348,15 @@ class CloudWatch {
   /// Synchronous lock to enforce synchronous request order
   Lock _loggingLock = Lock();
 
+  /// Private version of delay
+  Duration _delay;
+
+  /// Private version of requestTimeout
+  Duration _requestTimeout;
+
+  /// Private version of retries
+  int _retries;
+
   /// CloudWatch Constructor
   CloudWatch(
     this.awsAccessKey,
@@ -342,21 +366,24 @@ class CloudWatch {
     this.streamName,
     this.awsSessionToken,
     delay: const Duration(),
-    this.requestTimeout: const Duration(seconds: 10),
+    requestTimeout: const Duration(seconds: 10),
     retries: 3,
     largeMessageBehavior: CloudWatchLargeMessages.truncate,
     this.raiseFailedLookups: false,
   })  : this._largeMessageBehavior = largeMessageBehavior,
-        this.delay = !delay.isNegative ? delay : Duration(),
-        this.retries = max(0, retries),
+        this._delay = !delay.isNegative ? delay : Duration(),
+        this._requestTimeout =
+            !requestTimeout.isNegative ? requestTimeout : Duration(),
+        this._retries = max(0, retries),
         this.logStack =
             CloudWatchLogStack(largeMessageBehavior: largeMessageBehavior);
 
   /// Sets how long to wait between requests to avoid rate limiting
   ///
   /// Sets the delay to be [delay]
+  @Deprecated('Set the delay property')
   Duration setDelay(Duration delay) {
-    this.delay = !delay.isNegative ? delay : Duration();
+    this.delay = delay;
     _debugPrint(
       2,
       'CloudWatch INFO: Set delay to $delay',
@@ -367,6 +394,7 @@ class CloudWatch {
   /// Sets log group name and log stream name
   ///
   /// Sets the [logGroupName] and [logStreamName]
+  @Deprecated('Set the logGroupName and logStreamName properties')
   void setLoggingParameters(String? logGroupName, String? logStreamName) {
     groupName = logGroupName;
     streamName = logStreamName;

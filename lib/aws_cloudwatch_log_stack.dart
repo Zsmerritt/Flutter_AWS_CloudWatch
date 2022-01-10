@@ -5,9 +5,9 @@ import 'aws_cloudwatch_cloudwatch_log.dart';
 import 'aws_cloudwatch_util.dart';
 
 /// AWS Hard Limits
-const int _AWS_MAX_BYTE_MESSAGE_SIZE = 262118;
-const int _AWS_MAX_BYTE_BATCH_SIZE = 1048550;
-const int _AWS_MAX_MESSAGES_PER_BATCH = 10000;
+const int AWS_MAX_BYTE_MESSAGE_SIZE = 262118;
+const int AWS_MAX_BYTE_BATCH_SIZE = 1048550;
+const int AWS_MAX_MESSAGES_PER_BATCH = 10000;
 
 /// A class that automatically splits and handles logs according to AWS hard limits
 class CloudWatchLogStack {
@@ -16,7 +16,7 @@ class CloudWatchLogStack {
 
   /// CloudWatchLogStack constructor
   CloudWatchLogStack({
-    required this.largeMessageBehavior,
+    this.largeMessageBehavior: CloudWatchLargeMessages.truncate,
   });
 
   /// The stack of logs that holds presplt CloudWatchLogs
@@ -34,7 +34,7 @@ class CloudWatchLogStack {
     for (String msg in logStrings) {
       List<int> bytes = utf8.encode(msg);
       // AWS hard limit on message size
-      if (bytes.length <= _AWS_MAX_BYTE_MESSAGE_SIZE) {
+      if (bytes.length <= AWS_MAX_BYTE_MESSAGE_SIZE) {
         addToStack(time, bytes);
       } else {
         switch (largeMessageBehavior) {
@@ -43,7 +43,7 @@ class CloudWatchLogStack {
           case CloudWatchLargeMessages.truncate:
             // plus 3 to account for "..."
             int toRemove =
-                ((bytes.length - _AWS_MAX_BYTE_MESSAGE_SIZE + 3) / 2).ceil();
+                ((bytes.length - AWS_MAX_BYTE_MESSAGE_SIZE + 3) / 2).ceil();
             int midPoint = (bytes.length / 2).floor();
             List<int> newMessage = bytes.sublist(0, midPoint - toRemove) +
                 // "..." in bytes (2e)
@@ -54,12 +54,12 @@ class CloudWatchLogStack {
 
           /// Split up large message into multiple smaller ones
           case CloudWatchLargeMessages.split:
-            while (bytes.length > _AWS_MAX_BYTE_MESSAGE_SIZE) {
+            while (bytes.length > AWS_MAX_BYTE_MESSAGE_SIZE) {
               addToStack(
                 time,
-                bytes.sublist(0, _AWS_MAX_BYTE_MESSAGE_SIZE),
+                bytes.sublist(0, AWS_MAX_BYTE_MESSAGE_SIZE),
               );
-              bytes = bytes.sublist(_AWS_MAX_BYTE_MESSAGE_SIZE);
+              bytes = bytes.sublist(AWS_MAX_BYTE_MESSAGE_SIZE);
             }
             addToStack(time, bytes);
             break;
@@ -73,7 +73,7 @@ class CloudWatchLogStack {
             throw CloudWatchException(
               message:
                   'Provided log message is too long. Individual message size limit is '
-                  '$_AWS_MAX_BYTE_MESSAGE_SIZE. log message: $msg',
+                  '$AWS_MAX_BYTE_MESSAGE_SIZE. log message: $msg',
               stackTrace: StackTrace.current,
             );
         }
@@ -88,8 +88,8 @@ class CloudWatchLogStack {
   void addToStack(int time, List<int> bytes) {
     // empty list / aws hard limits on batch sizes
     if (logStack.length == 0 ||
-        logStack.last.logs.length >= _AWS_MAX_MESSAGES_PER_BATCH ||
-        logStack.last.messageSize + bytes.length > _AWS_MAX_BYTE_BATCH_SIZE) {
+        logStack.last.logs.length >= AWS_MAX_MESSAGES_PER_BATCH ||
+        logStack.last.messageSize + bytes.length > AWS_MAX_BYTE_BATCH_SIZE) {
       logStack.add(
         CloudWatchLog(
           logs: [

@@ -1,7 +1,10 @@
 ## [0.4.7] - 2022/01/09
 
-* Added note about android premissions to readme
+* Added note about android permissions to readme
 * Added coverage
+* Added unit tests
+* Deprecated setDelay & setLoggingParameters
+* Fixed issue where delay, requestTimeout, and retries could be set negative
 
 ## [0.4.6+2] - 2022/01/08
 
