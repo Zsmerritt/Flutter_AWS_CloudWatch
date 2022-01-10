@@ -9,7 +9,7 @@ environment:
 dependencies:
   aws_request: ^0.3.0 # Make request to AWS
   synchronized: ^3.0.0 # Synchronize requests to ensure valid keys
-  http: ^0.13.4 #Http package for parsing AWS responses correctly on Multiple Platforms 
+  http: ^0.13.0 #Http package for parsing AWS responses correctly on Multiple Platforms 
 
 dev_dependencies:
   test: ^1.16.0
