@@ -6,12 +6,6 @@
     <a href="https://pub.dev/packages/aws_cloudwatch">
         <img alt="Pub Package" src="https://img.shields.io/pub/v/aws_cloudwatch.svg?logo=dart&logoColor=00b9fc">
     </a>
-    <a href="https://github.com/Zsmerritt/Flutter_AWS_CloudWatch/commits/main">
-        <img alt="Last Commit" src="https://img.shields.io/github/last-commit/Zsmerritt/Flutter_AWS_CloudWatch?logo=git&logoColor=white">
-    </a>
-    <a href="https://github.com/Zsmerritt/Flutter_AWS_CloudWatch/pulls">
-        <img alt="Pull Requests" src="https://img.shields.io/github/issues-pr/Zsmerritt/Flutter_AWS_CloudWatch?logo=github&logoColor=white">
-    </a>
     <a href="https://github.com/Zsmerritt/Flutter_AWS_CloudWatch/issues">
         <img alt="Open Issues" src="https://img.shields.io/github/issues/Zsmerritt/Flutter_AWS_CloudWatch?logo=github&logoColor=white">
     </a>
@@ -23,6 +17,9 @@
     </a>
     <a href="https://github.com/Zsmerritt/Flutter_AWS_CloudWatch/actions/workflows/dart.yml">
         <img alt="CI pipeline status" src="https://github.com/Zsmerritt/Flutter_AWS_CloudWatch/actions/workflows/dart.yml/badge.svg">
+    </a>
+    <a href="https://codecov.io/gh/Zsmerritt/Flutter_AWS_CloudWatch">
+      <img src="https://codecov.io/gh/Zsmerritt/Flutter_AWS_CloudWatch/branch/main/graph/badge.svg?token=IYYGJNJEA1"/>
     </a>
 </p>
 
