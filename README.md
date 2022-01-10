@@ -131,6 +131,13 @@ flutter errors see example 3.
 
 ## Important Notes:
 
+### Android
+If running on android, make sure you have
+
+`<uses-permission android:name="android.permission.INTERNET" />`
+
+in your app's `android/app/src/main/AndroidManifest.xml`
+
 ### Using Temporary Credentials
 
 Temporary credentials are supported as of version 0.4.6. Use the optional parameter sessionToken to specify your session

@@ -1,3 +1,7 @@
+## [0.4.7] - 2022/01/09
+
+* Added note about android premissions to readme
+
 ## [0.4.6+2] - 2022/01/08
 
 * Updated aws_request version to fix issue related to web requests
