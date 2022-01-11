@@ -640,7 +640,8 @@ class CloudWatch {
   bool _checkError(dynamic error) {
     if (error != null) {
       if (!raiseFailedLookups &&
-          error.toString().contains('XMLHttpRequest error')) {
+              error.toString().contains('XMLHttpRequest error') ||
+          error.toString().contains('Failed host lookup')) {
         print(
           'CloudWatch: Failed host lookup! This usually means internet '
           'is unavailable but could also indicate a problem with the '
