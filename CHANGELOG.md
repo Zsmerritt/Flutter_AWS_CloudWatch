@@ -1,7 +1,8 @@
-## [0.4.7] - 2022/01/09
+## [0.4.7] - 2022/01/10
 
-* Added note about android premissions to readme
+* Added note about android permissions to readme
 * Added coverage
+* Updated `aws_request` to 0.3.0 to resolve issues on web [khurram72]
 
 ## [0.4.6+2] - 2022/01/08
 
