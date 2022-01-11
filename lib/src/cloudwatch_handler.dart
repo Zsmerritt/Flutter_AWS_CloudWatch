@@ -1,6 +1,6 @@
 import 'dart:math';
 
-import 'package:aws_cloudwatch/cloudwatch.dart';
+import 'package:aws_cloudwatch/aws_cloudwatch.dart';
 import 'package:aws_cloudwatch/src/util.dart';
 
 /// A CloudWatch handler class to easily manage multiple CloudWatch instances

@@ -4,7 +4,7 @@
 
 library CloudWatch;
 
-import 'src/aws_cloudwatch.dart' show AwsCloudWatch;
+import 'src/cloudwatch.dart' show AwsCloudWatch;
 import 'src/util.dart' show CloudWatchLargeMessages, CloudWatchException;
 
 export 'src/util.dart' show CloudWatchLargeMessages, CloudWatchException;

@@ -1,4 +1,4 @@
-import 'package:aws_cloudwatch/aws_cloudwatch.dart';
+import 'package:aws_cloudwatch/aws_cloudwatch_handler.dart';
 import 'package:intl/intl.dart';
 
 /// QUICK START LOGGING FILE

@@ -1,5 +1,5 @@
-import 'package:aws_cloudwatch/cloudwatch.dart';
-import 'package:aws_cloudwatch/src/aws_cloudwatch.dart';
+import 'package:aws_cloudwatch/aws_cloudwatch.dart';
+import 'package:aws_cloudwatch/src/cloudwatch.dart';
 import 'package:test/test.dart';
 
 void main() {
