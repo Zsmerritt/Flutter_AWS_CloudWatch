@@ -6,11 +6,11 @@ import 'dart:math';
 
 import 'package:aws_request/aws_request.dart';
 import 'package:synchronized/synchronized.dart';
-import 'package:universal_io/io.dart';
 
 import 'aws_cloudwatch_cloudwatch_log.dart';
 import 'aws_cloudwatch_log_stack.dart';
 import 'aws_cloudwatch_util.dart';
+import 'package:http/http.dart' as http;
 
 /// Enum representing what should happen to messages that are too big
 /// to be sent as a single message. This limit is 262118 utf8 bytes
@@ -493,7 +493,7 @@ class CloudWatch {
       logStreamCreated = true;
       String body =
           '{"logGroupName": "$groupName","logStreamName": "$streamName"}';
-      HttpClientResponse log;
+      http.Response log;
       Map<String, String> headers = {};
       Map<String, String> queryString = {};
       if (awsSessionToken != null) {
@@ -560,7 +560,7 @@ class CloudWatch {
       );
       logGroupCreated = true;
       String body = '{"logGroupName": "$groupName"}';
-      HttpClientResponse log;
+      http.Response log;
       Map<String, String> headers = {};
       Map<String, String> queryString = {};
       if (awsSessionToken != null) {
@@ -668,8 +668,8 @@ class CloudWatch {
   bool _checkError(dynamic error) {
     if (error != null) {
       if (!raiseFailedLookups &&
-          error is SocketException &&
-          error.message.startsWith('Failed host lookup')) {
+              error.toString().contains('XMLHttpRequest error') ||
+          error.toString().contains('Failed host lookup')) {
         print(
           'CloudWatch: Failed host lookup! This usually means internet '
           'is unavailable but could also indicate a problem with the '
@@ -715,7 +715,7 @@ class CloudWatch {
     dynamic error;
     for (int i = 0; i < retries && !success; i++) {
       try {
-        HttpClientResponse? response = await _sendRequest(_logs);
+        http.Response? response = await _sendRequest(_logs);
         success = await _handleResponse(response);
       } catch (e) {
         _debugPrint(
@@ -737,9 +737,9 @@ class CloudWatch {
   }
 
   /// Creates an AwsRequest and sends request
-  Future<HttpClientResponse?> _sendRequest(CloudWatchLog _logs) async {
+  Future<http.Response?> _sendRequest(CloudWatchLog _logs) async {
     String body = _createBody(_logs.logs);
-    HttpClientResponse? result;
+    http.Response? result;
     Map<String, String> headers = {};
     Map<String, String> queryString = {};
     if (awsSessionToken != null) {
@@ -768,7 +768,7 @@ class CloudWatch {
   ///
   /// Returns whether or not the call was successful
   Future<bool> _handleResponse(
-    HttpClientResponse? response,
+    http.Response? response,
   ) async {
     if (response == null) {
       _debugPrint(
