@@ -7,9 +7,9 @@ environment:
   sdk: '>=2.12.0 <3.0.0'
 
 dependencies:
-  aws_request: ^0.2.1 # Make request to AWS
+  aws_request: ^0.3.0 # Make request to AWS
   synchronized: ^3.0.0 # Synchronize requests to ensure valid keys
-  universal_io: ^2.0.0 # Web support\
+  http: ^0.13.0 #Http package for parsing AWS responses correctly on Multiple Platforms 
 
 dev_dependencies:
   test: ^1.16.0
