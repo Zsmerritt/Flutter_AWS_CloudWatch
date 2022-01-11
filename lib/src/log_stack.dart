@@ -1,8 +1,8 @@
 import 'dart:convert';
 
-import 'aws_cloudwatch.dart';
-import 'aws_cloudwatch_cloudwatch_log.dart';
-import 'aws_cloudwatch_util.dart';
+import 'package:aws_cloudwatch/src/util.dart';
+
+import 'log.dart';
 
 /// AWS Hard Limits
 const int AWS_MAX_BYTE_MESSAGE_SIZE = 262118;

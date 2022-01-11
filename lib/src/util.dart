@@ -1,9 +1,10 @@
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
 
 /// AWS Hard Limits
-const String _GROUP_NAME_REGEX_PATTERN = r'^[\.\-_/#A-Za-z0-9]+$';
-const String _STREAM_NAME_REGEX_PATTERN = r'^[^:*]*$';
+const String GROUP_NAME_REGEX_PATTERN = r'^[\.\-_/#A-Za-z0-9]+$';
+const String STREAM_NAME_REGEX_PATTERN = r'^[^:*]*$';
 
 /// Special exception class to identify exceptions from CloudWatch
 class CloudWatchException implements Exception {
@@ -32,10 +33,10 @@ class CloudWatchException implements Exception {
 ///
 /// Throws [CloudWatchException] if bad name is found
 void validateLogStreamName(String? streamName) {
-  _validateName(
+  validateName(
     streamName,
     'streamName',
-    _STREAM_NAME_REGEX_PATTERN,
+    STREAM_NAME_REGEX_PATTERN,
   );
 }
 
@@ -43,15 +44,15 @@ void validateLogStreamName(String? streamName) {
 ///
 /// Throws [CloudWatchException] if bad name is found
 void validateLogGroupName(String? groupName) {
-  _validateName(
+  validateName(
     groupName,
     'groupName',
-    _GROUP_NAME_REGEX_PATTERN,
+    GROUP_NAME_REGEX_PATTERN,
   );
 }
 
 /// Validates [name] to have a regex match with [pattern] and checks length requirements
-void _validateName(String? name, String type, String pattern) {
+void validateName(String? name, String type, String pattern) {
   if (name == null) {
     throw CloudWatchException(
       message: 'No $type name provided. Set $type and then try again.',
@@ -128,4 +129,30 @@ class AwsResponse {
     }
     return sb.toString();
   }
+}
+
+/// Enum representing what should happen to messages that are too big
+/// to be sent as a single message. This limit is 262118 utf8 bytes
+///
+/// truncate: Replace the middle of the message with "...", making it 262118
+///           utf8 bytes long. This is the default value.
+///
+/// ignore: Ignore large messages. They will not be sent
+///
+/// split: Split large messages into multiple smaller messages and send them
+///
+/// error: Throw an error when a large message is encountered
+enum CloudWatchLargeMessages {
+  /// Replace the middle of the message with "...", making it 262118 utf8 bytes
+  /// long. This is the default value.
+  truncate,
+
+  /// Ignore large messages. They will not be sent
+  ignore,
+
+  /// Split large messages into multiple smaller messages and send them
+  split,
+
+  /// Throw an error when a large message is encountered
+  error,
 }

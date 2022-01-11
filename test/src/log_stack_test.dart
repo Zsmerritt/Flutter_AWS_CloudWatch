@@ -1,7 +1,6 @@
-import 'package:aws_cloudwatch/aws_cloudwatch.dart';
-import 'package:aws_cloudwatch/aws_cloudwatch_cloudwatch_log.dart';
-import 'package:aws_cloudwatch/aws_cloudwatch_log_stack.dart';
-import 'package:aws_cloudwatch/aws_cloudwatch_util.dart';
+import 'package:aws_cloudwatch/src/log.dart';
+import 'package:aws_cloudwatch/src/log_stack.dart';
+import 'package:aws_cloudwatch/src/util.dart';
 import 'package:test/test.dart';
 
 void main() {

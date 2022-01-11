@@ -1,13 +1,19 @@
-import 'package:aws_cloudwatch/aws_cloudwatch.dart';
-import 'package:aws_cloudwatch/aws_cloudwatch_util.dart';
+import 'package:aws_cloudwatch/cloudwatch.dart';
+import 'package:aws_cloudwatch/src/aws_cloudwatch_handler.dart';
 import 'package:test/test.dart';
 
 void main() {
   test('CloudWatchHandler - creation', () {
-    final CloudWatchHandler cloudWatchHandler = CloudWatchHandler(
+    final AwsCloudWatchHandler cloudWatchHandler = AwsCloudWatchHandler(
       awsAccessKey: 'awsAccessKey',
       awsSecretKey: 'awsSecretKey',
-      region: 'us-west-2',
+      region: 'region',
+      awsSessionToken: 'awsSessionToken',
+      delay: Duration(),
+      requestTimeout: Duration(seconds: 10),
+      retries: 3,
+      largeMessageBehavior: CloudWatchLargeMessages.truncate,
+      raiseFailedLookups: false,
     );
     try {
       cloudWatchHandler.createInstance(
@@ -50,10 +56,16 @@ void main() {
   });
 
   test('CloudWatchHandler - delay', () {
-    final CloudWatchHandler cloudWatchHandler = CloudWatchHandler(
+    final AwsCloudWatchHandler cloudWatchHandler = AwsCloudWatchHandler(
       awsAccessKey: 'awsAccessKey',
       awsSecretKey: 'awsSecretKey',
-      region: 'us-west-2',
+      region: 'region',
+      awsSessionToken: 'awsSessionToken',
+      delay: Duration(),
+      requestTimeout: Duration(seconds: 10),
+      retries: 3,
+      largeMessageBehavior: CloudWatchLargeMessages.truncate,
+      raiseFailedLookups: false,
     );
     CloudWatch cloudWatch = cloudWatchHandler.createInstance(
       logGroupName: 'logGroupName',
@@ -67,10 +79,16 @@ void main() {
   });
 
   test('CloudWatchHandler - requestTimeout', () {
-    final CloudWatchHandler cloudWatchHandler = CloudWatchHandler(
+    final AwsCloudWatchHandler cloudWatchHandler = AwsCloudWatchHandler(
       awsAccessKey: 'awsAccessKey',
       awsSecretKey: 'awsSecretKey',
-      region: 'us-west-2',
+      region: 'region',
+      awsSessionToken: 'awsSessionToken',
+      delay: Duration(),
+      requestTimeout: Duration(seconds: 10),
+      retries: 3,
+      largeMessageBehavior: CloudWatchLargeMessages.truncate,
+      raiseFailedLookups: false,
     );
     CloudWatch cloudWatch = cloudWatchHandler.createInstance(
       logGroupName: 'logGroupName',
@@ -84,10 +102,16 @@ void main() {
   });
 
   test('CloudWatchHandler - retries', () {
-    final CloudWatchHandler cloudWatchHandler = CloudWatchHandler(
+    final AwsCloudWatchHandler cloudWatchHandler = AwsCloudWatchHandler(
       awsAccessKey: 'awsAccessKey',
       awsSecretKey: 'awsSecretKey',
-      region: 'us-west-2',
+      region: 'region',
+      awsSessionToken: 'awsSessionToken',
+      delay: Duration(),
+      requestTimeout: Duration(seconds: 10),
+      retries: 3,
+      largeMessageBehavior: CloudWatchLargeMessages.truncate,
+      raiseFailedLookups: false,
     );
     CloudWatch cloudWatch = cloudWatchHandler.createInstance(
       logGroupName: 'logGroupName',
@@ -101,10 +125,16 @@ void main() {
   });
 
   test('CloudWatchHandler - largeMessageBehavior', () {
-    final CloudWatchHandler cloudWatchHandler = CloudWatchHandler(
+    final AwsCloudWatchHandler cloudWatchHandler = AwsCloudWatchHandler(
       awsAccessKey: 'awsAccessKey',
       awsSecretKey: 'awsSecretKey',
-      region: 'us-west-2',
+      region: 'region',
+      awsSessionToken: 'awsSessionToken',
+      delay: Duration(),
+      requestTimeout: Duration(seconds: 10),
+      retries: 3,
+      largeMessageBehavior: CloudWatchLargeMessages.truncate,
+      raiseFailedLookups: false,
     );
     CloudWatch cloudWatch = cloudWatchHandler.createInstance(
       logGroupName: 'logGroupName',
@@ -120,10 +150,16 @@ void main() {
   });
 
   test('CloudWatchHandler - raiseFailedLookups', () {
-    final CloudWatchHandler cloudWatchHandler = CloudWatchHandler(
+    final AwsCloudWatchHandler cloudWatchHandler = AwsCloudWatchHandler(
       awsAccessKey: 'awsAccessKey',
       awsSecretKey: 'awsSecretKey',
-      region: 'us-west-2',
+      region: 'region',
+      awsSessionToken: 'awsSessionToken',
+      delay: Duration(),
+      requestTimeout: Duration(seconds: 10),
+      retries: 3,
+      largeMessageBehavior: CloudWatchLargeMessages.truncate,
+      raiseFailedLookups: false,
     );
     CloudWatch cloudWatch = cloudWatchHandler.createInstance(
       logGroupName: 'logGroupName',
