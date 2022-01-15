@@ -1,11 +1,12 @@
 import 'dart:math';
 
-import 'package:aws_cloudwatch/aws_cloudwatch.dart';
+import 'package:aws_cloudwatch/src/cloudwatch.dart';
 import 'package:aws_cloudwatch/src/util.dart';
+import 'package:http/http.dart';
 
 /// A CloudWatch handler class to easily manage multiple CloudWatch instances
 class AwsCloudWatchHandler {
-  Map<String, CloudWatch> _logInstances = {};
+  Map<String, AwsCloudWatch> logInstances = {};
 
   /// Private version of access key
   String _awsAccessKey;
@@ -13,10 +14,10 @@ class AwsCloudWatchHandler {
   /// Your AWS access key
   void set awsAccessKey(String awsAccessKey) {
     // Updates all instances with new key. Useful for temp credentials
-    for (CloudWatch cw in _logInstances.values) {
+    for (AwsCloudWatch cw in logInstances.values) {
       cw.awsAccessKey = awsAccessKey;
-      _awsAccessKey = awsAccessKey;
     }
+    _awsAccessKey = awsAccessKey;
   }
 
   /// Your AWS access key
@@ -28,10 +29,10 @@ class AwsCloudWatchHandler {
   /// Your AWS secret key
   void set awsSecretKey(String awsSecretKey) {
     // Updates all instances with new key. Useful for temp credentials
-    for (CloudWatch cw in _logInstances.values) {
+    for (AwsCloudWatch cw in logInstances.values) {
       cw.awsSecretKey = awsSecretKey;
-      _awsSecretKey = awsSecretKey;
     }
+    _awsSecretKey = awsSecretKey;
   }
 
   /// Your AWS secret key
@@ -43,10 +44,10 @@ class AwsCloudWatchHandler {
   /// Your AWS session token
   void set awsSessionToken(String? awsSessionToken) {
     // Updates all instances with new key. Useful for temp credentials
-    for (CloudWatch cw in _logInstances.values) {
+    for (AwsCloudWatch cw in logInstances.values) {
       cw.awsSessionToken = awsSessionToken;
-      _awsSessionToken = awsSessionToken;
     }
+    _awsSessionToken = awsSessionToken;
   }
 
   /// Your AWS session token
@@ -60,10 +61,10 @@ class AwsCloudWatchHandler {
 
   /// How long to wait between requests to avoid rate limiting (suggested value is Duration(milliseconds: 200))
   void set delay(Duration val) {
-    for (CloudWatch cw in _logInstances.values) {
+    for (AwsCloudWatch cw in logInstances.values) {
       cw.delay = val;
-      _delay = val;
     }
+    _delay = val;
   }
 
   /// private version of [delay]
@@ -74,10 +75,10 @@ class AwsCloudWatchHandler {
 
   /// How long to wait for request before triggering a timeout
   void set requestTimeout(Duration val) {
-    for (CloudWatch cw in _logInstances.values) {
+    for (AwsCloudWatch cw in logInstances.values) {
       cw.requestTimeout = val;
-      _requestTimeout = val;
     }
+    _requestTimeout = val;
   }
 
   /// private version of [requestTimeout]
@@ -88,10 +89,10 @@ class AwsCloudWatchHandler {
 
   /// How many times an api request should be retired upon failure. Default is 3
   void set retries(int val) {
-    for (CloudWatch cw in _logInstances.values) {
+    for (AwsCloudWatch cw in logInstances.values) {
       cw.retries = val;
-      _retries = val;
     }
+    _retries = val;
   }
 
   /// private version of [largeMessageBehavior]
@@ -102,7 +103,7 @@ class AwsCloudWatchHandler {
 
   /// How messages larger than AWS limit should be handled. Default is truncate.
   void set largeMessageBehavior(CloudWatchLargeMessages val) {
-    for (CloudWatch cw in _logInstances.values) {
+    for (AwsCloudWatch cw in logInstances.values) {
       cw.largeMessageBehavior = val;
     }
     _largeMessageBehavior = val;
@@ -116,7 +117,7 @@ class AwsCloudWatchHandler {
 
   /// Whether exceptions should be raised on failed lookups (usually no internet)
   void set raiseFailedLookups(bool val) {
-    for (CloudWatch cw in _logInstances.values) {
+    for (AwsCloudWatch cw in logInstances.values) {
       cw.raiseFailedLookups = val;
     }
     _raiseFailedLookups = val;
@@ -124,6 +125,14 @@ class AwsCloudWatchHandler {
 
   /// private version of [raiseFailedLookups]
   bool _raiseFailedLookups;
+
+  /// Testing Variables
+
+  /// Function used to mock requests
+  Future<Response> Function(Request)? mockFunction;
+
+  /// Whether we are mocking requests
+  bool mockCloudWatch;
 
   /// CloudWatchHandler Constructor
   AwsCloudWatchHandler({
@@ -136,6 +145,8 @@ class AwsCloudWatchHandler {
     required retries,
     required largeMessageBehavior,
     required raiseFailedLookups,
+    this.mockCloudWatch: false,
+    this.mockFunction,
   })  : this._awsAccessKey = awsAccessKey,
         this._awsSecretKey = awsSecretKey,
         this._awsSessionToken = awsSessionToken,
@@ -150,23 +161,23 @@ class AwsCloudWatchHandler {
   ///
   /// Uses the [logGroupName] and the [logStreamName] to find the correct
   /// CloudWatch instance. Returns null if it doesn't exist
-  CloudWatch? getInstance({
+  AwsCloudWatch? getInstance({
     required String logGroupName,
     required String logStreamName,
   }) {
     String instanceName = '$logGroupName.$logStreamName';
-    return _logInstances[instanceName];
+    return logInstances[instanceName];
   }
 
   /// Logs the provided message to the provided log group and log stream
   ///
   /// Logs a single [msg] to [logStreamName] under the group [logGroupName]
-  void log({
+  Future<void> log({
     required String msg,
     required String logGroupName,
     required String logStreamName,
-  }) {
-    logMany(
+  }) async {
+    await logMany(
       messages: [msg],
       logGroupName: logGroupName,
       logStreamName: logStreamName,
@@ -178,12 +189,12 @@ class AwsCloudWatchHandler {
   /// Logs a list of string [messages] to [logStreamName] under the group [logGroupName]
   ///
   /// Note: using logMany will result in all logs having the same timestamp
-  void logMany({
+  Future<void> logMany({
     required List<String> messages,
     required String logGroupName,
     required String logStreamName,
-  }) {
-    CloudWatch instance = getInstance(
+  }) async {
+    AwsCloudWatch instance = getInstance(
           logGroupName: logGroupName,
           logStreamName: logStreamName,
         ) ??
@@ -191,23 +202,23 @@ class AwsCloudWatchHandler {
           logGroupName: logGroupName,
           logStreamName: logStreamName,
         );
-    instance.logMany(messages);
+    await instance.log(messages);
   }
 
   /// Creates a CloudWatch instance.
   ///
   /// Calling any log function will call this as needed automatically
-  CloudWatch createInstance({
+  AwsCloudWatch createInstance({
     required String logGroupName,
     required String logStreamName,
   }) {
     validateLogGroupName(logGroupName);
     validateLogStreamName(logStreamName);
     String instanceName = '$logGroupName.$logStreamName';
-    CloudWatch instance = CloudWatch(
-      awsAccessKey,
-      awsSecretKey,
-      region,
+    AwsCloudWatch instance = AwsCloudWatch(
+      awsAccessKey: awsAccessKey,
+      awsSecretKey: awsSecretKey,
+      region: region,
       groupName: logGroupName,
       streamName: logStreamName,
       awsSessionToken: awsSessionToken,
@@ -216,8 +227,10 @@ class AwsCloudWatchHandler {
       retries: retries,
       largeMessageBehavior: largeMessageBehavior,
       raiseFailedLookups: raiseFailedLookups,
+      mockCloudWatch: mockCloudWatch,
+      mockFunction: mockFunction,
     );
-    _logInstances[instanceName] = instance;
+    logInstances[instanceName] = instance;
     return instance;
   }
 }

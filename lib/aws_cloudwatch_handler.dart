@@ -96,7 +96,7 @@ class CloudWatchHandler {
     return _handler.getInstance(
       logGroupName: logGroupName,
       logStreamName: logStreamName,
-    );
+    ) as CloudWatch;
   }
 
   /// Logs the provided message to the provided log group and log stream
@@ -141,6 +141,6 @@ class CloudWatchHandler {
     return _handler.createInstance(
       logGroupName: logGroupName,
       logStreamName: logStreamName,
-    );
+    ) as CloudWatch;
   }
 }

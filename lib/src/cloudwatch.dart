@@ -4,6 +4,7 @@ import 'dart:math';
 
 import 'package:aws_cloudwatch/src/util.dart';
 import 'package:aws_request/aws_request.dart';
+import 'package:aws_request/testing.dart';
 import 'package:http/http.dart';
 import 'package:synchronized/synchronized.dart';
 
@@ -110,6 +111,14 @@ class AwsCloudWatch {
   /// Private version of retries
   int _retries;
 
+  /// Testing Variables
+
+  /// Function used to mock requests
+  Future<Response> Function(Request)? mockFunction;
+
+  /// Whether we are mocking requests
+  bool mockCloudWatch;
+
   /// CloudWatch Constructor
   AwsCloudWatch({
     required this.awsAccessKey,
@@ -123,13 +132,18 @@ class AwsCloudWatch {
     required retries,
     required largeMessageBehavior,
     required this.raiseFailedLookups,
+    this.mockCloudWatch: false,
+    this.mockFunction,
   })  : this._largeMessageBehavior = largeMessageBehavior,
         this._delay = !delay.isNegative ? delay : Duration(),
         this._requestTimeout =
             !requestTimeout.isNegative ? requestTimeout : Duration(),
         this._retries = max(0, retries),
         this.logStack =
-            CloudWatchLogStack(largeMessageBehavior: largeMessageBehavior);
+            CloudWatchLogStack(largeMessageBehavior: largeMessageBehavior) {
+    validateLogGroupName(groupName);
+    validateLogStreamName(streamName);
+  }
 
   /// Sets console verbosity level.
   /// Useful for debugging.
@@ -197,14 +211,6 @@ class AwsCloudWatch {
       String body =
           '{"logGroupName": "$groupName","logStreamName": "$streamName"}';
       Response result;
-      Map<String, String> headers = {};
-      Map<String, String> queryString = {};
-      if (awsSessionToken != null) {
-        headers['X-Amz-Security-Token'] = awsSessionToken!;
-      }
-      if (requestTimeout.inSeconds > 0 && requestTimeout.inSeconds < 604800) {
-        queryString['X-Amz-Expires'] = requestTimeout.inSeconds.toString();
-      }
       try {
         result = await sendRequest(
           body: body,
@@ -255,14 +261,6 @@ class AwsCloudWatch {
       logGroupCreated = true;
       String body = '{"logGroupName": "$groupName"}';
       Response result;
-      Map<String, String> headers = {};
-      Map<String, String> queryString = {};
-      if (awsSessionToken != null) {
-        headers['X-Amz-Security-Token'] = awsSessionToken!;
-      }
-      if (requestTimeout.inSeconds > 0 && requestTimeout.inSeconds < 604800) {
-        queryString['X-Amz-Expires'] = requestTimeout.inSeconds.toString();
-      }
       try {
         result = await sendRequest(
           body: body,
@@ -436,13 +434,26 @@ class AwsCloudWatch {
     if (requestTimeout.inSeconds > 0 && requestTimeout.inSeconds < 604800) {
       queryString['X-Amz-Expires'] = requestTimeout.inSeconds.toString();
     }
-    return await AwsRequest(
-      awsAccessKey,
-      awsSecretKey,
-      region,
-      service: 'logs',
-      timeout: requestTimeout,
-    ).send(
+    dynamic awsRequest;
+    if (mockCloudWatch) {
+      awsRequest = MockAwsRequest(
+        awsAccessKey,
+        awsSecretKey,
+        region,
+        service: 'logs',
+        timeout: requestTimeout,
+        mockFunction: mockFunction!,
+      );
+    } else {
+      awsRequest = AwsRequest(
+        awsAccessKey,
+        awsSecretKey,
+        region,
+        service: 'logs',
+        timeout: requestTimeout,
+      );
+    }
+    return await awsRequest.send(
       AwsRequestType.POST,
       jsonBody: body,
       target: target,
