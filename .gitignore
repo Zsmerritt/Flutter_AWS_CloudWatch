@@ -74,3 +74,4 @@ build/
 !**/ios/**/default.perspectivev3
 test/coverage_helper_test.dart
 coverage/lcov.info
+*.json

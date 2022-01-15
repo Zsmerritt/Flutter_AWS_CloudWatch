@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:aws_cloudwatch/src/log.dart';
 import 'package:aws_cloudwatch/src/log_stack.dart';
 import 'package:aws_cloudwatch/src/util.dart';
@@ -47,7 +49,7 @@ void main() {
       expect(splitStack.length, 2);
       CloudWatchLog log = splitStack.pop();
       expect(splitStack.length, 1);
-      expect(log.logs.length, 10000);
+      expect(log.logs.length, AWS_MAX_MESSAGES_PER_BATCH);
     });
 
     test('prepend', () {
@@ -92,19 +94,43 @@ void main() {
           largeMessageBehavior: CloudWatchLargeMessages.split,
         );
 
-        splitStack.addLogs(['test' * 262118 * 2]);
+        splitStack.addLogs(['test' * AWS_MAX_BYTE_MESSAGE_SIZE * 2]);
         expect(splitStack.length, 2);
         expect(splitStack.logStack[0].logs.length, 4);
-        expect(splitStack.logStack[0].logs[0]['message'].length, 262118);
-        expect(splitStack.logStack[0].logs[1]['message'].length, 262118);
-        expect(splitStack.logStack[0].logs[2]['message'].length, 262118);
-        expect(splitStack.logStack[0].logs[3]['message'].length, 262118);
+        expect(
+          splitStack.logStack[0].logs[0]['message'].length,
+          AWS_MAX_BYTE_MESSAGE_SIZE,
+        );
+        expect(
+          splitStack.logStack[0].logs[1]['message'].length,
+          AWS_MAX_BYTE_MESSAGE_SIZE,
+        );
+        expect(
+          splitStack.logStack[0].logs[2]['message'].length,
+          AWS_MAX_BYTE_MESSAGE_SIZE,
+        );
+        expect(
+          splitStack.logStack[0].logs[3]['message'].length,
+          AWS_MAX_BYTE_MESSAGE_SIZE,
+        );
         expect(splitStack.logStack[0].messageSize, 1048472);
         expect(splitStack.logStack[1].logs.length, 4);
-        expect(splitStack.logStack[1].logs[0]['message'].length, 262118);
-        expect(splitStack.logStack[1].logs[1]['message'].length, 262118);
-        expect(splitStack.logStack[1].logs[2]['message'].length, 262118);
-        expect(splitStack.logStack[1].logs[3]['message'].length, 262118);
+        expect(
+          splitStack.logStack[1].logs[0]['message'].length,
+          AWS_MAX_BYTE_MESSAGE_SIZE,
+        );
+        expect(
+          splitStack.logStack[1].logs[1]['message'].length,
+          AWS_MAX_BYTE_MESSAGE_SIZE,
+        );
+        expect(
+          splitStack.logStack[1].logs[2]['message'].length,
+          AWS_MAX_BYTE_MESSAGE_SIZE,
+        );
+        expect(
+          splitStack.logStack[1].logs[3]['message'].length,
+          AWS_MAX_BYTE_MESSAGE_SIZE,
+        );
         expect(splitStack.logStack[1].messageSize, 1048472);
       });
 
@@ -113,13 +139,25 @@ void main() {
           largeMessageBehavior: CloudWatchLargeMessages.split,
         );
         // test splitting large message into smaller chunks
-        splitStack.addLogs(['test' * 262118]);
+        splitStack.addLogs(['test' * AWS_MAX_BYTE_MESSAGE_SIZE]);
         expect(splitStack.length, 1);
         expect(splitStack.logStack[0].logs.length, 4);
-        expect(splitStack.logStack[0].logs[0]['message'].length, 262118);
-        expect(splitStack.logStack[0].logs[1]['message'].length, 262118);
-        expect(splitStack.logStack[0].logs[2]['message'].length, 262118);
-        expect(splitStack.logStack[0].logs[3]['message'].length, 262118);
+        expect(
+          splitStack.logStack[0].logs[0]['message'].length,
+          AWS_MAX_BYTE_MESSAGE_SIZE,
+        );
+        expect(
+          splitStack.logStack[0].logs[1]['message'].length,
+          AWS_MAX_BYTE_MESSAGE_SIZE,
+        );
+        expect(
+          splitStack.logStack[0].logs[2]['message'].length,
+          AWS_MAX_BYTE_MESSAGE_SIZE,
+        );
+        expect(
+          splitStack.logStack[0].logs[3]['message'].length,
+          AWS_MAX_BYTE_MESSAGE_SIZE,
+        );
         expect(splitStack.logStack[0].messageSize, 1048472);
 
         // these messages should not be split
@@ -133,19 +171,22 @@ void main() {
       test('truncate', () {
         CloudWatchLogStack truncateStack = CloudWatchLogStack();
         // test truncating large message
-        List<String> logStrings = ['test' * 262118];
+        List<String> logStrings = ['test' * AWS_MAX_BYTE_MESSAGE_SIZE];
         truncateStack.addLogs(logStrings);
         expect(truncateStack.length, 1);
         expect(truncateStack.logStack[0].logs.length, 1);
-        expect(truncateStack.logStack[0].logs[0]['message'].length, 262117);
-        expect(truncateStack.logStack[0].messageSize, 262117);
+        expect(truncateStack.logStack[0].logs[0]['message'].length,
+            AWS_MAX_BYTE_MESSAGE_SIZE);
+        expect(
+            truncateStack.logStack[0].messageSize, AWS_MAX_BYTE_MESSAGE_SIZE);
 
         // these messages should not be truncated
         truncateStack.addLogs(['test' * 65529]);
         expect(truncateStack.length, 1);
         expect(truncateStack.logStack[0].logs.length, 2);
         expect(truncateStack.logStack[0].logs[1]['message'].length, 262116);
-        expect(truncateStack.logStack[0].messageSize, 262116 + 262117);
+        expect(truncateStack.logStack[0].messageSize,
+            262116 + AWS_MAX_BYTE_MESSAGE_SIZE);
       });
 
       test('ignore', () {
@@ -153,7 +194,7 @@ void main() {
           largeMessageBehavior: CloudWatchLargeMessages.ignore,
         );
         // test ignoreing large messages
-        ignoreStack.addLogs(['test' * 262118]);
+        ignoreStack.addLogs(['test' * AWS_MAX_BYTE_MESSAGE_SIZE]);
         expect(ignoreStack.length, 0);
 
         // these messages should be added
@@ -170,7 +211,7 @@ void main() {
         );
         // test throwing an error on large messages
         try {
-          errorStack.addLogs(['test' * 262118]);
+          errorStack.addLogs(['test' * AWS_MAX_BYTE_MESSAGE_SIZE]);
         } catch (e) {
           expect(e, isA<CloudWatchException>());
         }
@@ -238,6 +279,41 @@ void main() {
         expect(stack.logStack[1].logs[0]['message'], '...');
         expect(stack.logStack[1].logs[0]['timestamp'], 1);
         expect(stack.logStack[1].messageSize, 3);
+      });
+    });
+
+    group('truncate', () {
+      test('limit + 1', () {
+        String msg = '1' * (AWS_MAX_BYTE_MESSAGE_SIZE + 1);
+        List<int> bytes = utf8.encode(msg);
+        List<int> result = CloudWatchLogStack.truncate(bytes);
+        expect(result.length, AWS_MAX_BYTE_MESSAGE_SIZE);
+      });
+      test('limit + 2', () {
+        String msg = '1' * (AWS_MAX_BYTE_MESSAGE_SIZE + 2);
+        List<int> bytes = utf8.encode(msg);
+        List<int> result = CloudWatchLogStack.truncate(bytes);
+        expect(result.length, AWS_MAX_BYTE_MESSAGE_SIZE);
+      });
+    });
+    group('calculateMidpoint', () {
+      test('no split', () {
+        String msg = '1' * (AWS_MAX_BYTE_MESSAGE_SIZE - 1);
+        List<int> bytes = utf8.encode(msg);
+        List<List<int>> result = CloudWatchLogStack.split(bytes);
+        expect(result.length, 1);
+      });
+      test('Limit + 1', () {
+        String msg = '1' * (AWS_MAX_BYTE_MESSAGE_SIZE + 1);
+        List<int> bytes = utf8.encode(msg);
+        List<List<int>> result = CloudWatchLogStack.split(bytes);
+        expect(result.length, 2);
+      });
+      test('Limit + 2', () {
+        String msg = '1' * (AWS_MAX_BYTE_MESSAGE_SIZE + 2);
+        List<int> bytes = utf8.encode(msg);
+        List<List<int>> result = CloudWatchLogStack.split(bytes);
+        expect(result.length, 2);
       });
     });
   });

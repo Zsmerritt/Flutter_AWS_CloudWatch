@@ -37,48 +37,64 @@ class CloudWatchLogStack {
       if (bytes.length <= AWS_MAX_BYTE_MESSAGE_SIZE) {
         addToStack(time, bytes);
       } else {
-        switch (largeMessageBehavior) {
-
-          /// Truncate message by replacing middle with "..."
-          case CloudWatchLargeMessages.truncate:
-            // plus 3 to account for "..."
-            int toRemove =
-                ((bytes.length - AWS_MAX_BYTE_MESSAGE_SIZE + 3) / 2).ceil();
-            int midPoint = (bytes.length / 2).floor();
-            List<int> newMessage = bytes.sublist(0, midPoint - toRemove) +
-                // "..." in bytes (2e)
-                [46, 46, 46] +
-                bytes.sublist(midPoint + toRemove);
-            addToStack(time, newMessage);
-            break;
-
-          /// Split up large message into multiple smaller ones
-          case CloudWatchLargeMessages.split:
-            while (bytes.length > AWS_MAX_BYTE_MESSAGE_SIZE) {
-              addToStack(
-                time,
-                bytes.sublist(0, AWS_MAX_BYTE_MESSAGE_SIZE),
-              );
-              bytes = bytes.sublist(AWS_MAX_BYTE_MESSAGE_SIZE);
-            }
-            addToStack(time, bytes);
-            break;
-
-          /// Ignore the message
-          case CloudWatchLargeMessages.ignore:
-            continue;
-
-          /// Throw an error
-          case CloudWatchLargeMessages.error:
-            throw CloudWatchException(
-              message:
-                  'Provided log message is too long. Individual message size limit is '
-                  '$AWS_MAX_BYTE_MESSAGE_SIZE. log message: $msg',
-              stackTrace: StackTrace.current,
-            );
-        }
+        fixMessage(bytes, time, msg);
       }
     }
+  }
+
+  /// Implements chosen largeMessageBehaviour
+  void fixMessage(List<int> bytes, int time, String msg) {
+    switch (largeMessageBehavior) {
+
+      /// Truncate message by replacing middle with "..."
+      case CloudWatchLargeMessages.truncate:
+        addToStack(time, truncate(bytes));
+        return;
+
+      /// Split up large message into multiple smaller ones
+      case CloudWatchLargeMessages.split:
+        split(bytes).forEach((splitMessage) {
+          addToStack(time, splitMessage);
+        });
+        return;
+
+      /// Ignore the message
+      case CloudWatchLargeMessages.ignore:
+        return;
+
+      /// Throw an error
+      case CloudWatchLargeMessages.error:
+        throw CloudWatchException(
+          message:
+              'Provided log message is too long. Individual message size limit is '
+              '$AWS_MAX_BYTE_MESSAGE_SIZE. log message: $msg',
+          stackTrace: StackTrace.current,
+        );
+    }
+  }
+
+  /// Truncates the middle of a message and replaces it with ...
+  static List<int> truncate(List<int> bytes) {
+    // plus 3 to account for "..."
+    double toRemove = ((bytes.length + 3 - AWS_MAX_BYTE_MESSAGE_SIZE) / 2);
+    int toRemoveFront = toRemove.ceil();
+    int toRemoveBack = toRemove % 1 == 0 ? toRemove.ceil() : toRemove.floor();
+    int midPoint = (bytes.length / 2).floor();
+    return bytes.sublist(0, midPoint - toRemoveFront) +
+        // "..." in bytes (2e)
+        [46, 46, 46] +
+        bytes.sublist(midPoint + toRemoveBack);
+  }
+
+  /// Splits message into smaller chunks
+  static List<List<int>> split(List<int> bytes) {
+    List<List<int>> res = [];
+    while (bytes.length > AWS_MAX_BYTE_MESSAGE_SIZE) {
+      res.add(bytes.sublist(0, AWS_MAX_BYTE_MESSAGE_SIZE));
+      bytes = bytes.sublist(AWS_MAX_BYTE_MESSAGE_SIZE);
+    }
+    if (bytes.length > 0) res.add(bytes);
+    return res;
   }
 
   /// Adds logs to the last CloudWatchLog
