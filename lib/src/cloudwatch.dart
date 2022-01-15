@@ -93,8 +93,26 @@ class AwsCloudWatch {
   /// A log stack that holds queued logs ready to be sent
   CloudWatchLogStack logStack;
 
+  /// Sets console verbosity level.
+  /// Useful for debugging.
+  ///
+  /// 0 - Errors only
+  /// 1 - Status Codes
+  /// 2 - General Info
+  void set verbosity(int level) {
+    level = min(level, 3);
+    level = max(level, 0);
+    _verbosity = level;
+    debugPrint(
+      2,
+      'CloudWatch INFO: Set verbosity to $verbosity',
+    );
+  }
+
+  int get verbosity => _verbosity;
+
   /// Verbosity for debugging
-  int verbosity = 0;
+  int _verbosity = 0;
 
   /// Token provided by aws to ensure logs are received in the correct order
   String? sequenceToken;
@@ -145,107 +163,23 @@ class AwsCloudWatch {
     validateLogStreamName(streamName);
   }
 
-  /// Sets console verbosity level.
-  /// Useful for debugging.
-  /// Hidden by default. Get here with a debugger ;)
-  ///
-  /// 0 - Errors only
-  /// 1 - Status Codes
-  /// 2 - General Info
-  void setVerbosity(int level) {
-    level = min(level, 3);
-    level = max(level, 0);
-    verbosity = level;
-    debugPrint(
-      2,
-      'CloudWatch INFO: Set verbosity to $verbosity',
-    );
-  }
-
   /// prints [msg] if [v] is greater than the verbosity level
-  void debugPrint(int v, String msg) {
+  bool debugPrint(int v, String msg) {
     if (verbosity > v) {
       print(msg);
+      return true;
     }
-  }
-
-  /// Creates a log stream and log group if needed
-  ///
-  /// rethrows any caught errors if ultimately unsuccessful
-  Future<void> createLogStreamAndLogGroup() async {
-    dynamic error;
-    // retries + 1 to account for first try with 0 retries
-    for (int i = 0; i < retries + 1; i++) {
-      try {
-        await createLogStream();
-        return;
-      } on CloudWatchException catch (e) {
-        if (e.type == 'ResourceNotFoundException') {
-          // Create a new log group and try stream creation again
-          await createLogGroup();
-          await createLogStream();
-          return;
-        }
-        error = e;
-      } catch (e) {
-        error = e;
-        debugPrint(
-          0,
-          'CloudWatch ERROR: Failed _createLogStreamAndLogGroup. Retrying ${i + 1}',
-        );
-      }
-    }
-    throw error;
+    return false;
   }
 
   /// Creates a log stream if one hasn't been created yet
   ///
   /// Throws [CloudWatchException] if API returns something other than 200
   Future<void> createLogStream() async {
-    if (!logStreamCreated) {
-      debugPrint(
-        2,
-        'CloudWatch INFO: Generating LogStream',
-      );
-      logStreamCreated = true;
-      String body =
-          '{"logGroupName": "$groupName","logStreamName": "$streamName"}';
-      Response result;
-      try {
-        result = await sendRequest(
-          body: body,
-          target: 'Logs_20140328.CreateLogStream',
-        );
-      } catch (e) {
-        logStreamCreated = false;
-        rethrow;
-      }
-      int statusCode = result.statusCode;
-      debugPrint(
-        1,
-        'CloudWatch Info: LogStream creation status code: $statusCode',
-      );
-      if (statusCode != 200) {
-        AwsResponse response = await AwsResponse.parseResponse(result);
-        debugPrint(
-          0,
-          'CloudWatch ERROR: $response',
-        );
-        // Just move on if the resource already exists
-        if (response.type != 'ResourceAlreadyExistsException') {
-          logStreamCreated = false;
-          throw CloudWatchException(
-            message: response.message,
-            type: response.type,
-            stackTrace: StackTrace.current,
-            raw: response.raw,
-          );
-        }
-      }
-    }
-    debugPrint(
-      2,
-      'CloudWatch INFO: Got LogStream',
+    await createLogResource(
+      body: '{"logGroupName": "$groupName","logStreamName": "$streamName"}',
+      target: 'Logs_20140328.CreateLogStream',
+      type: 'LogStream',
     );
   }
 
@@ -253,27 +187,50 @@ class AwsCloudWatch {
   ///
   /// Throws [CloudWatchException] if API returns something other than 200
   Future<void> createLogGroup() async {
-    if (!logGroupCreated) {
+    await createLogResource(
+      body: '{"logGroupName": "$groupName"}',
+      target: 'Logs_20140328.CreateLogGroup',
+      type: 'LogGroup',
+    );
+  }
+
+  /// Creates a specified log resource
+  ///
+  /// and throws a [CloudWatchException] if it cant.
+  Future<void> createLogResource({
+    required String body,
+    required String target,
+    required String type,
+  }) async {
+    bool isLogGroup = type == 'LogGroup';
+    if (!(isLogGroup ? logGroupCreated : logStreamCreated)) {
       debugPrint(
         2,
-        'CloudWatch INFO: creating LogGroup Exists',
+        'CloudWatch INFO: creating $type Exists',
       );
-      logGroupCreated = true;
-      String body = '{"logGroupName": "$groupName"}';
+      if (isLogGroup) {
+        logGroupCreated = true;
+      } else {
+        logStreamCreated = true;
+      }
       Response result;
       try {
         result = await sendRequest(
           body: body,
-          target: 'Logs_20140328.CreateLogGroup',
+          target: target,
         );
       } catch (e) {
-        logGroupCreated = false;
+        if (isLogGroup) {
+          logGroupCreated = false;
+        } else {
+          logStreamCreated = false;
+        }
         rethrow;
       }
       int statusCode = result.statusCode;
       debugPrint(
         1,
-        'CloudWatch Info: LogGroup creation status code: $statusCode',
+        'CloudWatch Info: $type creation status code: $statusCode',
       );
       if (statusCode != 200) {
         AwsResponse response = await AwsResponse.parseResponse(result);
@@ -283,7 +240,11 @@ class AwsCloudWatch {
         );
         // Just move on if the resource already exists
         if (response.type != 'ResourceAlreadyExistsException') {
-          logGroupCreated = false;
+          if (isLogGroup) {
+            logGroupCreated = false;
+          } else {
+            logStreamCreated = false;
+          }
           throw CloudWatchException(
             message: response.message,
             type: response.type,
@@ -292,11 +253,11 @@ class AwsCloudWatch {
           );
         }
       }
+      debugPrint(
+        2,
+        'CloudWatch INFO: created $type',
+      );
     }
-    debugPrint(
-      2,
-      'CloudWatch INFO: created LogGroup',
-    );
   }
 
   /// Creates a json log events string and adds the sequence token if available
@@ -333,12 +294,6 @@ class AwsCloudWatch {
       'CloudWatch INFO: Added messages to log stack',
     );
     dynamic error;
-    if (!logStreamCreated) {
-      await lock.synchronized(createLogStreamAndLogGroup).catchError((e) {
-        error = e;
-      });
-    }
-    if (checkError(error)) return;
     await sendAllLogs().catchError((e) {
       error = e;
     });
