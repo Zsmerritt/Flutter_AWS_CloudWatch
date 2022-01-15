@@ -6,6 +6,32 @@ import 'package:http/http.dart' as http;
 const String GROUP_NAME_REGEX_PATTERN = r'^[\.\-_/#A-Za-z0-9]+$';
 const String STREAM_NAME_REGEX_PATTERN = r'^[^:*]*$';
 
+/// Enum representing what should happen to messages that are too big
+/// to be sent as a single message. This limit is 262118 utf8 bytes
+///
+/// truncate: Replace the middle of the message with "...", making it 262118
+///           utf8 bytes long. This is the default value.
+///
+/// ignore: Ignore large messages. They will not be sent
+///
+/// split: Split large messages into multiple smaller messages and send them
+///
+/// error: Throw an error when a large message is encountered
+enum CloudWatchLargeMessages {
+  /// Replace the middle of the message with "...", making it 262118 utf8 bytes
+  /// long. This is the default value.
+  truncate,
+
+  /// Ignore large messages. They will not be sent
+  ignore,
+
+  /// Split large messages into multiple smaller messages and send them
+  split,
+
+  /// Throw an error when a large message is encountered
+  error,
+}
+
 /// Special exception class to identify exceptions from CloudWatch
 class CloudWatchException implements Exception {
   String? message;
@@ -129,30 +155,4 @@ class AwsResponse {
     }
     return sb.toString();
   }
-}
-
-/// Enum representing what should happen to messages that are too big
-/// to be sent as a single message. This limit is 262118 utf8 bytes
-///
-/// truncate: Replace the middle of the message with "...", making it 262118
-///           utf8 bytes long. This is the default value.
-///
-/// ignore: Ignore large messages. They will not be sent
-///
-/// split: Split large messages into multiple smaller messages and send them
-///
-/// error: Throw an error when a large message is encountered
-enum CloudWatchLargeMessages {
-  /// Replace the middle of the message with "...", making it 262118 utf8 bytes
-  /// long. This is the default value.
-  truncate,
-
-  /// Ignore large messages. They will not be sent
-  ignore,
-
-  /// Split large messages into multiple smaller messages and send them
-  split,
-
-  /// Throw an error when a large message is encountered
-  error,
 }
