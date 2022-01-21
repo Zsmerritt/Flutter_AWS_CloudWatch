@@ -1,7 +1,18 @@
-## [0.5.0] - 2022/01/10
-* Added unit tests
-* Deprecated setDelay & setLoggingParameters
+## [0.5.0] - 2022/01/20
+
+### Breaking Changes:
+
+* Removed `setDelay` & `setLoggingParameters`
+* Added `groupName` & `streamName` as required arguments to `CloudWatch`
+* Changed `awsAccessKey` & `awsSecretKey` to named arguments
+* Changed `CloudWatchHandler.log` argument `msg` to `message` to be more consistent
+
+### General Changes and Fixes
+* Refactored entire library to be highly testable
+* Added lots of unit tests 
 * Fixed issue where delay, requestTimeout, and retries could be set negative
+* Updated examples to reflect breaking changes
+* Added stricter analyzer rules
 
 ## [0.4.7] - 2022/01/10
 

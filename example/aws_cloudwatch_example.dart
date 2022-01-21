@@ -14,6 +14,7 @@ CloudWatch cloudWatch = CloudWatch(
   region: region,
   groupName: groupName,
   streamName: streamName,
+  delay: const Duration(milliseconds: 200),
 );
 
 void log(String logString) {

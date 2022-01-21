@@ -62,15 +62,16 @@ Create a CloudWatch instance and then send a log
 ~~~dart
 import 'package:aws_cloudwatch/aws_cloudwatch.dart';
 
-CloudWatch cloudWatch = CloudWatch(
-  _AWS_ACCESS_KEY_ID,
-  _AWS_SECRET_ACCESS_KEY,
-  _Region,
-  groupName: GROUP_NAME,
-  streamName: STREAM_NAME,
+CloudWatchHandler logging = CloudWatchHandler(
+  awsAccessKey: _awsAccessKeyId,
+  awsSecretKey: _awsSecretAccessKey,
+  region: _region,
+  delay: const Duration(milliseconds: 200),
 );
 
-cloudWatch.log('Hello World');
+void main() {
+  cloudWatch.log('Hello World');
+}
 ~~~
 
 ### Quick Start
@@ -85,37 +86,37 @@ import 'package:intl/intl.dart';
 ///
 /// PLEASE FILL OUT THE FOLLOWING VARIABLES:
 
-const String _AWS_ACCESS_KEY_ID = 'YOUR_ACCESS_KEY';
-const String _AWS_SECRET_ACCESS_KEY = 'YOUR_SECRET_ACCESS_KEY';
-const String _Region = 'YOUR_REGION_CODE'; // (us-west-1, us-east-2, etc)
-const String _LogGroup = 'DESIRED_LOG_GROUP_NAME';
-const String _ErrorGroup = 'DESIRED_ERROR_LOG_GROUP_NAME';
+const String _awsAccessKeyId = 'YOUR_ACCESS_KEY';
+const String _awsSecretAccessKey = 'YOUR_SECRET_ACCESS_KEY';
+const String _region = 'YOUR_REGION_CODE'; // (us-west-1, us-east-2, etc)
+const String _logGroup = 'DESIRED_LOG_GROUP_NAME';
+const String _errorGroup = 'DESIRED_ERROR_LOG_GROUP_NAME';
 
 /// END OF VARIABLES
 
 CloudWatchHandler logging = CloudWatchHandler(
-  awsAccessKey: _AWS_ACCESS_KEY_ID,
-  awsSecretKey: _AWS_SECRET_ACCESS_KEY,
-  region: _Region,
-  delay: Duration(milliseconds: 200),
+  awsAccessKey: _awsAccessKeyId,
+  awsSecretKey: _awsSecretAccessKey,
+  region: _region,
+  delay: const Duration(milliseconds: 200),
 );
 
 String logStreamName = '';
 
 // You may want to edit this function to suit your needs
 String _getLogStreamName() {
-  if (logStreamName == "") {
-    logStreamName = DateFormat("yyyy-MM-dd HH-mm-ss").format(
+  if (logStreamName == '') {
+    logStreamName = DateFormat('yyyy-MM-dd HH-mm-ss').format(
       DateTime.now().toUtc(),
     );
   }
   return logStreamName;
 }
 
-void log(String logString, {isError = false}) {
+void log(String logString, {bool isError = false}) {
   logging.log(
-    msg: logString,
-    logGroupName: isError ? _LogGroup : _ErrorGroup,
+    message: logString,
+    logGroupName: isError ? _logGroup : _errorGroup,
     logStreamName: _getLogStreamName(),
   );
 }
@@ -194,19 +195,19 @@ Here's an example of using aws_cloudwatch to send a CloudWatch PutLogEvent reque
 import 'package:aws_cloudwatch/aws_cloudwatch.dart';
 
 // AWS Variables
-const String AWS_ACCESS_KEY_ID = 'ExampleKey';
-const String AWS_SECRET_ACCESS_KEY = 'ExampleSecret';
-const String Region = 'us-west-2';
+const String awsAccessKeyId = 'ExampleKey';
+const String awsSecretAccessKey = 'ExampleSecret';
+const String region = 'us-west-2';
 
 // Logging Variables
-const String logGroupName = 'LogGroupExample';
-const String logStreamName = 'LogStreamExample';
+const String groupName = 'LogGroupExample';
+const String streamName = 'LogStreamExample';
 CloudWatch cloudWatch = CloudWatch(
-  AWS_ACCESS_KEY_ID,
-  AWS_SECRET_ACCESS_KEY,
-  Region,
-  groupName: logGroupName,
-  streamName: logStreamName,
+  awsAccessKey: awsAccessKeyId,
+  awsSecretKey: awsSecretAccessKey,
+  region: region,
+  groupName: groupName,
+  streamName: streamName,
 );
 
 void log(String logString) {
@@ -216,23 +217,27 @@ void log(String logString) {
 
 ### Example 2
 
-Here's an example of using aws_cloudwatch to send a CloudWatch PutLogEvent request with a 200-millisecond delay to avoid
-rate limiting:
+Here's an example of using aws_cloudwatch to send a CloudWatch log with a 200-millisecond delay to avoid rate limiting:
 
 ~~~dart
 import 'package:aws_cloudwatch/aws_cloudwatch.dart';
 
 // AWS Variables
-const String AWS_ACCESS_KEY_ID = 'ExampleKey';
-const String AWS_SECRET_ACCESS_KEY = 'ExampleSecret';
-const String Region = 'us-west-2';
+const String awsAccessKeyId = 'ExampleKey';
+const String awsSecretAccessKey = 'ExampleSecret';
+const String region = 'us-west-2';
 
 // Logging Variables
-const String logGroupName = 'LogGroupExample';
-const String logStreamName = 'LogStreamExample';
-CloudWatch cloudWatch = new CloudWatch(AWS_ACCESS_KEY_ID,
-    AWS_SECRET_ACCESS_KEY, Region, groupName: logGroupName,
-    streamName: logStreamName, delay: Duration(milliseconds: 200));
+const String groupName = 'LogGroupExample';
+const String streamName = 'LogStreamExample';
+CloudWatch cloudWatch = CloudWatch(
+  awsAccessKey: awsAccessKeyId,
+  awsSecretKey: awsSecretAccessKey,
+  region: region,
+  groupName: groupName,
+  streamName: streamName,
+  delay: const Duration(milliseconds: 200),
+);
 
 void log(String logString) {
   cloudWatch.log(logString);
@@ -249,45 +254,45 @@ Here is an example of how to capture all errors in flutter and send them to Clou
 it `errorLog.dart`
 
 ~~~dart
-import 'package:aws_request/aws_cloudwatch.dart';
+import 'package:aws_cloudwatch/aws_cloudwatch.dart';
 import 'package:intl/intl.dart';
 
 // AWS Variables
-const String AWS_ACCESS_KEY_ID = 'ExampleKey';
-const String AWS_SECRET_ACCESS_KEY = 'ExampleSecret';
-const String Region = 'us-west-2';
+const String awsAccessKeyId = 'ExampleKey';
+const String awsSecretAccessKey = 'ExampleSecret';
+const String region = 'us-west-2';
 
 // Logging Variables
 const String logGroupName = 'LogGroupExample';
 const String logGroupNameError = 'ErrorLogGroupExample';
 
 CloudWatchHandler logging = CloudWatchHandler(
-  awsAccessKey: AWS_ACCESS_KEY_ID,
-  awsSecretKey: AWS_SECRET_ACCESS_KEY,
-  region: Region,
+  awsAccessKey: awsAccessKeyId,
+  awsSecretKey: awsSecretAccessKey,
+  region: region,
 );
 
 String logStreamName = '';
 
 // You may want to edit this function to suit your needs
 String _getLogStreamName() {
-  if (logStreamName == "") {
-    logStreamName = DateFormat("yyyy-MM-dd HH-mm-ss").format(
+  if (logStreamName == '') {
+    logStreamName = DateFormat('yyyy-MM-dd HH-mm-ss').format(
       DateTime.now().toUtc(),
     );
   }
   return logStreamName;
 }
 
-void log(String logString, {isError = false}) {
+void log(String logString, {bool isError = false}) {
   logging.log(
-    msg: logString,
+    message: logString,
     logGroupName: isError ? logGroupNameError : logGroupName,
     logStreamName: _getLogStreamName(),
   );
 }
 
-void logFlutterSystemError(dynamic logString, dynamic stackTrace) async {
+void logFlutterSystemError(dynamic logString, dynamic stackTrace) {
   log(
     'Auto Captured Error: ${logString.toString()}\n\n'
         'Auto Captured Stack Trace:\n${stackTrace.toString()}',
@@ -306,14 +311,14 @@ import 'errorLog.dart';
 
 void main() {
   runZonedGuarded<Future<void>>(() async {
-    Function originalOnError = FlutterError.onError;
+    final Function originalOnError = FlutterError.onError;
     FlutterError.onError = (FlutterErrorDetails errorDetails) async {
       Zone.current
           .handleUncaughtError(errorDetails.exception, errorDetails.stack);
       originalOnError(errorDetails);
     };
     runApp(MyApp());
-  }, (error, stackTrace) async {
+  }, (dynamic error, stackTrace) async {
     logFlutterSystemError(error, stackTrace);
     print(error.toString());
     throw error;
