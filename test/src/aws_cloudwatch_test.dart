@@ -745,7 +745,8 @@ void main() {
         );
       });
       test('InvalidSequenceTokenException', () async {
-        final AwsResponse awsResponse = await AwsResponse.parseResponse(Response(
+        final AwsResponse awsResponse =
+            await AwsResponse.parseResponse(Response(
           '{"__type": "InvalidSequenceTokenException", '
           '"expectedSequenceToken":"abc"}',
           400,
@@ -755,7 +756,8 @@ void main() {
         expect(cloudWatch.sequenceToken, 'abc');
       });
       test('ResourceNotFoundException', () async {
-        final AwsResponse awsResponse = await AwsResponse.parseResponse(Response(
+        final AwsResponse awsResponse =
+            await AwsResponse.parseResponse(Response(
           '{"__type": "ResourceNotFoundException", '
           '"message":"The specified log stream does not exist."}',
           400,
@@ -764,7 +766,8 @@ void main() {
         expect(res, false);
       });
       test('ResourceNotFoundException', () async {
-        final AwsResponse awsResponse = await AwsResponse.parseResponse(Response(
+        final AwsResponse awsResponse =
+            await AwsResponse.parseResponse(Response(
           '{"__type": "ResourceNotFoundException", '
           '"message":"The specified log group does not exist."}',
           400,
@@ -773,7 +776,8 @@ void main() {
         expect(res, false);
       });
       test('DataAlreadyAcceptedException', () async {
-        final AwsResponse awsResponse = await AwsResponse.parseResponse(Response(
+        final AwsResponse awsResponse =
+            await AwsResponse.parseResponse(Response(
           '{"__type": "DataAlreadyAcceptedException", '
           '"expectedSequenceToken":"def"}',
           400,
@@ -783,7 +787,8 @@ void main() {
         expect(cloudWatch.sequenceToken, 'def');
       });
       test('unknown type', () async {
-        final AwsResponse awsResponse = await AwsResponse.parseResponse(Response(
+        final AwsResponse awsResponse =
+            await AwsResponse.parseResponse(Response(
           '{"__type": "unknown"}',
           400,
         ));
