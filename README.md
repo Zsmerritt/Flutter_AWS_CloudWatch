@@ -295,7 +295,7 @@ void log(String logString, {bool isError = false}) {
 void logFlutterSystemError(dynamic logString, dynamic stackTrace) {
   log(
     'Auto Captured Error: ${logString.toString()}\n\n'
-        'Auto Captured Stack Trace:\n${stackTrace.toString()}',
+    'Auto Captured Stack Trace:\n${stackTrace.toString()}',
     isError: true,
   );
 }
