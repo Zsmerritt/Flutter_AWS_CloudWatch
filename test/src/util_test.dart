@@ -22,7 +22,7 @@ void main() {
   group('CloudWatchException', () {
     group('constructors', () {
       test('minimum', () {
-        CloudWatchException exception = CloudWatchException(
+        final CloudWatchException exception = CloudWatchException(
           message: 'message',
           stackTrace: StackTrace.empty,
         );
@@ -30,7 +30,7 @@ void main() {
         expect(exception.raw == null, true);
       });
       test('maximum', () {
-        CloudWatchException exception = CloudWatchException(
+        final CloudWatchException exception = CloudWatchException(
             message: 'message',
             stackTrace: StackTrace.empty,
             type: 'type',
@@ -41,24 +41,24 @@ void main() {
     });
     group('toString', () {
       test('minimum', () {
-        CloudWatchException exception = CloudWatchException(
+        final CloudWatchException exception = CloudWatchException(
           message: 'message',
           stackTrace: StackTrace.empty,
         );
         expect(
           exception.toString(),
-          "CloudWatchException - message: message",
+          'CloudWatchException - message: message',
         );
       });
       test('maximum', () {
-        CloudWatchException exception = CloudWatchException(
+        final CloudWatchException exception = CloudWatchException(
             message: 'message',
             stackTrace: StackTrace.empty,
             type: 'type',
             raw: 'raw');
         expect(
           exception.toString(),
-          "CloudWatchException - type: type, message: message",
+          'CloudWatchException - type: type, message: message',
         );
       });
     });
@@ -79,26 +79,12 @@ void main() {
       }
     });
     group('validateName', () {
-      test('null name', () {
-        try {
-          validateName(null, 'type', '');
-        } catch (e) {
-          expect(e, isA<CloudWatchException>());
-          CloudWatchException error = e as CloudWatchException;
-          expect(
-            error.message,
-            'No type name provided. Set type and then try again.',
-          );
-          return;
-        }
-        fail('validateName name cannot be null');
-      });
       test('empty name', () {
         try {
           validateName('', 'type', '');
         } catch (e) {
           expect(e, isA<CloudWatchException>());
-          CloudWatchException error = e as CloudWatchException;
+          final CloudWatchException error = e as CloudWatchException;
           expect(
             error.message,
             'Provided type "" is invalid. type must be between 1 and 512 characters.',
@@ -112,7 +98,7 @@ void main() {
           validateName('1' * 513, 'type', '');
         } catch (e) {
           expect(e, isA<CloudWatchException>());
-          CloudWatchException error = e as CloudWatchException;
+          final CloudWatchException error = e as CloudWatchException;
           expect(
             error.message,
             'Provided type "${'1' * 513}" is invalid. type must be between 1 and 512 characters.',
@@ -126,7 +112,7 @@ void main() {
           validateName('abc', 'type', r'\d');
         } catch (e) {
           expect(e, isA<CloudWatchException>());
-          CloudWatchException error = e as CloudWatchException;
+          final CloudWatchException error = e as CloudWatchException;
           expect(
             error.message,
             r'Provided type "abc" doesnt match pattern \d required of type',
@@ -143,8 +129,8 @@ void main() {
   group('AwsResponse', () {
     group('parseResponse', () {
       test('empty body', () async {
-        Response response = Response('', 200);
-        AwsResponse res = await AwsResponse.parseResponse(response);
+        final Response response = Response('', 200);
+        final AwsResponse res = await AwsResponse.parseResponse(response);
         expect(res.statusCode, 200);
         expect(res.type == null, true);
         expect(res.message == null, true);
@@ -153,8 +139,8 @@ void main() {
         expect(res.raw == null, true);
       });
       test('unknown element', () async {
-        Response response = Response('{"a":"a"}', 200);
-        AwsResponse res = await AwsResponse.parseResponse(response);
+        final Response response = Response('{"a":"a"}', 200);
+        final AwsResponse res = await AwsResponse.parseResponse(response);
         expect(res.statusCode, 200);
         expect(res.type == null, true);
         expect(res.message == null, true);
@@ -163,8 +149,8 @@ void main() {
         expect(res.raw, '{a: a}');
       });
       test('type', () async {
-        Response response = Response('{"__type":"type"}', 200);
-        AwsResponse res = await AwsResponse.parseResponse(response);
+        final Response response = Response('{"__type":"type"}', 200);
+        final AwsResponse res = await AwsResponse.parseResponse(response);
         expect(res.statusCode, 200);
         expect(res.type, 'type');
         expect(res.message == null, true);
@@ -173,8 +159,8 @@ void main() {
         expect(res.raw, '{__type: type}');
       });
       test('message', () async {
-        Response response = Response('{"message":"message"}', 200);
-        AwsResponse res = await AwsResponse.parseResponse(response);
+        final Response response = Response('{"message":"message"}', 200);
+        final AwsResponse res = await AwsResponse.parseResponse(response);
         expect(res.statusCode, 200);
         expect(res.type == null, true);
         expect(res.message, 'message');
@@ -183,11 +169,11 @@ void main() {
         expect(res.raw, '{message: message}');
       });
       test('nextSequenceToken', () async {
-        Response response = Response(
+        final Response response = Response(
           '{"nextSequenceToken":"nextSequenceToken"}',
           200,
         );
-        AwsResponse res = await AwsResponse.parseResponse(response);
+        final AwsResponse res = await AwsResponse.parseResponse(response);
         expect(res.statusCode, 200);
         expect(res.type == null, true);
         expect(res.message == null, true);
@@ -196,11 +182,11 @@ void main() {
         expect(res.raw, '{nextSequenceToken: nextSequenceToken}');
       });
       test('expectedSequenceToken', () async {
-        Response response = Response(
+        final Response response = Response(
           '{"expectedSequenceToken":"expectedSequenceToken"}',
           200,
         );
-        AwsResponse res = await AwsResponse.parseResponse(response);
+        final AwsResponse res = await AwsResponse.parseResponse(response);
         expect(res.statusCode, 200);
         expect(res.type == null, true);
         expect(res.message == null, true);
@@ -209,16 +195,18 @@ void main() {
         expect(res.raw, '{expectedSequenceToken: expectedSequenceToken}');
       });
       test('all', () async {
-        Response response = Response(
-          '''{
+        final Response response = Response(
+          '''
+          {
           "__type":"type",
           "message":"message",
           "nextSequenceToken":"nextSequenceToken",
           "expectedSequenceToken":"expectedSequenceToken"
-          }''',
+          }
+          ''',
           200,
         );
-        AwsResponse res = await AwsResponse.parseResponse(response);
+        final AwsResponse res = await AwsResponse.parseResponse(response);
         expect(res.statusCode, 200);
         expect(res.type, 'type');
         expect(res.message, 'message');
@@ -234,55 +222,57 @@ void main() {
     });
     group('toString', () {
       test('empty body', () async {
-        Response response = Response('', 200);
-        AwsResponse res = await AwsResponse.parseResponse(response);
+        final Response response = Response('', 200);
+        final AwsResponse res = await AwsResponse.parseResponse(response);
         expect(res.toString(), 'AwsResponse - statusCode: 200');
       });
       test('unknown element', () async {
-        Response response = Response('{"a":"a"}', 200);
-        AwsResponse res = await AwsResponse.parseResponse(response);
+        final Response response = Response('{"a":"a"}', 200);
+        final AwsResponse res = await AwsResponse.parseResponse(response);
         expect(res.toString(), 'AwsResponse - statusCode: 200');
       });
       test('type', () async {
-        Response response = Response('{"__type":"type"}', 200);
-        AwsResponse res = await AwsResponse.parseResponse(response);
+        final Response response = Response('{"__type":"type"}', 200);
+        final AwsResponse res = await AwsResponse.parseResponse(response);
         expect(res.toString(), 'AwsResponse - statusCode: 200, type: type');
       });
       test('message', () async {
-        Response response = Response('{"message":"message"}', 200);
-        AwsResponse res = await AwsResponse.parseResponse(response);
+        final Response response = Response('{"message":"message"}', 200);
+        final AwsResponse res = await AwsResponse.parseResponse(response);
         expect(
             res.toString(), 'AwsResponse - statusCode: 200, message: message');
       });
       test('nextSequenceToken', () async {
-        Response response = Response(
+        final Response response = Response(
           '{"nextSequenceToken":"nextSequenceToken"}',
           200,
         );
-        AwsResponse res = await AwsResponse.parseResponse(response);
+        final AwsResponse res = await AwsResponse.parseResponse(response);
         expect(res.toString(),
             'AwsResponse - statusCode: 200, nextSequenceToken: nextSequenceToken');
       });
       test('expectedSequenceToken', () async {
-        Response response = Response(
+        final Response response = Response(
           '{"expectedSequenceToken":"expectedSequenceToken"}',
           200,
         );
-        AwsResponse res = await AwsResponse.parseResponse(response);
+        final AwsResponse res = await AwsResponse.parseResponse(response);
         expect(res.toString(),
             'AwsResponse - statusCode: 200, expectedSequenceToken: expectedSequenceToken');
       });
       test('all', () async {
-        Response response = Response(
-          '''{
+        final Response response = Response(
+          '''
+          {
           "__type":"type",
           "message":"message",
           "nextSequenceToken":"nextSequenceToken",
           "expectedSequenceToken":"expectedSequenceToken"
-          }''',
+          }
+          ''',
           200,
         );
-        AwsResponse res = await AwsResponse.parseResponse(response);
+        final AwsResponse res = await AwsResponse.parseResponse(response);
         expect(
           res.toString(),
           'AwsResponse - statusCode: 200, type: type, '

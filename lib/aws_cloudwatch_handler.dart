@@ -54,7 +54,7 @@ class CloudWatchHandler {
   /// Whether exceptions should be raised on failed lookups (usually no internet)
   set raiseFailedLookups(bool val) => _handler.raiseFailedLookups = val;
 
-  final AwsCloudWatchHandler _handler;
+  final LoggerHandler _handler;
 
   /// CloudWatchHandler Constructor
   CloudWatchHandler({
@@ -67,7 +67,7 @@ class CloudWatchHandler {
     retries = 3,
     largeMessageBehavior = CloudWatchLargeMessages.truncate,
     raiseFailedLookups = false,
-  }) : _handler = AwsCloudWatchHandler(
+  }) : _handler = LoggerHandler(
           awsAccessKey: awsAccessKey,
           awsSecretKey: awsSecretKey,
           region: region,
@@ -88,45 +88,13 @@ class CloudWatchHandler {
     required String logGroupName,
     required String logStreamName,
   }) {
-    final AwsCloudWatch? cw = _handler.getInstance(
+    final Logger? cw = _handler.getInstance(
       logGroupName: logGroupName,
       logStreamName: logStreamName,
     );
     if (cw != null) {
       return CloudWatch._(cw);
     }
-  }
-
-  /// Logs the provided message to the provided log group and log stream
-  ///
-  /// Logs a single [msg] to [logStreamName] under the group [logGroupName]
-  void log({
-    required String msg,
-    required String logGroupName,
-    required String logStreamName,
-  }) {
-    _handler.log(
-      msg: msg,
-      logGroupName: logGroupName,
-      logStreamName: logStreamName,
-    );
-  }
-
-  /// Logs the provided message to the provided log group and log stream
-  ///
-  /// Logs a list of string [messages] to [logStreamName] under the group [logGroupName]
-  ///
-  /// Note: using logMany will result in all logs having the same timestamp
-  void logMany({
-    required List<String> messages,
-    required String logGroupName,
-    required String logStreamName,
-  }) {
-    _handler.logMany(
-      messages: messages,
-      logGroupName: logGroupName,
-      logStreamName: logStreamName,
-    );
   }
 
   /// Creates a CloudWatch instance.
@@ -141,6 +109,38 @@ class CloudWatchHandler {
         logGroupName: logGroupName,
         logStreamName: logStreamName,
       ),
+    );
+  }
+
+  /// Logs the provided message to the provided log group and log stream
+  ///
+  /// Logs a single [msg] to [logStreamName] under the group [logGroupName]
+  Future<void> log({
+    required String message,
+    required String logGroupName,
+    required String logStreamName,
+  }) async {
+    await _handler.log(
+      msg: message,
+      logGroupName: logGroupName,
+      logStreamName: logStreamName,
+    );
+  }
+
+  /// Logs the provided message to the provided log group and log stream
+  ///
+  /// Logs a list of string [messages] to [logStreamName] under the group [logGroupName]
+  ///
+  /// Note: using logMany will result in all logs having the same timestamp
+  Future<void> logMany({
+    required List<String> messages,
+    required String logGroupName,
+    required String logStreamName,
+  }) async {
+    await _handler.logMany(
+      messages: messages,
+      logGroupName: logGroupName,
+      logStreamName: logStreamName,
     );
   }
 }

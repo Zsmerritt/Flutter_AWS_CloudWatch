@@ -7,7 +7,7 @@ import 'package:test/test.dart';
 void main() {
   group('Constructors', () {
     test('minimum', () {
-      final AwsCloudWatch cloudWatch = AwsCloudWatch(
+      final Logger cloudWatch = Logger(
         awsAccessKey: 'awsAccessKey',
         awsSecretKey: 'awsSecretKey',
         region: 'region',
@@ -32,15 +32,15 @@ void main() {
           CloudWatchLargeMessages.truncate);
     });
     test('maximum', () {
-      final AwsCloudWatch cloudWatch = AwsCloudWatch(
+      final Logger cloudWatch = Logger(
         awsAccessKey: 'awsAccessKey',
         awsSecretKey: 'awsSecretKey',
         region: 'region',
         groupName: 'groupName',
         streamName: 'streamName',
         awsSessionToken: 'awsSessionToken',
-        delay: Duration(seconds: 100),
-        requestTimeout: Duration(seconds: 100),
+        delay: const Duration(seconds: 100),
+        requestTimeout: const Duration(seconds: 100),
         retries: 10,
         largeMessageBehavior: CloudWatchLargeMessages.split,
         raiseFailedLookups: true,
@@ -57,14 +57,14 @@ void main() {
           CloudWatchLargeMessages.split);
     });
     test('negative delay', () {
-      final AwsCloudWatch cloudWatch = AwsCloudWatch(
+      final Logger cloudWatch = Logger(
         awsAccessKey: 'awsAccessKey',
         awsSecretKey: 'awsSecretKey',
         region: 'region',
         groupName: 'groupName',
         streamName: 'streamName',
         awsSessionToken: 'awsSessionToken',
-        delay: Duration(seconds: -10),
+        delay: const Duration(seconds: -10),
         requestTimeout: const Duration(seconds: 10),
         retries: 3,
         largeMessageBehavior: CloudWatchLargeMessages.truncate,
@@ -73,7 +73,7 @@ void main() {
       expect(cloudWatch.delay.inSeconds, 0);
     });
     test('negative retries', () {
-      final AwsCloudWatch cloudWatch = AwsCloudWatch(
+      final Logger cloudWatch = Logger(
         awsAccessKey: 'awsAccessKey',
         awsSecretKey: 'awsSecretKey',
         region: 'region',
@@ -90,7 +90,7 @@ void main() {
     });
     test('bad groupName', () {
       try {
-        AwsCloudWatch(
+        Logger(
           awsAccessKey: 'awsAccessKey',
           awsSecretKey: 'awsSecretKey',
           region: 'region',
@@ -111,7 +111,7 @@ void main() {
     });
     test('bad streamName', () {
       try {
-        AwsCloudWatch(
+        Logger(
           awsAccessKey: 'awsAccessKey',
           awsSecretKey: 'awsSecretKey',
           region: 'region',
@@ -134,7 +134,7 @@ void main() {
 
   group('Getters / Setters', () {
     test('negative delay', () {
-      final AwsCloudWatch cloudWatch = AwsCloudWatch(
+      final Logger cloudWatch = Logger(
         awsAccessKey: 'awsAccessKey',
         awsSecretKey: 'awsSecretKey',
         region: 'region',
@@ -146,12 +146,11 @@ void main() {
         retries: 3,
         largeMessageBehavior: CloudWatchLargeMessages.truncate,
         raiseFailedLookups: false,
-      );
-      cloudWatch.delay = Duration(seconds: -1);
+      )..delay = const Duration(seconds: -1);
       expect(cloudWatch.delay.inSeconds, 0);
     });
     test('positive delay', () {
-      final AwsCloudWatch cloudWatch = AwsCloudWatch(
+      final Logger cloudWatch = Logger(
         awsAccessKey: 'awsAccessKey',
         awsSecretKey: 'awsSecretKey',
         region: 'region',
@@ -163,12 +162,11 @@ void main() {
         retries: 3,
         largeMessageBehavior: CloudWatchLargeMessages.truncate,
         raiseFailedLookups: false,
-      );
-      cloudWatch.delay = Duration(seconds: 15);
+      )..delay = const Duration(seconds: 15);
       expect(cloudWatch.delay.inSeconds, 15);
     });
     test('negative requestTimeout', () {
-      final AwsCloudWatch cloudWatch = AwsCloudWatch(
+      final Logger cloudWatch = Logger(
         awsAccessKey: 'awsAccessKey',
         awsSecretKey: 'awsSecretKey',
         region: 'region',
@@ -180,12 +178,11 @@ void main() {
         retries: 3,
         largeMessageBehavior: CloudWatchLargeMessages.truncate,
         raiseFailedLookups: false,
-      );
-      cloudWatch.requestTimeout = Duration(seconds: -1);
+      )..requestTimeout = const Duration(seconds: -1);
       expect(cloudWatch.requestTimeout.inSeconds, 0);
     });
     test('positive requestTimeout', () {
-      final AwsCloudWatch cloudWatch = AwsCloudWatch(
+      final Logger cloudWatch = Logger(
         awsAccessKey: 'awsAccessKey',
         awsSecretKey: 'awsSecretKey',
         region: 'region',
@@ -197,12 +194,11 @@ void main() {
         retries: 3,
         largeMessageBehavior: CloudWatchLargeMessages.truncate,
         raiseFailedLookups: false,
-      );
-      cloudWatch.requestTimeout = Duration(seconds: 15);
+      )..requestTimeout = const Duration(seconds: 15);
       expect(cloudWatch.requestTimeout.inSeconds, 15);
     });
     test('negative verbosity', () {
-      final AwsCloudWatch cloudWatch = AwsCloudWatch(
+      final Logger cloudWatch = Logger(
         awsAccessKey: 'awsAccessKey',
         awsSecretKey: 'awsSecretKey',
         region: 'region',
@@ -214,12 +210,11 @@ void main() {
         retries: 3,
         largeMessageBehavior: CloudWatchLargeMessages.truncate,
         raiseFailedLookups: false,
-      );
-      cloudWatch.verbosity = -1;
+      )..verbosity = -1;
       expect(cloudWatch.verbosity, 0);
     });
     test('positive verbosity - too big', () {
-      final AwsCloudWatch cloudWatch = AwsCloudWatch(
+      final Logger cloudWatch = Logger(
         awsAccessKey: 'awsAccessKey',
         awsSecretKey: 'awsSecretKey',
         region: 'region',
@@ -235,7 +230,7 @@ void main() {
       expect(cloudWatch.verbosity, 3);
     });
     test('positive verbosity - ok', () {
-      final AwsCloudWatch cloudWatch = AwsCloudWatch(
+      final Logger cloudWatch = Logger(
         awsAccessKey: 'awsAccessKey',
         awsSecretKey: 'awsSecretKey',
         region: 'region',
@@ -247,12 +242,11 @@ void main() {
         retries: 3,
         largeMessageBehavior: CloudWatchLargeMessages.truncate,
         raiseFailedLookups: false,
-      );
-      cloudWatch.verbosity = 2;
+      )..verbosity = 2;
       expect(cloudWatch.verbosity, 2);
     });
     test('negative retries', () {
-      final AwsCloudWatch cloudWatch = AwsCloudWatch(
+      final Logger cloudWatch = Logger(
         awsAccessKey: 'awsAccessKey',
         awsSecretKey: 'awsSecretKey',
         region: 'region',
@@ -264,12 +258,11 @@ void main() {
         retries: 3,
         largeMessageBehavior: CloudWatchLargeMessages.truncate,
         raiseFailedLookups: false,
-      );
-      cloudWatch.retries = -1;
+      )..retries = -1;
       expect(cloudWatch.retries, 0);
     });
     test('positive requestTimeout', () {
-      final AwsCloudWatch cloudWatch = AwsCloudWatch(
+      final Logger cloudWatch = Logger(
         awsAccessKey: 'awsAccessKey',
         awsSecretKey: 'awsSecretKey',
         region: 'region',
@@ -281,12 +274,11 @@ void main() {
         retries: 3,
         largeMessageBehavior: CloudWatchLargeMessages.truncate,
         raiseFailedLookups: false,
-      );
-      cloudWatch.retries = 15;
+      )..retries = 15;
       expect(cloudWatch.retries, 15);
     });
     test('largeMessageBehavior', () {
-      final AwsCloudWatch cloudWatch = AwsCloudWatch(
+      final Logger cloudWatch = Logger(
         awsAccessKey: 'awsAccessKey',
         awsSecretKey: 'awsSecretKey',
         region: 'region',
@@ -298,14 +290,13 @@ void main() {
         retries: 3,
         largeMessageBehavior: CloudWatchLargeMessages.truncate,
         raiseFailedLookups: false,
-      );
-      cloudWatch.largeMessageBehavior = CloudWatchLargeMessages.split;
+      )..largeMessageBehavior = CloudWatchLargeMessages.split;
       expect(cloudWatch.largeMessageBehavior, CloudWatchLargeMessages.split);
       expect(cloudWatch.logStack.largeMessageBehavior,
           CloudWatchLargeMessages.split);
     });
     test('logGroupName', () {
-      final AwsCloudWatch cloudWatch = AwsCloudWatch(
+      final Logger cloudWatch = Logger(
         awsAccessKey: 'awsAccessKey',
         awsSecretKey: 'awsSecretKey',
         region: 'region',
@@ -317,12 +308,11 @@ void main() {
         retries: 3,
         largeMessageBehavior: CloudWatchLargeMessages.truncate,
         raiseFailedLookups: false,
-      );
-      cloudWatch.logGroupName = 'logGroupName';
+      )..logGroupName = 'logGroupName';
       expect(cloudWatch.groupName, 'logGroupName');
     });
     test('logStreamName', () {
-      final AwsCloudWatch cloudWatch = AwsCloudWatch(
+      final Logger cloudWatch = Logger(
         awsAccessKey: 'awsAccessKey',
         awsSecretKey: 'awsSecretKey',
         region: 'region',
@@ -334,44 +324,15 @@ void main() {
         retries: 3,
         largeMessageBehavior: CloudWatchLargeMessages.truncate,
         raiseFailedLookups: false,
-      );
-      cloudWatch.logStreamName = 'logStreamName';
+      )..logStreamName = 'logStreamName';
       expect(cloudWatch.streamName, 'logStreamName');
     });
   });
 
   group('Functions', () {
-    Future<Response> mockFunction(Request request) async {
-      String body = request.body;
-      if (body.contains('"logGroupName": "ok"')) {
-        return Response('', 200);
-      } else if (body.contains('"logStreamName": "ok"')) {
-        return Response('', 200);
-      } else if (body.contains('"logGroupName": "ResourceNotFoundException"')) {
-        return Response(
-            '{"__type":"ResourceNotFoundException", "message": "The specified log group does not exist."}',
-            400);
-      } else if (body
-          .contains('"logStreamName": "DataAlreadyAcceptedException"')) {
-        return Response('{"__type":"DataAlreadyAcceptedException"}', 400);
-      } else if (body
-          .contains('"logStreamName": "ResourceNotFoundException"')) {
-        return Response(
-            '{"__type":"ResourceNotFoundException", "message":"The specified log stream does not exist."}',
-            400);
-      } else if (body
-          .contains('"logStreamName": "InvalidSequenceTokenException"')) {
-        return Response(
-            '{"__type":"InvalidSequenceTokenException", "expectedSequenceToken":"abc"}',
-            400);
-      } else {
-        return Response('', 200);
-      }
-    }
-
     group('debugPrint', () {
       test('verbosity 0', () {
-        final AwsCloudWatch cloudWatch = AwsCloudWatch(
+        final Logger cloudWatch = Logger(
           awsAccessKey: 'awsAccessKey',
           awsSecretKey: 'awsSecretKey',
           region: 'region',
@@ -384,11 +345,12 @@ void main() {
           largeMessageBehavior: CloudWatchLargeMessages.truncate,
           raiseFailedLookups: false,
         );
-        bool res = cloudWatch.debugPrint(1, 'this message wont be printed');
+        final bool res =
+            cloudWatch.debugPrint(1, 'this message wont be printed');
         expect(res, false);
       });
       test('verbosity 1', () {
-        final AwsCloudWatch cloudWatch = AwsCloudWatch(
+        final Logger cloudWatch = Logger(
           awsAccessKey: 'awsAccessKey',
           awsSecretKey: 'awsSecretKey',
           region: 'region',
@@ -400,15 +362,14 @@ void main() {
           retries: 3,
           largeMessageBehavior: CloudWatchLargeMessages.truncate,
           raiseFailedLookups: false,
-        );
-        cloudWatch.verbosity = 1;
+        )..verbosity = 1;
         bool res = cloudWatch.debugPrint(0, 'this message will be printed');
         expect(res, true);
         res = cloudWatch.debugPrint(1, 'this message wont be printed');
         expect(res, false);
       });
       test('verbosity 2', () {
-        final AwsCloudWatch cloudWatch = AwsCloudWatch(
+        final Logger cloudWatch = Logger(
           awsAccessKey: 'awsAccessKey',
           awsSecretKey: 'awsSecretKey',
           region: 'region',
@@ -420,15 +381,14 @@ void main() {
           retries: 3,
           largeMessageBehavior: CloudWatchLargeMessages.truncate,
           raiseFailedLookups: false,
-        );
-        cloudWatch.verbosity = 2;
+        )..verbosity = 2;
         bool res = cloudWatch.debugPrint(1, 'this message will be printed');
         expect(res, true);
         res = cloudWatch.debugPrint(2, 'this message wont be printed');
         expect(res, false);
       });
       test('verbosity 3', () {
-        final AwsCloudWatch cloudWatch = AwsCloudWatch(
+        final Logger cloudWatch = Logger(
           awsAccessKey: 'awsAccessKey',
           awsSecretKey: 'awsSecretKey',
           region: 'region',
@@ -440,8 +400,7 @@ void main() {
           retries: 3,
           largeMessageBehavior: CloudWatchLargeMessages.truncate,
           raiseFailedLookups: false,
-        );
-        cloudWatch.verbosity = 3;
+        )..verbosity = 3;
         bool res = cloudWatch.debugPrint(2, 'this message will be printed');
         expect(res, true);
         res = cloudWatch.debugPrint(3, 'this message wont be printed');
@@ -449,9 +408,9 @@ void main() {
       });
     });
     group('createLogStream', () {
-      late AwsCloudWatch cloudWatch;
+      late Logger cloudWatch;
       setUpAll(() {
-        cloudWatch = AwsCloudWatch(
+        cloudWatch = Logger(
           awsAccessKey: 'awsAccessKey',
           awsSecretKey: 'awsSecretKey',
           region: 'region',
@@ -479,34 +438,38 @@ void main() {
         fail('Exception did not stop log stream creation!');
       });
       test('log stream already created', () async {
-        cloudWatch.logStreamCreated = true;
-        cloudWatch.mockFunction = (Request request) async {
-          throw Exception('Big bad exception');
-        };
+        cloudWatch
+          ..logStreamCreated = true
+          ..mockFunction = (Request request) async {
+            throw Exception('Big bad exception');
+          };
         await cloudWatch.createLogStream();
         expect(cloudWatch.logStreamCreated, true);
       });
       test('create log stream', () async {
-        cloudWatch.logStreamCreated = false;
-        cloudWatch.mockFunction = (Request request) async {
-          return Response('', 200);
-        };
+        cloudWatch
+          ..logStreamCreated = false
+          ..mockFunction = (Request request) async {
+            return Response('', 200);
+          };
         await cloudWatch.createLogStream();
         expect(cloudWatch.logStreamCreated, true);
       });
       test('ResourceAlreadyExistsException', () async {
-        cloudWatch.logStreamCreated = false;
-        cloudWatch.mockFunction = (Request request) async {
-          return Response('{"__type":"ResourceAlreadyExistsException"}', 400);
-        };
+        cloudWatch
+          ..logStreamCreated = false
+          ..mockFunction = (Request request) async {
+            return Response('{"__type":"ResourceAlreadyExistsException"}', 400);
+          };
         await cloudWatch.createLogStream();
         expect(cloudWatch.logStreamCreated, true);
       });
       test('Other Error', () async {
-        cloudWatch.logStreamCreated = false;
-        cloudWatch.mockFunction = (Request request) async {
-          return Response('', 400);
-        };
+        cloudWatch
+          ..logStreamCreated = false
+          ..mockFunction = (Request request) async {
+            return Response('', 400);
+          };
         try {
           await cloudWatch.createLogStream();
         } catch (e) {
@@ -518,9 +481,9 @@ void main() {
       });
     });
     group('createLogGroup', () {
-      late AwsCloudWatch cloudWatch;
+      late Logger cloudWatch;
       setUpAll(() {
-        cloudWatch = AwsCloudWatch(
+        cloudWatch = Logger(
           awsAccessKey: 'awsAccessKey',
           awsSecretKey: 'awsSecretKey',
           region: 'region',
@@ -548,34 +511,38 @@ void main() {
         fail('Exception did not stop log stream creation!');
       });
       test('log stream already created', () async {
-        cloudWatch.logGroupCreated = true;
-        cloudWatch.mockFunction = (Request request) async {
-          throw Exception('Big bad exception');
-        };
+        cloudWatch
+          ..logGroupCreated = true
+          ..mockFunction = (Request request) async {
+            throw Exception('Big bad exception');
+          };
         await cloudWatch.createLogGroup();
         expect(cloudWatch.logGroupCreated, true);
       });
       test('create log stream', () async {
-        cloudWatch.logGroupCreated = false;
-        cloudWatch.mockFunction = (Request request) async {
-          return Response('', 200);
-        };
+        cloudWatch
+          ..logGroupCreated = false
+          ..mockFunction = (Request request) async {
+            return Response('', 200);
+          };
         await cloudWatch.createLogGroup();
         expect(cloudWatch.logGroupCreated, true);
       });
       test('ResourceAlreadyExistsException', () async {
-        cloudWatch.logGroupCreated = false;
-        cloudWatch.mockFunction = (Request request) async {
-          return Response('{"__type":"ResourceAlreadyExistsException"}', 400);
-        };
+        cloudWatch
+          ..logGroupCreated = false
+          ..mockFunction = (Request request) async {
+            return Response('{"__type":"ResourceAlreadyExistsException"}', 400);
+          };
         await cloudWatch.createLogGroup();
         expect(cloudWatch.logGroupCreated, true);
       });
       test('Other Error', () async {
-        cloudWatch.logGroupCreated = false;
-        cloudWatch.mockFunction = (Request request) async {
-          return Response('', 400);
-        };
+        cloudWatch
+          ..logGroupCreated = false
+          ..mockFunction = (Request request) async {
+            return Response('', 400);
+          };
         try {
           await cloudWatch.createLogGroup();
         } catch (e) {
@@ -587,9 +554,9 @@ void main() {
       });
     });
     group('createBody', () {
-      late AwsCloudWatch cloudWatch;
+      late Logger cloudWatch;
       setUpAll(() {
-        cloudWatch = AwsCloudWatch(
+        cloudWatch = Logger(
           awsAccessKey: 'awsAccessKey',
           awsSecretKey: 'awsSecretKey',
           region: 'region',
@@ -605,7 +572,7 @@ void main() {
         );
       });
       test('empty logs', () {
-        String res = cloudWatch.createBody([]);
+        final String res = cloudWatch.createBody([]);
         expect(
           res,
           '{"logEvents":[],"logGroupName":"groupName",'
@@ -613,7 +580,7 @@ void main() {
         );
       });
       test('logs', () {
-        String res = cloudWatch.createBody([
+        final String res = cloudWatch.createBody([
           {'key': 'value'}
         ]);
         expect(
@@ -624,7 +591,7 @@ void main() {
       });
       test('sequenceToken', () {
         cloudWatch.sequenceToken = 'abc';
-        String res = cloudWatch.createBody([]);
+        final String res = cloudWatch.createBody([]);
         expect(
           res,
           '{"logEvents":[],"logGroupName":"groupName",'
@@ -633,9 +600,9 @@ void main() {
       });
     });
     group('checkError', () {
-      late AwsCloudWatch cloudWatch;
+      late Logger cloudWatch;
       setUpAll(() {
-        cloudWatch = AwsCloudWatch(
+        cloudWatch = Logger(
           awsAccessKey: 'awsAccessKey',
           awsSecretKey: 'awsSecretKey',
           region: 'region',
@@ -651,15 +618,16 @@ void main() {
         );
       });
       test('error null', () {
-        bool res = cloudWatch.checkError(null);
+        final bool res = cloudWatch.checkError(null);
         expect(res, false);
       });
       test('error null', () {
-        bool res = cloudWatch.checkError(Exception('XMLHttpRequest error'));
+        final bool res =
+            cloudWatch.checkError(Exception('XMLHttpRequest error'));
         expect(res, true);
       });
       test('error null', () {
-        bool res = cloudWatch.checkError(Exception('Failed host lookup'));
+        final bool res = cloudWatch.checkError(Exception('Failed host lookup'));
         expect(res, true);
       });
       test('raiseFailedLookups', () {
@@ -673,9 +641,9 @@ void main() {
       });
     });
     group('sendLogs', () {
-      late AwsCloudWatch cloudWatch;
+      late Logger cloudWatch;
       setUpAll(() {
-        cloudWatch = AwsCloudWatch(
+        cloudWatch = Logger(
           awsAccessKey: 'awsAccessKey',
           awsSecretKey: 'awsSecretKey',
           region: 'region',
@@ -710,8 +678,9 @@ void main() {
         fail('Exception was not thrown!');
       });
       test('Send Not Mocked Logs', () async {
-        cloudWatch.mockCloudWatch = false;
-        cloudWatch.raiseFailedLookups = true;
+        cloudWatch
+          ..mockCloudWatch = false
+          ..raiseFailedLookups = true;
         cloudWatch.logStack.addLogs(['test']);
         try {
           await cloudWatch.sendLogs();
@@ -721,9 +690,9 @@ void main() {
       });
     });
     group('handleResponse', () {
-      late AwsCloudWatch cloudWatch;
+      late Logger cloudWatch;
       setUpAll(() {
-        cloudWatch = AwsCloudWatch(
+        cloudWatch = Logger(
           awsAccessKey: 'awsAccessKey',
           awsSecretKey: 'awsSecretKey',
           region: 'region',
@@ -748,16 +717,16 @@ void main() {
         fail('Error not thrown');
       });
       test('status 400 - type', () async {
-        bool res = await cloudWatch.handleResponse(
+        final bool res = await cloudWatch.handleResponse(
           Response('{"__type": "InvalidSequenceTokenException"}', 400),
         );
         expect(res, false);
       });
     });
     group('handleError', () {
-      late AwsCloudWatch cloudWatch;
+      late Logger cloudWatch;
       setUpAll(() {
-        cloudWatch = AwsCloudWatch(
+        cloudWatch = Logger(
           awsAccessKey: 'awsAccessKey',
           awsSecretKey: 'awsSecretKey',
           region: 'region',
@@ -776,49 +745,49 @@ void main() {
         );
       });
       test('InvalidSequenceTokenException', () async {
-        AwsResponse awsResponse = await AwsResponse.parseResponse(Response(
+        final AwsResponse awsResponse = await AwsResponse.parseResponse(Response(
           '{"__type": "InvalidSequenceTokenException", '
           '"expectedSequenceToken":"abc"}',
           400,
         ));
-        bool res = await cloudWatch.handleError(awsResponse);
+        final bool res = await cloudWatch.handleError(awsResponse);
         expect(res, false);
         expect(cloudWatch.sequenceToken, 'abc');
       });
       test('ResourceNotFoundException', () async {
-        AwsResponse awsResponse = await AwsResponse.parseResponse(Response(
+        final AwsResponse awsResponse = await AwsResponse.parseResponse(Response(
           '{"__type": "ResourceNotFoundException", '
           '"message":"The specified log stream does not exist."}',
           400,
         ));
-        bool res = await cloudWatch.handleError(awsResponse);
+        final bool res = await cloudWatch.handleError(awsResponse);
         expect(res, false);
       });
       test('ResourceNotFoundException', () async {
-        AwsResponse awsResponse = await AwsResponse.parseResponse(Response(
+        final AwsResponse awsResponse = await AwsResponse.parseResponse(Response(
           '{"__type": "ResourceNotFoundException", '
           '"message":"The specified log group does not exist."}',
           400,
         ));
-        bool res = await cloudWatch.handleError(awsResponse);
+        final bool res = await cloudWatch.handleError(awsResponse);
         expect(res, false);
       });
       test('DataAlreadyAcceptedException', () async {
-        AwsResponse awsResponse = await AwsResponse.parseResponse(Response(
+        final AwsResponse awsResponse = await AwsResponse.parseResponse(Response(
           '{"__type": "DataAlreadyAcceptedException", '
           '"expectedSequenceToken":"def"}',
           400,
         ));
-        bool res = await cloudWatch.handleError(awsResponse);
+        final bool res = await cloudWatch.handleError(awsResponse);
         expect(res, true);
         expect(cloudWatch.sequenceToken, 'def');
       });
       test('unknown type', () async {
-        AwsResponse awsResponse = await AwsResponse.parseResponse(Response(
+        final AwsResponse awsResponse = await AwsResponse.parseResponse(Response(
           '{"__type": "unknown"}',
           400,
         ));
-        bool res = await cloudWatch.handleError(awsResponse);
+        final bool res = await cloudWatch.handleError(awsResponse);
         expect(res, false);
       });
     });

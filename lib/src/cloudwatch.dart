@@ -8,12 +8,15 @@ import 'package:http/http.dart';
 import 'package:synchronized/synchronized.dart';
 
 part 'cloudwatch_handler.dart';
+
 part 'log.dart';
+
 part 'log_stack.dart';
+
 part 'util.dart';
 
 /// An AWS CloudWatch class for sending logs more easily to AWS
-class AwsCloudWatch {
+class Logger {
   // AWS Variables
   /// Public AWS access key
   String awsAccessKey;
@@ -68,22 +71,22 @@ class AwsCloudWatch {
 
   // Logging Variables
   /// The log group the log stream will appear under
-  String? groupName;
+  String groupName;
 
   /// Synonym for groupName
-  String? get logGroupName => groupName;
+  String get logGroupName => groupName;
 
   /// Synonym for groupName
-  set logGroupName(String? val) => groupName = val;
+  set logGroupName(String val) => groupName = val;
 
   /// The log stream name for log events to be filed in
-  String? streamName;
+  String streamName;
 
   /// Synonym for streamName
-  String? get logStreamName => streamName;
+  String get logStreamName => streamName;
 
   /// Synonym for streamName
-  set logStreamName(String? val) => streamName = val;
+  set logStreamName(String val) => streamName = val;
 
   /// Bool to skip log stream creation
   bool logStreamCreated = false;
@@ -139,7 +142,7 @@ class AwsCloudWatch {
   bool mockCloudWatch;
 
   /// CloudWatch Constructor
-  AwsCloudWatch({
+  Logger({
     required this.awsAccessKey,
     required this.awsSecretKey,
     required this.region,
@@ -307,8 +310,8 @@ class AwsCloudWatch {
   bool checkError(dynamic error) {
     if (error != null) {
       if (!raiseFailedLookups &&
-              error.toString().contains('XMLHttpRequest error') ||
-          error.toString().contains('Failed host lookup')) {
+          (error.toString().contains('XMLHttpRequest error') ||
+              error.toString().contains('Failed host lookup'))) {
         print(
           'CloudWatch: Failed host lookup! This usually means internet '
           'is unavailable but could also indicate a problem with the '

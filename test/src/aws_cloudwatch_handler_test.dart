@@ -5,7 +5,7 @@ import 'package:test/test.dart';
 void main() {
   group('constructor', () {
     test('main constructor', () {
-      AwsCloudWatchHandler(
+      LoggerHandler(
         awsAccessKey: 'awsAccessKey',
         awsSecretKey: 'awsSecretKey',
         region: 'region',
@@ -18,7 +18,7 @@ void main() {
       );
     });
     test('mock constructor', () {
-      AwsCloudWatchHandler(
+      LoggerHandler(
         awsAccessKey: 'awsAccessKey',
         awsSecretKey: 'awsSecretKey',
         region: 'region',
@@ -37,7 +37,7 @@ void main() {
   });
   group('functions', () {
     group('createInstance', () {
-      final AwsCloudWatchHandler cloudWatchHandler = AwsCloudWatchHandler(
+      final LoggerHandler cloudWatchHandler = LoggerHandler(
         awsAccessKey: 'awsAccessKey',
         awsSecretKey: 'awsSecretKey',
         region: 'region',
@@ -85,13 +85,13 @@ void main() {
         );
       });
       test('variables', () {
-        final AwsCloudWatchHandler cloudWatchHandler = AwsCloudWatchHandler(
+        final LoggerHandler cloudWatchHandler = LoggerHandler(
           awsAccessKey: '1',
           awsSecretKey: '2',
           region: '3',
           awsSessionToken: '4',
-          delay: Duration(seconds: 100),
-          requestTimeout: Duration(seconds: 100),
+          delay: const Duration(seconds: 100),
+          requestTimeout: const Duration(seconds: 100),
           retries: 10,
           largeMessageBehavior: CloudWatchLargeMessages.split,
           raiseFailedLookups: true,
@@ -100,7 +100,7 @@ void main() {
           },
           mockCloudWatch: true,
         );
-        AwsCloudWatch cw = cloudWatchHandler.createInstance(
+        final Logger cw = cloudWatchHandler.createInstance(
           logGroupName: 'logGroupName',
           logStreamName: 'logStreamName',
         );
@@ -118,7 +118,7 @@ void main() {
       });
     });
     group('getInstance', () {
-      final AwsCloudWatchHandler cloudWatchHandler = AwsCloudWatchHandler(
+      final LoggerHandler cloudWatchHandler = LoggerHandler(
         awsAccessKey: 'awsAccessKey',
         awsSecretKey: 'awsSecretKey',
         region: 'region',
@@ -130,7 +130,7 @@ void main() {
         raiseFailedLookups: false,
       );
       test('no instances', () {
-        AwsCloudWatch? nullCloudWatch = cloudWatchHandler.getInstance(
+        final Logger? nullCloudWatch = cloudWatchHandler.getInstance(
           logGroupName: 'logGroupName',
           logStreamName: 'logStreamName',
         );
@@ -144,12 +144,12 @@ void main() {
           logStreamName: 'logStreamName',
         );
         expect(cloudWatchHandler.logInstances.length, 1);
-        AwsCloudWatch? cloudWatch = cloudWatchHandler.getInstance(
+        final Logger? cloudWatch = cloudWatchHandler.getInstance(
           logGroupName: 'logGroupName',
           logStreamName: 'logStreamName',
         );
         expect(cloudWatch != null, true);
-        expect(cloudWatch, isA<AwsCloudWatch>());
+        expect(cloudWatch, isA<Logger>());
         expect(cloudWatch!.logGroupName, 'logGroupName');
         expect(cloudWatch.logStreamName, 'logStreamName');
       });
@@ -160,7 +160,7 @@ void main() {
           logStreamName: 'logStreamName',
         );
         expect(cloudWatchHandler.logInstances.length, 1);
-        AwsCloudWatch? cloudWatch = cloudWatchHandler.getInstance(
+        final Logger? cloudWatch = cloudWatchHandler.getInstance(
           logGroupName: 'logGroupName1',
           logStreamName: 'logStreamName1',
         );
@@ -189,7 +189,7 @@ void main() {
       }
 
       test('log', () async {
-        AwsCloudWatchHandler handler = AwsCloudWatchHandler(
+        final LoggerHandler handler = LoggerHandler(
           awsAccessKey: 'awsAccessKey',
           awsSecretKey: 'awsSecretKey',
           region: 'region',
@@ -207,14 +207,14 @@ void main() {
           logGroupName: 'logGroupName',
           logStreamName: 'logStreamName',
         );
-        AwsCloudWatch cw = handler.getInstance(
+        final Logger cw = handler.getInstance(
           logGroupName: 'logGroupName',
           logStreamName: 'logStreamName',
         )!;
         expect(cw.sequenceToken, '123412341234');
       });
       test('logMany', () async {
-        AwsCloudWatchHandler handler = AwsCloudWatchHandler(
+        final LoggerHandler handler = LoggerHandler(
           awsAccessKey: 'awsAccessKey',
           awsSecretKey: 'awsSecretKey',
           region: 'region',
@@ -232,7 +232,7 @@ void main() {
           logGroupName: 'logGroupName',
           logStreamName: 'logStreamName',
         );
-        AwsCloudWatch cw = handler.getInstance(
+        final Logger cw = handler.getInstance(
           logGroupName: 'logGroupName',
           logStreamName: 'logStreamName',
         )!;
@@ -242,7 +242,7 @@ void main() {
   });
   group('Getters & Setters', () {
     group('awsAccessKey', () {
-      final AwsCloudWatchHandler cloudWatchHandler = AwsCloudWatchHandler(
+      final LoggerHandler cloudWatchHandler = LoggerHandler(
         awsAccessKey: 'awsAccessKey',
         awsSecretKey: 'awsSecretKey',
         region: 'region',
@@ -258,21 +258,22 @@ void main() {
         expect(cloudWatchHandler.awsAccessKey, '');
       });
       test('set - instances', () {
-        cloudWatchHandler.createInstance(
-          logGroupName: 'logGroupName',
-          logStreamName: 'logStreamName',
-        );
-        cloudWatchHandler.awsAccessKey = '';
+        cloudWatchHandler
+          ..createInstance(
+            logGroupName: 'logGroupName',
+            logStreamName: 'logStreamName',
+          )
+          ..awsAccessKey = '';
         expect(cloudWatchHandler.awsAccessKey, '');
-        AwsCloudWatch? cw = cloudWatchHandler.getInstance(
+        final Logger? cw = cloudWatchHandler.getInstance(
           logGroupName: 'logGroupName',
           logStreamName: 'logStreamName',
         )!;
-        expect(cw.awsAccessKey, '');
+        expect(cw!.awsAccessKey, '');
       });
     });
     group('awsSecretKey', () {
-      final AwsCloudWatchHandler cloudWatchHandler = AwsCloudWatchHandler(
+      final LoggerHandler cloudWatchHandler = LoggerHandler(
         awsAccessKey: 'awsAccessKey',
         awsSecretKey: 'awsSecretKey',
         region: 'region',
@@ -288,21 +289,22 @@ void main() {
         expect(cloudWatchHandler.awsSecretKey, '');
       });
       test('set - instances', () {
-        cloudWatchHandler.createInstance(
-          logGroupName: 'logGroupName',
-          logStreamName: 'logStreamName',
-        );
-        cloudWatchHandler.awsSecretKey = '';
+        cloudWatchHandler
+          ..createInstance(
+            logGroupName: 'logGroupName',
+            logStreamName: 'logStreamName',
+          )
+          ..awsSecretKey = '';
         expect(cloudWatchHandler.awsSecretKey, '');
-        AwsCloudWatch? cw = cloudWatchHandler.getInstance(
+        final Logger? cw = cloudWatchHandler.getInstance(
           logGroupName: 'logGroupName',
           logStreamName: 'logStreamName',
         )!;
-        expect(cw.awsSecretKey, '');
+        expect(cw!.awsSecretKey, '');
       });
     });
     group('awsSessionToken', () {
-      final AwsCloudWatchHandler cloudWatchHandler = AwsCloudWatchHandler(
+      final LoggerHandler cloudWatchHandler = LoggerHandler(
         awsAccessKey: 'awsAccessKey',
         awsSecretKey: 'awsSecretKey',
         region: 'region',
@@ -318,21 +320,22 @@ void main() {
         expect(cloudWatchHandler.awsSessionToken, '');
       });
       test('set - instances', () {
-        cloudWatchHandler.createInstance(
-          logGroupName: 'logGroupName',
-          logStreamName: 'logStreamName',
-        );
-        cloudWatchHandler.awsSessionToken = '';
+        cloudWatchHandler
+          ..createInstance(
+            logGroupName: 'logGroupName',
+            logStreamName: 'logStreamName',
+          )
+          ..awsSessionToken = '';
         expect(cloudWatchHandler.awsSessionToken, '');
-        AwsCloudWatch? cw = cloudWatchHandler.getInstance(
+        final Logger? cw = cloudWatchHandler.getInstance(
           logGroupName: 'logGroupName',
           logStreamName: 'logStreamName',
         )!;
-        expect(cw.awsSessionToken, '');
+        expect(cw!.awsSessionToken, '');
       });
     });
     group('delay', () {
-      final AwsCloudWatchHandler cloudWatchHandler = AwsCloudWatchHandler(
+      final LoggerHandler cloudWatchHandler = LoggerHandler(
         awsAccessKey: 'awsAccessKey',
         awsSecretKey: 'awsSecretKey',
         region: 'region',
@@ -344,25 +347,26 @@ void main() {
         raiseFailedLookups: false,
       );
       test('set - no instances', () {
-        cloudWatchHandler.delay = Duration(seconds: 100);
+        cloudWatchHandler.delay = const Duration(seconds: 100);
         expect(cloudWatchHandler.delay.inSeconds, 100);
       });
       test('set - instances', () {
-        cloudWatchHandler.createInstance(
-          logGroupName: 'logGroupName',
-          logStreamName: 'logStreamName',
-        );
-        cloudWatchHandler.delay = Duration(seconds: 100);
+        cloudWatchHandler
+          ..createInstance(
+            logGroupName: 'logGroupName',
+            logStreamName: 'logStreamName',
+          )
+          ..delay = const Duration(seconds: 100);
         expect(cloudWatchHandler.delay.inSeconds, 100);
-        AwsCloudWatch? cw = cloudWatchHandler.getInstance(
+        final Logger? cw = cloudWatchHandler.getInstance(
           logGroupName: 'logGroupName',
           logStreamName: 'logStreamName',
         )!;
-        expect(cw.delay.inSeconds, 100);
+        expect(cw!.delay.inSeconds, 100);
       });
     });
     group('requestTimeout', () {
-      final AwsCloudWatchHandler cloudWatchHandler = AwsCloudWatchHandler(
+      final LoggerHandler cloudWatchHandler = LoggerHandler(
         awsAccessKey: 'awsAccessKey',
         awsSecretKey: 'awsSecretKey',
         region: 'region',
@@ -374,25 +378,26 @@ void main() {
         raiseFailedLookups: false,
       );
       test('set - no instances', () {
-        cloudWatchHandler.requestTimeout = Duration(seconds: 100);
+        cloudWatchHandler.requestTimeout = const Duration(seconds: 100);
         expect(cloudWatchHandler.requestTimeout.inSeconds, 100);
       });
       test('set - instances', () {
-        cloudWatchHandler.createInstance(
-          logGroupName: 'logGroupName',
-          logStreamName: 'logStreamName',
-        );
-        cloudWatchHandler.requestTimeout = Duration(seconds: 100);
+        cloudWatchHandler
+          ..createInstance(
+            logGroupName: 'logGroupName',
+            logStreamName: 'logStreamName',
+          )
+          ..requestTimeout = const Duration(seconds: 100);
         expect(cloudWatchHandler.requestTimeout.inSeconds, 100);
-        AwsCloudWatch? cw = cloudWatchHandler.getInstance(
+        final Logger? cw = cloudWatchHandler.getInstance(
           logGroupName: 'logGroupName',
           logStreamName: 'logStreamName',
         )!;
-        expect(cw.requestTimeout.inSeconds, 100);
+        expect(cw!.requestTimeout.inSeconds, 100);
       });
     });
     group('largeMessageBehavior', () {
-      final AwsCloudWatchHandler cloudWatchHandler = AwsCloudWatchHandler(
+      final LoggerHandler cloudWatchHandler = LoggerHandler(
         awsAccessKey: 'awsAccessKey',
         awsSecretKey: 'awsSecretKey',
         region: 'region',
@@ -409,22 +414,23 @@ void main() {
             CloudWatchLargeMessages.split);
       });
       test('set - instances', () {
-        cloudWatchHandler.createInstance(
-          logGroupName: 'logGroupName',
-          logStreamName: 'logStreamName',
-        );
-        cloudWatchHandler.largeMessageBehavior = CloudWatchLargeMessages.split;
+        cloudWatchHandler
+          ..createInstance(
+            logGroupName: 'logGroupName',
+            logStreamName: 'logStreamName',
+          )
+          ..largeMessageBehavior = CloudWatchLargeMessages.split;
         expect(cloudWatchHandler.largeMessageBehavior,
             CloudWatchLargeMessages.split);
-        AwsCloudWatch? cw = cloudWatchHandler.getInstance(
+        final Logger? cw = cloudWatchHandler.getInstance(
           logGroupName: 'logGroupName',
           logStreamName: 'logStreamName',
         )!;
-        expect(cw.largeMessageBehavior, CloudWatchLargeMessages.split);
+        expect(cw!.largeMessageBehavior, CloudWatchLargeMessages.split);
       });
     });
     group('raiseFailedLookups', () {
-      final AwsCloudWatchHandler cloudWatchHandler = AwsCloudWatchHandler(
+      final LoggerHandler cloudWatchHandler = LoggerHandler(
         awsAccessKey: 'awsAccessKey',
         awsSecretKey: 'awsSecretKey',
         region: 'region',
@@ -440,21 +446,22 @@ void main() {
         expect(cloudWatchHandler.raiseFailedLookups, true);
       });
       test('set - instances', () {
-        cloudWatchHandler.createInstance(
-          logGroupName: 'logGroupName',
-          logStreamName: 'logStreamName',
-        );
-        cloudWatchHandler.raiseFailedLookups = true;
+        cloudWatchHandler
+          ..createInstance(
+            logGroupName: 'logGroupName',
+            logStreamName: 'logStreamName',
+          )
+          ..raiseFailedLookups = true;
         expect(cloudWatchHandler.raiseFailedLookups, true);
-        AwsCloudWatch? cw = cloudWatchHandler.getInstance(
+        final Logger? cw = cloudWatchHandler.getInstance(
           logGroupName: 'logGroupName',
           logStreamName: 'logStreamName',
         )!;
-        expect(cw.raiseFailedLookups, true);
+        expect(cw!.raiseFailedLookups, true);
       });
     });
     group('retries', () {
-      final AwsCloudWatchHandler cloudWatchHandler = AwsCloudWatchHandler(
+      final LoggerHandler cloudWatchHandler = LoggerHandler(
         awsAccessKey: 'awsAccessKey',
         awsSecretKey: 'awsSecretKey',
         region: 'region',
@@ -470,17 +477,18 @@ void main() {
         expect(cloudWatchHandler.retries, 0);
       });
       test('set - instances', () {
-        cloudWatchHandler.createInstance(
-          logGroupName: 'logGroupName',
-          logStreamName: 'logStreamName',
-        );
-        cloudWatchHandler.retries = 0;
+        cloudWatchHandler
+          ..createInstance(
+            logGroupName: 'logGroupName',
+            logStreamName: 'logStreamName',
+          )
+          ..retries = 0;
         expect(cloudWatchHandler.retries, 0);
-        AwsCloudWatch? cw = cloudWatchHandler.getInstance(
+        final Logger? cw = cloudWatchHandler.getInstance(
           logGroupName: 'logGroupName',
           logStreamName: 'logStreamName',
         )!;
-        expect(cw.retries, 0);
+        expect(cw!.retries, 0);
       });
     });
   });

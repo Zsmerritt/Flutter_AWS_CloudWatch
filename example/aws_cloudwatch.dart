@@ -5,18 +5,18 @@ import 'package:intl/intl.dart';
 ///
 /// PLEASE FILL OUT THE FOLLOWING VARIABLES:
 
-const String _AWS_ACCESS_KEY_ID = 'YOUR_ACCESS_KEY';
-const String _AWS_SECRET_ACCESS_KEY = 'YOUR_SECRET_ACCESS_KEY';
-const String _Region = 'YOUR_REGION_CODE'; // (us-west-1, us-east-2, etc)
-const String _LogGroup = 'DESIRED_LOG_GROUP_NAME';
-const String _ErrorGroup = 'DESIRED_ERROR_LOG_GROUP_NAME';
+const String _awsAccessKeyId = 'YOUR_ACCESS_KEY';
+const String _awsSecretAccessKey = 'YOUR_SECRET_ACCESS_KEY';
+const String _region = 'YOUR_REGION_CODE'; // (us-west-1, us-east-2, etc)
+const String _logGroup = 'DESIRED_LOG_GROUP_NAME';
+const String _errorGroup = 'DESIRED_ERROR_LOG_GROUP_NAME';
 
 /// END OF VARIABLES
 
 CloudWatchHandler logging = CloudWatchHandler(
-  awsAccessKey: _AWS_ACCESS_KEY_ID,
-  awsSecretKey: _AWS_SECRET_ACCESS_KEY,
-  region: _Region,
+  awsAccessKey: _awsAccessKeyId,
+  awsSecretKey: _awsSecretAccessKey,
+  region: _region,
   delay: const Duration(milliseconds: 200),
 );
 
@@ -34,8 +34,8 @@ String _getLogStreamName() {
 
 void log(String logString, {bool isError = false}) {
   logging.log(
-    msg: logString,
-    logGroupName: isError ? _ErrorGroup : _LogGroup,
+    message: logString,
+    logGroupName: isError ? _errorGroup : _logGroup,
     logStreamName: _getLogStreamName(),
   );
 }

@@ -57,7 +57,7 @@ class CloudWatchException implements Exception {
 /// Validates [streamName] based on aws restrictions
 ///
 /// Throws [CloudWatchException] if bad name is found
-void validateLogStreamName(String? streamName) {
+void validateLogStreamName(String streamName) {
   validateName(
     streamName,
     'streamName',
@@ -68,7 +68,7 @@ void validateLogStreamName(String? streamName) {
 /// Validates [groupName] based on aws restrictions
 ///
 /// Throws [CloudWatchException] if bad name is found
-void validateLogGroupName(String? groupName) {
+void validateLogGroupName(String groupName) {
   validateName(
     groupName,
     'groupName',
@@ -77,13 +77,7 @@ void validateLogGroupName(String? groupName) {
 }
 
 /// Validates [name] to have a regex match with [pattern] and checks length requirements
-void validateName(String? name, String type, String pattern) {
-  if (name == null) {
-    throw CloudWatchException(
-      message: 'No $type name provided. Set $type and then try again.',
-      stackTrace: StackTrace.current,
-    );
-  }
+void validateName(String name, String type, String pattern) {
   if (name.length > 512 || name.isEmpty) {
     throw CloudWatchException(
       message:

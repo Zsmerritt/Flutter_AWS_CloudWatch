@@ -5,7 +5,7 @@
 library aws_cloudwatch;
 
 import 'package:aws_cloudwatch/src/cloudwatch.dart'
-    show AwsCloudWatch, CloudWatchLargeMessages, AwsCloudWatchHandler;
+    show Logger, CloudWatchLargeMessages, LoggerHandler;
 
 export 'package:aws_cloudwatch/aws_cloudwatch.dart'
     show CloudWatch, CloudWatchHandler;
@@ -35,7 +35,7 @@ class CloudWatch {
   /// AWS session token (temporary credentials)
   String? get awsSessionToken => _cloudWatch.awsSessionToken;
 
-  set awsSessionToken(String? token) => _cloudWatch.awsSessionToken;
+  set awsSessionToken(String? token) => _cloudWatch.awsSessionToken = token;
 
   /// How long to wait between requests to avoid rate limiting (suggested value is Duration(milliseconds: 200))
   Duration get delay => _cloudWatch.delay;
@@ -66,43 +66,44 @@ class CloudWatch {
 
   // Logging Variables
   /// The log group the log stream will appear under
-  String? get groupName => _cloudWatch.groupName;
+  String get groupName => _cloudWatch.groupName;
 
-  set groupName(String? group) => _cloudWatch.groupName = group;
+  set groupName(String group) => _cloudWatch.groupName = group;
 
   /// Synonym for groupName
-  String? get logGroupName => groupName;
+  String get logGroupName => groupName;
 
-  set logGroupName(String? val) => groupName = val;
+  set logGroupName(String val) => groupName = val;
 
   /// The log stream name for log events to be filed in
-  String? get streamName => _cloudWatch.streamName;
+  String get streamName => _cloudWatch.streamName;
 
-  set streamName(String? stream) => _cloudWatch.streamName = stream;
-
-  /// Synonym for streamName
-  String? get logStreamName => streamName;
+  set streamName(String stream) => _cloudWatch.streamName = stream;
 
   /// Synonym for streamName
-  set logStreamName(String? val) => streamName = val;
+  String get logStreamName => streamName;
+
+  /// Synonym for streamName
+  set logStreamName(String val) => streamName = val;
 
   /// Hidden instance of AwsCloudWatch that does behind the scenes work
-  final AwsCloudWatch _cloudWatch;
+  final Logger _cloudWatch;
 
   /// CloudWatch Constructor
-  CloudWatch(
-    String awsAccessKey,
-    String awsSecretKey,
-    String region, {
-    groupName,
-    streamName,
-    awsSessionToken,
-    delay = const Duration(),
-    requestTimeout = const Duration(seconds: 10),
-    retries = 3,
-    largeMessageBehavior = CloudWatchLargeMessages.truncate,
-    raiseFailedLookups = false,
-  }) : _cloudWatch = AwsCloudWatch(
+  CloudWatch({
+    required String awsAccessKey,
+    required String awsSecretKey,
+    required String region,
+    required String groupName,
+    required String streamName,
+    String? awsSessionToken,
+    Duration delay = const Duration(),
+    Duration requestTimeout = const Duration(seconds: 10),
+    int retries = 3,
+    CloudWatchLargeMessages largeMessageBehavior =
+        CloudWatchLargeMessages.truncate,
+    bool raiseFailedLookups = false,
+  }) : _cloudWatch = Logger(
           awsAccessKey: awsAccessKey,
           awsSecretKey: awsSecretKey,
           region: region,
@@ -125,8 +126,8 @@ class CloudWatch {
   ///
   /// Throws a [CloudWatchException] if [groupName] or [streamName] are not
   /// initialized or if aws returns an error.
-  void log(String logString) {
-    _cloudWatch.log([logString]);
+  Future<void> log(String logString) async {
+    await _cloudWatch.log([logString]);
   }
 
   /// Sends a log to AWS
@@ -137,7 +138,7 @@ class CloudWatch {
   ///
   /// Throws a [CloudWatchException] if [groupName] or [streamName] are not
   /// initialized or if aws returns an error.
-  void logMany(List<String> logStrings) {
-    _cloudWatch.log(logStrings);
+  Future<void> logMany(List<String> logStrings) async {
+    await _cloudWatch.log(logStrings);
   }
 }
