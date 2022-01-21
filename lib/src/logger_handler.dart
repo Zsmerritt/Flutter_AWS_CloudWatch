@@ -167,14 +167,14 @@ class LoggerHandler {
 
   /// Logs the provided message to the provided log group and log stream
   ///
-  /// Logs a single [msg] to [logStreamName] under the group [logGroupName]
+  /// Logs a single [message] to [logStreamName] under the group [logGroupName]
   Future<void> log({
-    required String msg,
+    required String message,
     required String logGroupName,
     required String logStreamName,
   }) async {
     await logMany(
-      messages: [msg],
+      messages: [message],
       logGroupName: logGroupName,
       logStreamName: logStreamName,
     );

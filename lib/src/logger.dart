@@ -164,10 +164,10 @@ class Logger {
     validateLogStreamName(streamName);
   }
 
-  /// prints [msg] if [v] is greater than the verbosity level
-  bool debugPrint(int v, String msg) {
+  /// prints [message] if [v] is greater than the verbosity level
+  bool debugPrint(int v, String message) {
     if (verbosity > v) {
-      print(msg);
+      print(message);
       return true;
     }
     return false;

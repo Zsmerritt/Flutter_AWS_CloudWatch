@@ -114,14 +114,14 @@ class CloudWatchHandler {
 
   /// Logs the provided message to the provided log group and log stream
   ///
-  /// Logs a single [msg] to [logStreamName] under the group [logGroupName]
+  /// Logs a single [message] to [logStreamName] under the group [logGroupName]
   Future<void> log({
     required String message,
     required String logGroupName,
     required String logStreamName,
   }) async {
     await _handler.log(
-      msg: message,
+      message: message,
       logGroupName: logGroupName,
       logStreamName: logStreamName,
     );

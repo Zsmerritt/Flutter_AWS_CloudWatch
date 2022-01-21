@@ -203,7 +203,7 @@ void main() {
           mockCloudWatch: true,
         );
         await handler.log(
-          msg: 'msg',
+          message: 'message',
           logGroupName: 'logGroupName',
           logStreamName: 'logStreamName',
         );
@@ -228,7 +228,7 @@ void main() {
           mockCloudWatch: true,
         );
         await handler.logMany(
-          messages: ['msg'],
+          messages: ['message'],
           logGroupName: 'logGroupName',
           logStreamName: 'logStreamName',
         );
