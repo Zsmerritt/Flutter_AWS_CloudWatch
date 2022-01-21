@@ -15,7 +15,7 @@ class CloudWatchLogStack {
     this.largeMessageBehavior = CloudWatchLargeMessages.truncate,
   });
 
-  /// The stack of logs that holds presplt CloudWatchLogs
+  /// The stack of logs that holds pre-split CloudWatchLogs
   List<CloudWatchLog> logStack = [];
 
   /// The length of the stack
