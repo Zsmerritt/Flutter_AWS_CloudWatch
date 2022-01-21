@@ -1,4 +1,4 @@
-part of 'cloudwatch.dart';
+part of 'logger.dart';
 
 /// A class to hold logs and their metadata
 class CloudWatchLog {

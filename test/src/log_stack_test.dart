@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:aws_cloudwatch/src/cloudwatch.dart';
+import 'package:aws_cloudwatch/src/logger.dart';
 import 'package:test/test.dart';
 
 void main() {

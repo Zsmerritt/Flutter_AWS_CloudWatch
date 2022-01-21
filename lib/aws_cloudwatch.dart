@@ -4,12 +4,12 @@
 
 library aws_cloudwatch;
 
-import 'package:aws_cloudwatch/src/cloudwatch.dart'
+import 'package:aws_cloudwatch/src/logger.dart'
     show Logger, CloudWatchLargeMessages, LoggerHandler;
 
 export 'package:aws_cloudwatch/aws_cloudwatch.dart'
     show CloudWatch, CloudWatchHandler;
-export 'package:aws_cloudwatch/src/cloudwatch.dart'
+export 'package:aws_cloudwatch/src/logger.dart'
     show CloudWatchLargeMessages, CloudWatchException;
 
 part 'aws_cloudwatch_handler.dart';

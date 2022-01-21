@@ -1,4 +1,4 @@
-part of 'cloudwatch.dart';
+part of 'logger.dart';
 
 /// AWS Hard Limits
 const int awsMaxByteMessageSize = 262118;

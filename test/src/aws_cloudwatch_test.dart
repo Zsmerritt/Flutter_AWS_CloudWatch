@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:aws_cloudwatch/src/cloudwatch.dart';
+import 'package:aws_cloudwatch/src/logger.dart';
 import 'package:http/http.dart';
 import 'package:test/test.dart';
 

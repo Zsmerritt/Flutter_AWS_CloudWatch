@@ -1,4 +1,4 @@
-part of 'cloudwatch.dart';
+part of 'logger.dart';
 
 /// A CloudWatch handler class to easily manage multiple CloudWatch instances
 class LoggerHandler {
