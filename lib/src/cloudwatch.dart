@@ -2,14 +2,15 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
-import 'package:aws_cloudwatch/src/util.dart';
 import 'package:aws_request/aws_request.dart';
 import 'package:aws_request/testing.dart';
 import 'package:http/http.dart';
 import 'package:synchronized/synchronized.dart';
 
-import 'log.dart';
-import 'log_stack.dart';
+part 'cloudwatch_handler.dart';
+part 'log.dart';
+part 'log_stack.dart';
+part 'util.dart';
 
 /// An AWS CloudWatch class for sending logs more easily to AWS
 class AwsCloudWatch {
@@ -30,23 +31,23 @@ class AwsCloudWatch {
   Duration get delay => _delay;
 
   /// How long to wait between requests to avoid rate limiting (suggested value is Duration(milliseconds: 200))
-  void set delay(Duration d) {
-    _delay = !d.isNegative ? d : Duration();
+  set delay(Duration d) {
+    _delay = !d.isNegative ? d : const Duration();
   }
 
   /// How long to wait for request before triggering a timeout
   Duration get requestTimeout => _requestTimeout;
 
   /// How long to wait for request before triggering a timeout
-  void set requestTimeout(Duration d) {
-    _requestTimeout = !d.isNegative ? d : Duration();
+  set requestTimeout(Duration d) {
+    _requestTimeout = !d.isNegative ? d : const Duration();
   }
 
   /// How many times an api request should be retired upon failure. Default is 3
   int get retries => _retries;
 
   /// How many times an api request should be retired upon failure. Default is 3
-  void set retries(int d) {
+  set retries(int d) {
     _retries = d >= 0 ? d : 0;
   }
 
@@ -99,10 +100,10 @@ class AwsCloudWatch {
   /// 0 - Errors only
   /// 1 - Status Codes
   /// 2 - General Info
-  void set verbosity(int level) {
-    level = min(level, 3);
-    level = max(level, 0);
-    _verbosity = level;
+  set verbosity(int level) {
+    int newLevel = min(level, 3);
+    newLevel = max(newLevel, 0);
+    _verbosity = newLevel;
     debugPrint(
       2,
       'CloudWatch INFO: Set verbosity to $verbosity',
@@ -150,14 +151,14 @@ class AwsCloudWatch {
     required retries,
     required largeMessageBehavior,
     required this.raiseFailedLookups,
-    this.mockCloudWatch: false,
+    this.mockCloudWatch = false,
     this.mockFunction,
-  })  : this._largeMessageBehavior = largeMessageBehavior,
-        this._delay = !delay.isNegative ? delay : Duration(),
-        this._requestTimeout =
-            !requestTimeout.isNegative ? requestTimeout : Duration(),
-        this._retries = max(0, retries),
-        this.logStack =
+  })  : _largeMessageBehavior = largeMessageBehavior,
+        _delay = !delay.isNegative ? delay : const Duration(),
+        _requestTimeout =
+            !requestTimeout.isNegative ? requestTimeout : const Duration(),
+        _retries = max(0, retries),
+        logStack =
             CloudWatchLogStack(largeMessageBehavior: largeMessageBehavior) {
     validateLogGroupName(groupName);
     validateLogStreamName(streamName);
@@ -202,7 +203,7 @@ class AwsCloudWatch {
     required String target,
     required String type,
   }) async {
-    bool isLogGroup = type == 'LogGroup';
+    final bool isLogGroup = type == 'LogGroup';
     if (!(isLogGroup ? logGroupCreated : logStreamCreated)) {
       debugPrint(
         2,
@@ -227,13 +228,13 @@ class AwsCloudWatch {
         }
         rethrow;
       }
-      int statusCode = result.statusCode;
+      final int statusCode = result.statusCode;
       debugPrint(
         1,
         'CloudWatch Info: $type creation status code: $statusCode',
       );
       if (statusCode != 200) {
-        AwsResponse response = await AwsResponse.parseResponse(result);
+        final AwsResponse response = await AwsResponse.parseResponse(result);
         debugPrint(
           0,
           'CloudWatch ERROR: $response',
@@ -266,7 +267,7 @@ class AwsCloudWatch {
       2,
       'CloudWatch INFO: Generating CloudWatch request body',
     );
-    Map<String, dynamic> body = {
+    final Map<String, dynamic> body = {
       'logEvents': logsToSend,
       'logGroupName': groupName,
       'logStreamName': streamName,
@@ -278,7 +279,7 @@ class AwsCloudWatch {
         'CloudWatch INFO: Adding sequence token',
       );
     }
-    String jsonBody = json.encode(body);
+    final String jsonBody = jsonEncode(body);
     debugPrint(
       2,
       'CloudWatch INFO: Generated jsonBody with ${logsToSend.length} logs: $jsonBody',
@@ -297,7 +298,9 @@ class AwsCloudWatch {
     await sendAllLogs().catchError((e) {
       error = e;
     });
-    if (checkError(error)) return;
+    if (checkError(error)) {
+      return;
+    }
   }
 
   /// Checks info about [error] and returns whether execution should stop
@@ -321,17 +324,11 @@ class AwsCloudWatch {
 
   /// Queues [sendLogs] until all logs are sent or error occurs
   Future<void> sendAllLogs() async {
-    dynamic error;
-    while (logStack.length > 0 && error == null) {
+    while (logStack.length > 0) {
       await Future.delayed(
         delay,
-        () async => await lock.synchronized(sendLogs),
-      ).catchError((e) {
-        error = e;
-      });
-    }
-    if (error != null) {
-      throw error;
+      );
+      await lock.synchronized(sendLogs);
     }
   }
 
@@ -346,13 +343,13 @@ class AwsCloudWatch {
       return;
     }
     // capture logs that are about to be sent in case the request fails
-    CloudWatchLog _logs = logStack.pop();
+    final CloudWatchLog _logs = logStack.pop();
     bool success = false;
     dynamic error;
     for (int i = 0; i < retries && !success; i++) {
       try {
-        String body = createBody(_logs.logs);
-        Response response = await sendRequest(
+        final String body = createBody(_logs.logs);
+        final Response response = await sendRequest(
           body: body,
           target: 'Logs_20140328.PutLogEvents',
         );
@@ -372,7 +369,9 @@ class AwsCloudWatch {
         0,
         'CloudWatch ERROR: Failed to send logs',
       );
-      if (error != null) throw error;
+      if (error != null) {
+        throw error;
+      }
     }
   }
 
@@ -381,8 +380,8 @@ class AwsCloudWatch {
     required String body,
     required String target,
   }) async {
-    Map<String, String> headers = {};
-    Map<String, String> queryString = {};
+    final Map<String, String> headers = {};
+    final Map<String, String> queryString = {};
     if (awsSessionToken != null) {
       headers['X-Amz-Security-Token'] = awsSessionToken!;
     }
@@ -423,7 +422,7 @@ class AwsCloudWatch {
   Future<bool> handleResponse(
     Response response,
   ) async {
-    AwsResponse awsResponse = await AwsResponse.parseResponse(response);
+    final AwsResponse awsResponse = await AwsResponse.parseResponse(response);
     if (awsResponse.statusCode == 200) {
       debugPrint(
         1,
@@ -433,7 +432,7 @@ class AwsCloudWatch {
       return true;
     } else {
       if (awsResponse.type != null) {
-        return await handleError(awsResponse);
+        return handleError(awsResponse);
       }
       debugPrint(
         0,
@@ -465,7 +464,7 @@ class AwsCloudWatch {
       );
       return false;
     } else if (awsResponse.type == 'ResourceNotFoundException' &&
-        awsResponse.message == "The specified log stream does not exist.") {
+        awsResponse.message == 'The specified log stream does not exist.') {
       // LogStream not present
       // Sometimes happens with debuggers / hot reloads
       // Attempt to recover
@@ -477,7 +476,7 @@ class AwsCloudWatch {
       await createLogStream();
       return false;
     } else if (awsResponse.type == 'ResourceNotFoundException' &&
-        awsResponse.message == "The specified log group does not exist.") {
+        awsResponse.message == 'The specified log group does not exist.') {
       // LogGroup not present
       // Sometimes happens with debuggers / hot reloads
       // Attempt to recover

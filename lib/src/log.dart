@@ -1,3 +1,5 @@
+part of 'cloudwatch.dart';
+
 /// A class to hold logs and their metadata
 class CloudWatchLog {
   /// The list of logs in json form. These are ready to be sent

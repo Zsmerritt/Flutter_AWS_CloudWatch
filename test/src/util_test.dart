@@ -1,14 +1,14 @@
-import 'package:aws_cloudwatch/src/util.dart';
+import 'package:aws_cloudwatch/src/cloudwatch.dart';
 import 'package:http/http.dart';
 import 'package:test/test.dart';
 
-main() {
+void main() {
   group('Constants', () {
     test('GROUP_NAME_REGEX_PATTERN', () {
-      expect(GROUP_NAME_REGEX_PATTERN, r'^[\.\-_/#A-Za-z0-9]+$');
+      expect(groupNameRegexPattern, r'^[\.\-_/#A-Za-z0-9]+$');
     });
     test('STREAM_NAME_REGEX_PATTERN', () {
-      expect(STREAM_NAME_REGEX_PATTERN, r'^[^:*]*$');
+      expect(streamNameRegexPattern, r'^[^:*]*$');
     });
     test('CloudWatchLargeMessages', () {
       expect(CloudWatchLargeMessages.values, [
@@ -81,7 +81,7 @@ main() {
     group('validateName', () {
       test('null name', () {
         try {
-          validateName(null, 'type', r'');
+          validateName(null, 'type', '');
         } catch (e) {
           expect(e, isA<CloudWatchException>());
           CloudWatchException error = e as CloudWatchException;
@@ -95,7 +95,7 @@ main() {
       });
       test('empty name', () {
         try {
-          validateName('', 'type', r'');
+          validateName('', 'type', '');
         } catch (e) {
           expect(e, isA<CloudWatchException>());
           CloudWatchException error = e as CloudWatchException;
@@ -109,7 +109,7 @@ main() {
       });
       test('huge name', () {
         try {
-          validateName('1' * 513, 'type', r'');
+          validateName('1' * 513, 'type', '');
         } catch (e) {
           expect(e, isA<CloudWatchException>());
           CloudWatchException error = e as CloudWatchException;

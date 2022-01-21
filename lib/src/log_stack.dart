@@ -1,13 +1,9 @@
-import 'dart:convert';
-
-import 'package:aws_cloudwatch/src/util.dart';
-
-import 'log.dart';
+part of 'cloudwatch.dart';
 
 /// AWS Hard Limits
-const int AWS_MAX_BYTE_MESSAGE_SIZE = 262118;
-const int AWS_MAX_BYTE_BATCH_SIZE = 1048550;
-const int AWS_MAX_MESSAGES_PER_BATCH = 10000;
+const int awsMaxByteMessageSize = 262118;
+const int awsMaxByteBatchSize = 1048550;
+const int awsMaxMessagePerByte = 10000;
 
 /// A class that automatically splits and handles logs according to AWS hard limits
 class CloudWatchLogStack {
@@ -16,7 +12,7 @@ class CloudWatchLogStack {
 
   /// CloudWatchLogStack constructor
   CloudWatchLogStack({
-    this.largeMessageBehavior: CloudWatchLargeMessages.truncate,
+    this.largeMessageBehavior = CloudWatchLargeMessages.truncate,
   });
 
   /// The stack of logs that holds presplt CloudWatchLogs
@@ -30,11 +26,11 @@ class CloudWatchLogStack {
   /// Prepares [logStrings] using selected [largeMessageBehavior] as needed
   /// taking care to mind aws hard limits.
   void addLogs(List<String> logStrings) {
-    int time = DateTime.now().toUtc().millisecondsSinceEpoch;
-    for (String msg in logStrings) {
-      List<int> bytes = utf8.encode(msg);
+    final int time = DateTime.now().toUtc().millisecondsSinceEpoch;
+    for (final String msg in logStrings) {
+      final List<int> bytes = utf8.encode(msg);
       // AWS hard limit on message size
-      if (bytes.length <= AWS_MAX_BYTE_MESSAGE_SIZE) {
+      if (bytes.length <= awsMaxByteMessageSize) {
         addToStack(time, bytes);
       } else {
         fixMessage(bytes, time, msg);
@@ -67,7 +63,7 @@ class CloudWatchLogStack {
         throw CloudWatchException(
           message:
               'Provided log message is too long. Individual message size limit is '
-              '$AWS_MAX_BYTE_MESSAGE_SIZE. log message: $msg',
+              '$awsMaxByteMessageSize. log message: $msg',
           stackTrace: StackTrace.current,
         );
     }
@@ -76,10 +72,11 @@ class CloudWatchLogStack {
   /// Truncates the middle of a message and replaces it with ...
   static List<int> truncate(List<int> bytes) {
     // plus 3 to account for "..."
-    double toRemove = ((bytes.length + 3 - AWS_MAX_BYTE_MESSAGE_SIZE) / 2);
-    int toRemoveFront = toRemove.ceil();
-    int toRemoveBack = toRemove % 1 == 0 ? toRemove.ceil() : toRemove.floor();
-    int midPoint = (bytes.length / 2).floor();
+    final double toRemove = (bytes.length + 3 - awsMaxByteMessageSize) / 2;
+    final int toRemoveFront = toRemove.ceil();
+    final int toRemoveBack =
+        toRemove % 1 == 0 ? toRemove.ceil() : toRemove.floor();
+    final int midPoint = (bytes.length / 2).floor();
     return bytes.sublist(0, midPoint - toRemoveFront) +
         // "..." in bytes (2e)
         [46, 46, 46] +
@@ -88,12 +85,15 @@ class CloudWatchLogStack {
 
   /// Splits message into smaller chunks
   static List<List<int>> split(List<int> bytes) {
-    List<List<int>> res = [];
-    while (bytes.length > AWS_MAX_BYTE_MESSAGE_SIZE) {
-      res.add(bytes.sublist(0, AWS_MAX_BYTE_MESSAGE_SIZE));
-      bytes = bytes.sublist(AWS_MAX_BYTE_MESSAGE_SIZE);
+    List<int> newBytes = bytes;
+    final List<List<int>> res = [];
+    while (newBytes.length > awsMaxByteMessageSize) {
+      res.add(newBytes.sublist(0, awsMaxByteMessageSize));
+      newBytes = newBytes.sublist(awsMaxByteMessageSize);
     }
-    if (bytes.length > 0) res.add(bytes);
+    if (newBytes.isNotEmpty) {
+      res.add(newBytes);
+    }
     return res;
   }
 
@@ -103,9 +103,9 @@ class CloudWatchLogStack {
   /// on the last [logStack] Creates a new CloudWatchLog as needed.
   void addToStack(int time, List<int> bytes) {
     // empty list / aws hard limits on batch sizes
-    if (logStack.length == 0 ||
-        logStack.last.logs.length >= AWS_MAX_MESSAGES_PER_BATCH ||
-        logStack.last.messageSize + bytes.length > AWS_MAX_BYTE_BATCH_SIZE) {
+    if (logStack.isEmpty ||
+        logStack.last.logs.length >= awsMaxMessagePerByte ||
+        logStack.last.messageSize + bytes.length > awsMaxByteBatchSize) {
       logStack.add(
         CloudWatchLog(
           logs: [
@@ -127,7 +127,7 @@ class CloudWatchLogStack {
 
   /// Pops off first CloudWatchLog from the [logStack] and returns it
   CloudWatchLog pop() {
-    CloudWatchLog result = logStack.first;
+    final CloudWatchLog result = logStack.first;
     if (logStack.length > 1) {
       logStack = logStack.sublist(1);
     } else {

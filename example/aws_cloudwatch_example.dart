@@ -8,7 +8,7 @@ const String Region = 'us-west-2';
 // Logging Variables
 const String groupName = 'LogGroupExample';
 const String streamName = 'LogStreamExample';
-CloudWatch cloudWatch = new CloudWatch(
+CloudWatch cloudWatch = CloudWatch(
   AWS_ACCESS_KEY_ID,
   AWS_SECRET_ACCESS_KEY,
   Region,

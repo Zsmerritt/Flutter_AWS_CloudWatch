@@ -1,10 +1,8 @@
-import 'dart:convert';
-
-import 'package:http/http.dart' as http;
+part of 'cloudwatch.dart';
 
 /// AWS Hard Limits
-const String GROUP_NAME_REGEX_PATTERN = r'^[\.\-_/#A-Za-z0-9]+$';
-const String STREAM_NAME_REGEX_PATTERN = r'^[^:*]*$';
+const String groupNameRegexPattern = r'^[\.\-_/#A-Za-z0-9]+$';
+const String streamNameRegexPattern = r'^[^:*]*$';
 
 /// Enum representing what should happen to messages that are too big
 /// to be sent as a single message. This limit is 262118 utf8 bytes
@@ -47,11 +45,12 @@ class CloudWatchException implements Exception {
       {required this.message, required this.stackTrace, this.type, this.raw});
 
   /// CloudWatchException toString
+  @override
   String toString() {
     if (type != null) {
-      return "CloudWatchException - type: $type, message: $message";
+      return 'CloudWatchException - type: $type, message: $message';
     }
-    return "CloudWatchException - message: $message";
+    return 'CloudWatchException - message: $message';
   }
 }
 
@@ -62,7 +61,7 @@ void validateLogStreamName(String? streamName) {
   validateName(
     streamName,
     'streamName',
-    STREAM_NAME_REGEX_PATTERN,
+    streamNameRegexPattern,
   );
 }
 
@@ -73,7 +72,7 @@ void validateLogGroupName(String? groupName) {
   validateName(
     groupName,
     'groupName',
-    GROUP_NAME_REGEX_PATTERN,
+    groupNameRegexPattern,
   );
 }
 
@@ -85,7 +84,7 @@ void validateName(String? name, String type, String pattern) {
       stackTrace: StackTrace.current,
     );
   }
-  if (name.length > 512 || name.length == 0) {
+  if (name.length > 512 || name.isEmpty) {
     throw CloudWatchException(
       message:
           'Provided $type "$name" is invalid. $type must be between 1 and 512 characters.',
@@ -113,10 +112,10 @@ class AwsResponse {
   AwsResponse._(this.statusCode);
 
   /// Attempts to parse aws response into its type and message parts
-  static Future<AwsResponse> parseResponse(http.Response response) async {
-    AwsResponse result = AwsResponse._(response.statusCode);
+  static Future<AwsResponse> parseResponse(Response response) async {
+    final AwsResponse result = AwsResponse._(response.statusCode);
     if (response.contentLength != null && response.contentLength! > 0) {
-      Map<String, dynamic>? reply = jsonDecode(
+      final Map<String, dynamic>? reply = jsonDecode(
         response.body,
       );
       result.raw = reply.toString();
@@ -139,8 +138,10 @@ class AwsResponse {
   }
 
   /// AwsResponse toString
+  @override
   String toString() {
-    StringBuffer sb = new StringBuffer('AwsResponse - statusCode: $statusCode');
+    final StringBuffer sb =
+        StringBuffer('AwsResponse - statusCode: $statusCode');
     if (type != null) {
       sb.write(', type: $type');
     }

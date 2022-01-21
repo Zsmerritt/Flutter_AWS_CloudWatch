@@ -17,22 +17,22 @@ CloudWatchHandler logging = CloudWatchHandler(
   awsAccessKey: _AWS_ACCESS_KEY_ID,
   awsSecretKey: _AWS_SECRET_ACCESS_KEY,
   region: _Region,
-  delay: Duration(milliseconds: 200),
+  delay: const Duration(milliseconds: 200),
 );
 
 String logStreamName = '';
 
 // You may want to edit this function to suit your needs
 String _getLogStreamName() {
-  if (logStreamName == "") {
-    logStreamName = DateFormat("yyyy-MM-dd HH-mm-ss").format(
+  if (logStreamName.isEmpty) {
+    logStreamName = DateFormat('yyyy-MM-dd HH-mm-ss').format(
       DateTime.now().toUtc(),
     );
   }
   return logStreamName;
 }
 
-void log(String logString, {isError = false}) {
+void log(String logString, {bool isError = false}) {
   logging.log(
     msg: logString,
     logGroupName: isError ? _ErrorGroup : _LogGroup,
