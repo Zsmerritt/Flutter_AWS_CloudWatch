@@ -1,3 +1,7 @@
+## [0.5.1] - 2022/01/20
+
+* Updated aws_request version
+
 ## [0.5.0] - 2022/01/20
 
 ### Breaking Changes:
