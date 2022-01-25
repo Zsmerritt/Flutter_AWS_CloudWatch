@@ -380,7 +380,7 @@ class Logger {
     required String body,
     required String target,
   }) async {
-    final Map<String, String> headers = {};
+    final Map<String, String> headers = {'x-amz-target': target};
     final Map<String, String> queryString = {};
     if (awsSessionToken != null) {
       headers['X-Amz-Security-Token'] = awsSessionToken!;
@@ -400,19 +400,19 @@ class Logger {
       );
     } else {
       awsRequest = AwsRequest(
-        awsAccessKey,
-        awsSecretKey,
-        region,
+        awsAccessKey: awsAccessKey,
+        awsSecretKey: awsSecretKey,
+        region: region,
         service: 'logs',
         timeout: requestTimeout,
       );
     }
     return await awsRequest.send(
-      AwsRequestType.POST,
+      type: AwsRequestType.post,
       jsonBody: body,
-      target: target,
       headers: headers,
       queryString: queryString,
+      signedHeaders: ['x-amz-target'],
     );
   }
 
