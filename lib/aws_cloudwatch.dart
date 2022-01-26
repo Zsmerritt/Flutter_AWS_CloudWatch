@@ -20,6 +20,7 @@ export 'package:aws_cloudwatch/src/logger.dart'
 
 part 'aws_cloudwatch_handler.dart';
 
+/// An AWS CloudWatch interface to easily send logs to CloudWatch
 class CloudWatch {
   // AWS Variables
 
