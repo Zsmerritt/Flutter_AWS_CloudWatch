@@ -140,7 +140,6 @@ void main() {
       cw.maxBytesPerRequest = 100;
       expect(cw.maxBytesPerRequest, 100);
     });
-    ;
     test('maxMessagesPerRequest', () {
       expect(cw.maxMessagesPerRequest, awsMaxMessagesPerRequest);
       cw.maxMessagesPerRequest = 100;
