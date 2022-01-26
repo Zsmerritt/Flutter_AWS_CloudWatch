@@ -5,6 +5,9 @@
   * `maxBytesPerMessage` Changes how large each message can be before [largeMessageBehavior] takes effect. Min 5, Max 262116
   * `maxBytesPerRequest` Changes how many bytes can be sent in each API request before a second request is made.
   * `maxMessagesPerRequest` Changes the maximum number of messages that can be sent in each API request
+* Added special case for timeout exception with detail message & steps forward
+* Updated README with info on new optional arguments
+* Added special case for `InvalidParameterException` along with instructions for reporting them
 
 ## [0.5.1] - 2022/01/24
 

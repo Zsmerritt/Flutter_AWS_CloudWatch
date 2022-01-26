@@ -349,6 +349,13 @@ class Logger {
           'region $region.',
         );
         return true; // stop execution
+      }
+      if (error is TimeoutException) {
+        throw CloudWatchException(
+          message: 'A timeout occurred while trying to upload logs. Consider '
+              'increasing requestTimeout.',
+          stackTrace: StackTrace.current,
+        );
       } else {
         throw error;
       }
@@ -532,6 +539,24 @@ class Logger {
       );
       sequenceToken = awsResponse.expectedSequenceToken;
       return true;
+    } else if (awsResponse.type == 'InvalidParameterException') {
+      // If this is hit its probably a bug! Please report it!
+      // Usually these arent recoverable unfortunately
+      debugPrint(
+        0,
+        'CloudWatch Info: InvalidParameterException! ',
+      );
+      throw CloudWatchException(
+        message:
+            'An InvalidParameterException occurred! This is probably a bug! '
+            'Please report it at\n'
+            'https://github.com/Zsmerritt/Flutter_AWS_CloudWatch/issues/new \n'
+            'and it will be addressed promptly. \n'
+            'Message: ${awsResponse.message} Raw: ${awsResponse.raw}',
+        stackTrace: StackTrace.current,
+        raw: awsResponse.raw,
+        type: 'InvalidParameterException',
+      );
     }
     return false;
   }
