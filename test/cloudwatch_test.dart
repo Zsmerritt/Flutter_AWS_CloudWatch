@@ -1,4 +1,5 @@
 import 'package:aws_cloudwatch/aws_cloudwatch.dart';
+import 'package:aws_cloudwatch/src/logger.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -128,6 +129,22 @@ void main() {
       expect(cw.raiseFailedLookups, true);
       cw.raiseFailedLookups = false;
       expect(cw.raiseFailedLookups, false);
+    });
+    test('maxBytesPerMessage', () {
+      expect(cw.maxBytesPerMessage, awsMaxBytesPerMessage);
+      cw.maxBytesPerMessage = 100;
+      expect(cw.maxBytesPerMessage, 100);
+    });
+    test('maxBytesPerRequest', () {
+      expect(cw.maxBytesPerRequest, awsMaxBytesPerRequest);
+      cw.maxBytesPerRequest = 100;
+      expect(cw.maxBytesPerRequest, 100);
+    });
+    ;
+    test('maxMessagesPerRequest', () {
+      expect(cw.maxMessagesPerRequest, awsMaxMessagesPerRequest);
+      cw.maxMessagesPerRequest = 100;
+      expect(cw.maxMessagesPerRequest, 100);
     });
   });
   group('functions', () {

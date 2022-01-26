@@ -1,4 +1,12 @@
-## [0.5.1] - 2022/01/20
+## [0.5.2] - 2022/01/25
+
+* Fixed issue where message bytes exceeded max in rare cases with many small messages
+* Added optional arguments
+  * `maxBytesPerMessage` Changes how large each message can be before [largeMessageBehavior] takes effect. Min 5, Max 262116
+  * `maxBytesPerRequest` Changes how many bytes can be sent in each API request before a second request is made.
+  * `maxMessagesPerRequest` Changes the maximum number of messages that can be sent in each API request
+
+## [0.5.1] - 2022/01/24
 
 * Updated aws_request version
 

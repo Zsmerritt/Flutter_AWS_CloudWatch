@@ -54,6 +54,33 @@ class CloudWatchHandler {
   /// Whether exceptions should be raised on failed lookups (usually no internet)
   set raiseFailedLookups(bool val) => _handler.raiseFailedLookups = val;
 
+  /// Changes how large each message can be before [largeMessageBehavior] takes
+  /// effect. Min 5, Max 262116
+  ///
+  /// These overrides change when messages are sent. No need to mess with them
+  /// unless you're running into issues
+  int get maxBytesPerMessage => _handler.maxBytesPerMessage;
+
+  set maxBytesPerMessage(int val) => _handler.maxBytesPerMessage = val;
+
+  /// Changes how many bytes can be sent in each API request before a second
+  /// request is made. Min 1, Max 1048576
+  ///
+  /// These overrides change when messages are sent. No need to mess with them
+  /// unless you're running into issues
+  int get maxBytesPerRequest => _handler.maxBytesPerRequest;
+
+  set maxBytesPerRequest(int val) => _handler.maxBytesPerRequest = val;
+
+  /// Changes the maximum number of messages that can be sent in each API
+  /// request. Min 1, Max 10000
+  ///
+  /// These overrides change when messages are sent. No need to mess with them
+  /// unless you're running into issues
+  int get maxMessagesPerRequest => _handler.maxMessagesPerRequest;
+
+  set maxMessagesPerRequest(int val) => _handler.maxMessagesPerRequest = val;
+
   final LoggerHandler _handler;
 
   /// CloudWatchHandler Constructor
@@ -67,6 +94,9 @@ class CloudWatchHandler {
     retries = 3,
     largeMessageBehavior = CloudWatchLargeMessages.truncate,
     raiseFailedLookups = false,
+    int maxBytesPerMessage = awsMaxBytesPerMessage,
+    int maxBytesPerRequest = awsMaxBytesPerRequest,
+    int maxMessagesPerRequest = awsMaxMessagesPerRequest,
   }) : _handler = LoggerHandler(
           awsAccessKey: awsAccessKey,
           awsSecretKey: awsSecretKey,
@@ -77,6 +107,9 @@ class CloudWatchHandler {
           retries: retries,
           largeMessageBehavior: largeMessageBehavior,
           raiseFailedLookups: raiseFailedLookups,
+          maxBytesPerMessage: maxBytesPerMessage,
+          maxBytesPerRequest: maxBytesPerRequest,
+          maxMessagesPerRequest: maxMessagesPerRequest,
         );
 
   /// Returns a specific instance of a CloudWatch class (or null if it doesn't

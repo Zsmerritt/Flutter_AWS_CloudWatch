@@ -121,6 +121,33 @@ class Logger {
   /// Synchronous lock to enforce synchronous request order
   Lock lock = Lock();
 
+  /// Changes how large each message can be before [largeMessageBehavior] takes
+  /// effect. Min 5, Max 262116
+  ///
+  /// These overrides change when messages are sent. No need to mess with them
+  /// unless you're running into issues
+  int get maxBytesPerMessage => logStack.maxBytesPerMessage;
+
+  set maxBytesPerMessage(int val) => logStack.maxBytesPerMessage = val;
+
+  /// Changes how many bytes can be sent in each API request before a second
+  /// request is made. Min 1, Max 1048576
+  ///
+  /// These overrides change when messages are sent. No need to mess with them
+  /// unless you're running into issues
+  int get maxBytesPerRequest => logStack.maxBytesPerRequest;
+
+  set maxBytesPerRequest(int val) => logStack.maxBytesPerRequest = val;
+
+  /// Changes the maximum number of messages that can be sent in each API
+  /// request. Min 1, Max 10000
+  ///
+  /// These overrides change when messages are sent. No need to mess with them
+  /// unless you're running into issues
+  int get maxMessagesPerRequest => logStack.maxMessagesPerRequest;
+
+  set maxMessagesPerRequest(int val) => logStack.maxMessagesPerRequest = val;
+
   /// Private version of delay
   Duration _delay;
 
@@ -151,6 +178,9 @@ class Logger {
     required retries,
     required largeMessageBehavior,
     required this.raiseFailedLookups,
+    int maxBytesPerMessage = awsMaxBytesPerMessage,
+    int maxBytesPerRequest = awsMaxBytesPerRequest,
+    int maxMessagesPerRequest = awsMaxMessagesPerRequest,
     this.mockCloudWatch = false,
     this.mockFunction,
   })  : _largeMessageBehavior = largeMessageBehavior,
@@ -158,8 +188,12 @@ class Logger {
         _requestTimeout =
             !requestTimeout.isNegative ? requestTimeout : const Duration(),
         _retries = max(0, retries),
-        logStack =
-            CloudWatchLogStack(largeMessageBehavior: largeMessageBehavior) {
+        logStack = CloudWatchLogStack(
+          largeMessageBehavior: largeMessageBehavior,
+          maxBytesPerMessage: maxBytesPerMessage,
+          maxBytesPerRequest: maxBytesPerRequest,
+          maxMessagesPerRequest: maxMessagesPerRequest,
+        ) {
     validateLogGroupName(groupName);
     validateLogStreamName(streamName);
   }

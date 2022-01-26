@@ -32,11 +32,9 @@ packages:
   aws_request:
     dependency: "direct main"
     description:
-      path: "."
-      ref: "release-0.4.0"
-      resolved-ref: efc9ea57e23a0deb285ccdc321d639efffeff79e
-      url: "https://github.com/Zsmerritt/Flutter_AWS_Request.git"
-    source: git
+      name: aws_request
+      url: "https://pub.dartlang.org"
+    source: hosted
     version: "0.4.0"
   boolean_selector:
     dependency: transitive

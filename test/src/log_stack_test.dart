@@ -5,9 +5,9 @@ import 'package:test/test.dart';
 
 void main() {
   test('consts', () {
-    expect(awsMaxByteMessageSize, 262118);
-    expect(awsMaxByteBatchSize, 1048550);
-    expect(awsMaxMessagePerByte, 10000);
+    expect(awsMaxBytesPerMessage, 262116);
+    expect(awsMaxBytesPerRequest, 1048576);
+    expect(awsMaxMessagesPerRequest, 10000);
   });
 
   test('constructor', () {
@@ -17,12 +17,44 @@ void main() {
     expect(logStack.logStack.length, 0);
   });
 
-  test('length getter', () {
-    final CloudWatchLogStack logStack = CloudWatchLogStack(
-      largeMessageBehavior: CloudWatchLargeMessages.split,
-    )..addLogs(['test']);
-    expect(logStack.length, 1);
-    expect(logStack.logStack.length, 1);
+  group('getters & setters', () {
+    test('length getter', () {
+      final CloudWatchLogStack logStack = CloudWatchLogStack(
+        largeMessageBehavior: CloudWatchLargeMessages.split,
+      )..addLogs(['test']);
+      expect(logStack.length, 1);
+      expect(logStack.logStack.length, 1);
+    });
+    test('maxBytesPerMessage too large', () {
+      final CloudWatchLogStack logStack = CloudWatchLogStack()
+        ..maxBytesPerMessage = awsMaxBytesPerMessage + 10;
+      expect(logStack.maxBytesPerMessage, awsMaxBytesPerMessage);
+    });
+    test('maxBytesPerMessage too small', () {
+      final CloudWatchLogStack logStack = CloudWatchLogStack()
+        ..maxBytesPerMessage = -1;
+      expect(logStack.maxBytesPerMessage, awsMinBytesPerMessage);
+    });
+    test('maxBytesPerRequest too large', () {
+      final CloudWatchLogStack logStack = CloudWatchLogStack()
+        ..maxBytesPerRequest = awsMaxBytesPerRequest + 10;
+      expect(logStack.maxBytesPerRequest, awsMaxBytesPerRequest);
+    });
+    test('maxBytesPerRequest too small', () {
+      final CloudWatchLogStack logStack = CloudWatchLogStack()
+        ..maxBytesPerRequest = -1;
+      expect(logStack.maxBytesPerRequest, awsMinBytesPerRequest);
+    });
+    test('maxMessagesPerRequest too large', () {
+      final CloudWatchLogStack logStack = CloudWatchLogStack()
+        ..maxMessagesPerRequest = awsMaxMessagesPerRequest + 10;
+      expect(logStack.maxMessagesPerRequest, awsMaxMessagesPerRequest);
+    });
+    test('maxMessagesPerRequest too small', () {
+      final CloudWatchLogStack logStack = CloudWatchLogStack()
+        ..maxMessagesPerRequest = -1;
+      expect(logStack.maxMessagesPerRequest, awsMinMessagesPerRequest);
+    });
   });
 
   group('Functions', () {
@@ -34,7 +66,7 @@ void main() {
       expect(log.logs.length, 2);
       expect(log.logs[0]['message'], 'test');
       expect(log.logs[1]['message'], 'test2');
-      expect(log.messageSize, 9);
+      expect(log.messageSize, 61);
     });
 
     test('pop - 2 message', () {
@@ -46,7 +78,7 @@ void main() {
       expect(splitStack.length, 2);
       final CloudWatchLog log = splitStack.pop();
       expect(splitStack.length, 1);
-      expect(log.logs.length, awsMaxMessagePerByte);
+      expect(log.logs.length, awsMaxMessagesPerRequest);
     });
 
     test('prepend', () {
@@ -68,7 +100,7 @@ void main() {
         expect(truncateStack.logStack[0].logs.length, 2);
         expect(truncateStack.logStack[0].logs[0]['message'], 'test');
         expect(truncateStack.logStack[0].logs[1]['message'], 'test2');
-        expect(truncateStack.logStack[0].messageSize, 9);
+        expect(truncateStack.logStack[0].messageSize, 61);
       });
 
       test('empty', () {
@@ -89,44 +121,44 @@ void main() {
       test('MAX_BYTE_BATCH_SIZE', () {
         final CloudWatchLogStack splitStack = CloudWatchLogStack(
           largeMessageBehavior: CloudWatchLargeMessages.split,
-        )..addLogs(['test' * awsMaxByteMessageSize * 2]);
+        )..addLogs(['test' * awsMaxBytesPerMessage * 2]);
         expect(splitStack.length, 2);
         expect(splitStack.logStack[0].logs.length, 4);
         expect(
           splitStack.logStack[0].logs[0]['message'].length,
-          awsMaxByteMessageSize,
+          awsMaxBytesPerMessage,
         );
         expect(
           splitStack.logStack[0].logs[1]['message'].length,
-          awsMaxByteMessageSize,
+          awsMaxBytesPerMessage,
         );
         expect(
           splitStack.logStack[0].logs[2]['message'].length,
-          awsMaxByteMessageSize,
+          awsMaxBytesPerMessage,
         );
         expect(
           splitStack.logStack[0].logs[3]['message'].length,
-          awsMaxByteMessageSize,
+          awsMaxBytesPerMessage,
         );
-        expect(splitStack.logStack[0].messageSize, 1048472);
+        expect(splitStack.logStack[0].messageSize, 1048568);
         expect(splitStack.logStack[1].logs.length, 4);
         expect(
           splitStack.logStack[1].logs[0]['message'].length,
-          awsMaxByteMessageSize,
+          awsMaxBytesPerMessage,
         );
         expect(
           splitStack.logStack[1].logs[1]['message'].length,
-          awsMaxByteMessageSize,
+          awsMaxBytesPerMessage,
         );
         expect(
           splitStack.logStack[1].logs[2]['message'].length,
-          awsMaxByteMessageSize,
+          awsMaxBytesPerMessage,
         );
         expect(
           splitStack.logStack[1].logs[3]['message'].length,
-          awsMaxByteMessageSize,
+          awsMaxBytesPerMessage,
         );
-        expect(splitStack.logStack[1].messageSize, 1048472);
+        expect(splitStack.logStack[1].messageSize, 1048568);
       });
 
       test('split', () {
@@ -134,45 +166,46 @@ void main() {
           largeMessageBehavior: CloudWatchLargeMessages.split,
         )
           // test splitting large message into smaller chunks
-          ..addLogs(['test' * awsMaxByteMessageSize]);
+          ..addLogs(['test' * awsMaxBytesPerMessage]);
         expect(splitStack.length, 1);
         expect(splitStack.logStack[0].logs.length, 4);
         expect(
           splitStack.logStack[0].logs[0]['message'].length,
-          awsMaxByteMessageSize,
+          awsMaxBytesPerMessage,
         );
         expect(
           splitStack.logStack[0].logs[1]['message'].length,
-          awsMaxByteMessageSize,
+          awsMaxBytesPerMessage,
         );
         expect(
           splitStack.logStack[0].logs[2]['message'].length,
-          awsMaxByteMessageSize,
+          awsMaxBytesPerMessage,
         );
         expect(
           splitStack.logStack[0].logs[3]['message'].length,
-          awsMaxByteMessageSize,
+          awsMaxBytesPerMessage,
         );
-        expect(splitStack.logStack[0].messageSize, 1048472);
+        expect(splitStack.logStack[0].messageSize, 1048568);
 
         // these messages should not be split
         splitStack.addLogs(['test' * 65529]);
         expect(splitStack.length, 2);
         expect(splitStack.logStack[1].logs.length, 1);
         expect(splitStack.logStack[1].logs[0]['message'].length, 262116);
-        expect(splitStack.logStack[1].messageSize, 262116);
+        expect(splitStack.logStack[1].messageSize, awsMaxBytesPerMessage + 26);
       });
 
       test('truncate', () {
         final CloudWatchLogStack truncateStack = CloudWatchLogStack();
         // test truncating large message
-        final List<String> logStrings = ['test' * awsMaxByteMessageSize];
+        final List<String> logStrings = ['test' * awsMaxBytesPerMessage];
         truncateStack.addLogs(logStrings);
         expect(truncateStack.length, 1);
         expect(truncateStack.logStack[0].logs.length, 1);
         expect(truncateStack.logStack[0].logs[0]['message'].length,
-            awsMaxByteMessageSize);
-        expect(truncateStack.logStack[0].messageSize, awsMaxByteMessageSize);
+            awsMaxBytesPerMessage);
+        expect(
+            truncateStack.logStack[0].messageSize, awsMaxBytesPerMessage + 26);
 
         // these messages should not be truncated
         truncateStack.addLogs(['test' * 65529]);
@@ -180,7 +213,7 @@ void main() {
         expect(truncateStack.logStack[0].logs.length, 2);
         expect(truncateStack.logStack[0].logs[1]['message'].length, 262116);
         expect(truncateStack.logStack[0].messageSize,
-            262116 + awsMaxByteMessageSize);
+            262116 + awsMaxBytesPerMessage + 26 * 2);
       });
 
       test('ignore', () {
@@ -188,7 +221,7 @@ void main() {
           largeMessageBehavior: CloudWatchLargeMessages.ignore,
         )
           // test ignoreing large messages
-          ..addLogs(['test' * awsMaxByteMessageSize]);
+          ..addLogs(['test' * awsMaxBytesPerMessage]);
         expect(ignoreStack.length, 0);
 
         // these messages should be added
@@ -196,7 +229,7 @@ void main() {
         expect(ignoreStack.length, 1);
         expect(ignoreStack.logStack[0].logs.length, 1);
         expect(ignoreStack.logStack[0].logs[0]['message'].length, 262116);
-        expect(ignoreStack.logStack[0].messageSize, 262116);
+        expect(ignoreStack.logStack[0].messageSize, awsMaxBytesPerMessage + 26);
       });
 
       test('error', () {
@@ -205,7 +238,7 @@ void main() {
         );
         // test throwing an error on large messages
         try {
-          errorStack.addLogs(['test' * awsMaxByteMessageSize]);
+          errorStack.addLogs(['test' * awsMaxBytesPerMessage]);
         } catch (e) {
           expect(e, isA<CloudWatchException>());
         }
@@ -216,7 +249,7 @@ void main() {
         expect(errorStack.length, 1);
         expect(errorStack.logStack[0].logs.length, 1);
         expect(errorStack.logStack[0].logs[0]['message'].length, 262116);
-        expect(errorStack.logStack[0].messageSize, 262116);
+        expect(errorStack.logStack[0].messageSize, awsMaxBytesPerMessage + 26);
       });
     });
 
@@ -228,7 +261,7 @@ void main() {
         expect(stack.logStack.length, 1);
         expect(stack.logStack[0].logs[0]['message'], '...');
         expect(stack.logStack[0].logs[0]['timestamp'], 0);
-        expect(stack.logStack[0].messageSize, 3);
+        expect(stack.logStack[0].messageSize, 3 + 26);
       });
 
       test('logStack.length = 1', () {
@@ -239,74 +272,74 @@ void main() {
         expect(stack.logStack[0].logs.length, 2);
         expect(stack.logStack[0].logs[1]['message'], '...');
         expect(stack.logStack[0].logs[1]['timestamp'], 1);
-        expect(stack.logStack[0].messageSize, 4);
+        expect(stack.logStack[0].messageSize, 4 + 26 * 2);
       });
 
       test('logStack.last.logs.length = AWS_MAX_MESSAGES_PER_BATCH', () {
         final CloudWatchLogStack stack = CloudWatchLogStack();
         stack.logStack.add(CloudWatchLog(logs: [], messageSize: 0));
-        for (int x = 0; x < awsMaxMessagePerByte; x++) {
+        for (int x = 0; x < awsMaxMessagesPerRequest; x++) {
           stack.logStack.last.addLog(
             log: {'timestamp': 0, 'message': '.'},
             size: 1,
           );
         }
         expect(stack.logStack.length, 1);
-        expect(stack.logStack[0].logs.length, awsMaxMessagePerByte);
+        expect(stack.logStack[0].logs.length, awsMaxMessagesPerRequest);
         stack.addToStack(1, [46, 46, 46]);
         expect(stack.logStack.length, 2);
         expect(stack.logStack[1].logs.length, 1);
         expect(stack.logStack[1].logs[0]['message'], '...');
         expect(stack.logStack[1].logs[0]['timestamp'], 1);
-        expect(stack.logStack[1].messageSize, 3);
+        expect(stack.logStack[1].messageSize, 3 + 26);
       });
 
       test('logStack.last.logs.length = AWS_MAX_MESSAGES_PER_BATCH', () {
         final CloudWatchLogStack stack = CloudWatchLogStack();
         stack.logStack.add(CloudWatchLog(
           logs: [],
-          messageSize: awsMaxByteBatchSize,
+          messageSize: awsMaxBytesPerRequest,
         ));
         stack.addToStack(1, [46, 46, 46]);
         expect(stack.logStack.length, 2);
         expect(stack.logStack[1].logs.length, 1);
         expect(stack.logStack[1].logs[0]['message'], '...');
         expect(stack.logStack[1].logs[0]['timestamp'], 1);
-        expect(stack.logStack[1].messageSize, 3);
+        expect(stack.logStack[1].messageSize, 3 + 26);
       });
     });
 
     group('truncate', () {
       test('limit + 1', () {
-        final String msg = '1' * (awsMaxByteMessageSize + 1);
+        final String msg = '1' * (awsMaxBytesPerMessage + 1);
         final List<int> bytes = utf8.encode(msg);
-        final List<int> result = CloudWatchLogStack.truncate(bytes);
-        expect(result.length, awsMaxByteMessageSize);
+        final List<int> result = CloudWatchLogStack().truncate(bytes);
+        expect(result.length, awsMaxBytesPerMessage);
       });
       test('limit + 2', () {
-        final String msg = '1' * (awsMaxByteMessageSize + 2);
+        final String msg = '1' * (awsMaxBytesPerMessage + 2);
         final List<int> bytes = utf8.encode(msg);
-        final List<int> result = CloudWatchLogStack.truncate(bytes);
-        expect(result.length, awsMaxByteMessageSize);
+        final List<int> result = CloudWatchLogStack().truncate(bytes);
+        expect(result.length, awsMaxBytesPerMessage);
       });
     });
     group('calculateMidpoint', () {
       test('no split', () {
-        final String msg = '1' * (awsMaxByteMessageSize - 1);
+        final String msg = '1' * (awsMaxBytesPerMessage - 1);
         final List<int> bytes = utf8.encode(msg);
-        final List<List<int>> result = CloudWatchLogStack.split(bytes);
+        final List<List<int>> result = CloudWatchLogStack().split(bytes);
         expect(result.length, 1);
       });
       test('Limit + 1', () {
-        final String msg = '1' * (awsMaxByteMessageSize + 1);
+        final String msg = '1' * (awsMaxBytesPerMessage + 1);
         final List<int> bytes = utf8.encode(msg);
-        final List<List<int>> result = CloudWatchLogStack.split(bytes);
+        final List<List<int>> result = CloudWatchLogStack().split(bytes);
         expect(result.length, 2);
       });
       test('Limit + 2', () {
-        final String msg = '1' * (awsMaxByteMessageSize + 2);
+        final String msg = '1' * (awsMaxBytesPerMessage + 2);
         final List<int> bytes = utf8.encode(msg);
-        final List<List<int>> result = CloudWatchLogStack.split(bytes);
+        final List<List<int>> result = CloudWatchLogStack().split(bytes);
         expect(result.length, 2);
       });
     });

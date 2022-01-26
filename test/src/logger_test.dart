@@ -133,6 +133,54 @@ void main() {
   });
 
   group('Getters / Setters', () {
+    test('maxBytesPerMessage', () {
+      final Logger cloudWatch = Logger(
+        awsAccessKey: 'awsAccessKey',
+        awsSecretKey: 'awsSecretKey',
+        region: 'region',
+        groupName: 'groupName',
+        streamName: 'streamName',
+        awsSessionToken: 'awsSessionToken',
+        delay: const Duration(),
+        requestTimeout: const Duration(seconds: 10),
+        retries: 3,
+        largeMessageBehavior: CloudWatchLargeMessages.truncate,
+        raiseFailedLookups: false,
+      )..maxBytesPerMessage = 100;
+      expect(cloudWatch.maxBytesPerMessage, 100);
+    });
+    test('maxBytesPerRequest', () {
+      final Logger cloudWatch = Logger(
+        awsAccessKey: 'awsAccessKey',
+        awsSecretKey: 'awsSecretKey',
+        region: 'region',
+        groupName: 'groupName',
+        streamName: 'streamName',
+        awsSessionToken: 'awsSessionToken',
+        delay: const Duration(),
+        requestTimeout: const Duration(seconds: 10),
+        retries: 3,
+        largeMessageBehavior: CloudWatchLargeMessages.truncate,
+        raiseFailedLookups: false,
+      )..maxBytesPerRequest = 100;
+      expect(cloudWatch.maxBytesPerRequest, 100);
+    });
+    test('maxMessagesPerRequest', () {
+      final Logger cloudWatch = Logger(
+        awsAccessKey: 'awsAccessKey',
+        awsSecretKey: 'awsSecretKey',
+        region: 'region',
+        groupName: 'groupName',
+        streamName: 'streamName',
+        awsSessionToken: 'awsSessionToken',
+        delay: const Duration(),
+        requestTimeout: const Duration(seconds: 10),
+        retries: 3,
+        largeMessageBehavior: CloudWatchLargeMessages.truncate,
+        raiseFailedLookups: false,
+      )..maxMessagesPerRequest = 100;
+      expect(cloudWatch.maxMessagesPerRequest, 100);
+    });
     test('negative delay', () {
       final Logger cloudWatch = Logger(
         awsAccessKey: 'awsAccessKey',

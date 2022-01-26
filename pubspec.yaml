@@ -1,6 +1,6 @@
 name: aws_cloudwatch
 description: An easy, lightweight, and convenient way to reliably send logs to AWS CloudWatch.
-version: 0.5.1
+version: 0.5.2
 homepage: https://github.com/Zsmerritt/Flutter_AWS_CloudWatch
 
 environment:

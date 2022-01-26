@@ -122,6 +122,57 @@ class LoggerHandler {
   /// private version of [raiseFailedLookups]
   bool _raiseFailedLookups;
 
+  /// Changes how large each message can be before [largeMessageBehavior] takes
+  /// effect. Min 5, Max 262116
+  ///
+  /// These overrides change when messages are sent. No need to mess with them
+  /// unless you're running into issues
+  int get maxBytesPerMessage => _maxBytesPerMessage;
+
+  set maxBytesPerMessage(int val) {
+    for (final Logger cw in logInstances.values) {
+      cw.maxBytesPerMessage = val;
+    }
+    _maxBytesPerMessage = val;
+  }
+
+  /// private maxBytesPerMessage
+  int _maxBytesPerMessage;
+
+  /// Changes how many bytes can be sent in each API request before a second
+  /// request is made. Min 1, Max 1048576
+  ///
+  /// These overrides change when messages are sent. No need to mess with them
+  /// unless you're running into issues
+  int get maxBytesPerRequest => _maxBytesPerRequest;
+
+  set maxBytesPerRequest(int val) {
+    for (final Logger cw in logInstances.values) {
+      cw.maxBytesPerRequest = val;
+    }
+    _maxBytesPerRequest = val;
+  }
+
+  /// private maxBytesPerRequest
+  int _maxBytesPerRequest;
+
+  /// Changes the maximum number of messages that can be sent in each API
+  /// request. Min 1, Max 10000
+  ///
+  /// These overrides change when messages are sent. No need to mess with them
+  /// unless you're running into issues
+  int get maxMessagesPerRequest => _maxMessagesPerRequest;
+
+  set maxMessagesPerRequest(int val) {
+    for (final Logger cw in logInstances.values) {
+      cw.maxMessagesPerRequest = val;
+    }
+    _maxMessagesPerRequest = val;
+  }
+
+  /// private maxMessagesPerRequest
+  int _maxMessagesPerRequest;
+
   /// Testing Variables
 
   /// Function used to mock requests
@@ -143,6 +194,9 @@ class LoggerHandler {
     required raiseFailedLookups,
     this.mockCloudWatch = false,
     this.mockFunction,
+    int maxBytesPerMessage = awsMaxBytesPerMessage,
+    int maxBytesPerRequest = awsMaxBytesPerRequest,
+    int maxMessagesPerRequest = awsMaxMessagesPerRequest,
   })  : _awsAccessKey = awsAccessKey,
         _awsSecretKey = awsSecretKey,
         _awsSessionToken = awsSessionToken,
@@ -150,7 +204,10 @@ class LoggerHandler {
         _requestTimeout = requestTimeout,
         _retries = max(0, retries),
         _largeMessageBehavior = largeMessageBehavior,
-        _raiseFailedLookups = raiseFailedLookups;
+        _raiseFailedLookups = raiseFailedLookups,
+        _maxBytesPerMessage = maxBytesPerMessage,
+        _maxBytesPerRequest = maxBytesPerRequest,
+        _maxMessagesPerRequest = maxMessagesPerRequest;
 
   /// Returns a specific instance of a CloudWatch class (or null if it doesn't
   /// exist) based on group name and stream name
@@ -223,6 +280,9 @@ class LoggerHandler {
       retries: retries,
       largeMessageBehavior: largeMessageBehavior,
       raiseFailedLookups: raiseFailedLookups,
+      maxBytesPerMessage: maxBytesPerMessage,
+      maxBytesPerRequest: maxBytesPerRequest,
+      maxMessagesPerRequest: maxMessagesPerRequest,
       mockCloudWatch: mockCloudWatch,
       mockFunction: mockFunction,
     );

@@ -5,7 +5,13 @@
 library aws_cloudwatch;
 
 import 'package:aws_cloudwatch/src/logger.dart'
-    show Logger, CloudWatchLargeMessages, LoggerHandler;
+    show
+        CloudWatchLargeMessages,
+        Logger,
+        LoggerHandler,
+        awsMaxBytesPerMessage,
+        awsMaxBytesPerRequest,
+        awsMaxMessagesPerRequest;
 
 export 'package:aws_cloudwatch/aws_cloudwatch.dart'
     show CloudWatch, CloudWatchHandler;
@@ -86,6 +92,33 @@ class CloudWatch {
   /// Synonym for streamName
   set logStreamName(String val) => streamName = val;
 
+  /// Changes how large each message can be before [largeMessageBehavior] takes
+  /// effect. Min 5, Max 262116
+  ///
+  /// These overrides change when messages are sent. No need to mess with them
+  /// unless you're running into issues
+  int get maxBytesPerMessage => _cloudWatch.maxBytesPerMessage;
+
+  set maxBytesPerMessage(int val) => _cloudWatch.maxBytesPerMessage = val;
+
+  /// Changes how many bytes can be sent in each API request before a second
+  /// request is made. Min 1, Max 1048576
+  ///
+  /// These overrides change when messages are sent. No need to mess with them
+  /// unless you're running into issues
+  int get maxBytesPerRequest => _cloudWatch.maxBytesPerRequest;
+
+  set maxBytesPerRequest(int val) => _cloudWatch.maxBytesPerRequest = val;
+
+  /// Changes the maximum number of messages that can be sent in each API
+  /// request. Min 1, Max 10000
+  ///
+  /// These overrides change when messages are sent. No need to mess with them
+  /// unless you're running into issues
+  int get maxMessagesPerRequest => _cloudWatch.maxMessagesPerRequest;
+
+  set maxMessagesPerRequest(int val) => _cloudWatch.maxMessagesPerRequest = val;
+
   /// Hidden instance of AwsCloudWatch that does behind the scenes work
   final Logger _cloudWatch;
 
@@ -103,6 +136,9 @@ class CloudWatch {
     CloudWatchLargeMessages largeMessageBehavior =
         CloudWatchLargeMessages.truncate,
     bool raiseFailedLookups = false,
+    int maxBytesPerMessage = awsMaxBytesPerMessage,
+    int maxBytesPerRequest = awsMaxBytesPerRequest,
+    int maxMessagesPerRequest = awsMaxMessagesPerRequest,
   }) : _cloudWatch = Logger(
           awsAccessKey: awsAccessKey,
           awsSecretKey: awsSecretKey,
@@ -115,6 +151,9 @@ class CloudWatch {
           retries: retries,
           largeMessageBehavior: largeMessageBehavior,
           raiseFailedLookups: raiseFailedLookups,
+          maxBytesPerMessage: maxBytesPerMessage,
+          maxBytesPerRequest: maxBytesPerRequest,
+          maxMessagesPerRequest: maxMessagesPerRequest,
         );
 
   /// Private constructor used with CloudWatchHandler
