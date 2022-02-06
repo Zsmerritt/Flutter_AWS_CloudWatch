@@ -1,3 +1,9 @@
+## [0.5.3] - 2022/02/06
+
+* Reduced repeated failed lookup printout 
+* Added unit tests
+* Fixed 2.10 analyzer errors
+
 ## [0.5.2] - 2022/01/25
 
 * Fixed issue where message bytes exceeded max in rare cases with many small messages

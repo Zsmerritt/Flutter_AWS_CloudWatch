@@ -148,6 +148,10 @@ class Logger {
 
   set maxMessagesPerRequest(int val) => logStack.maxMessagesPerRequest = val;
 
+  /// Holds whether the last request succeeded or not.
+  /// Used to stop excessive printing about failed lookups
+  bool shouldPrintFailedLookup = true;
+
   /// Private version of delay
   Duration _delay;
 
@@ -329,28 +333,31 @@ class Logger {
       'CloudWatch INFO: Added messages to log stack',
     );
     dynamic error;
-    await sendAllLogs().catchError((e) {
+    try {
+      await sendAllLogs();
+    } catch (e) {
       error = e;
-    });
-    if (checkError(error)) {
-      return;
     }
+    checkError(error);
   }
 
   /// Checks info about [error] and returns whether execution should stop
-  bool checkError(dynamic error) {
-    if (error != null) {
+  void checkError(dynamic error) {
+    if (error == null) {
+      shouldPrintFailedLookup = true;
+    } else {
       if (!raiseFailedLookups &&
           (error.toString().contains('XMLHttpRequest error') ||
               error.toString().contains('Failed host lookup'))) {
-        print(
-          'CloudWatch: Failed host lookup! This usually means internet '
-          'is unavailable but could also indicate a problem with the '
-          'region $region.',
-        );
-        return true; // stop execution
-      }
-      if (error is TimeoutException) {
+        if (shouldPrintFailedLookup) {
+          print(
+            'CloudWatch: Failed host lookup! This usually means internet '
+            'is unavailable but could also indicate a problem with the '
+            'region $region.',
+          );
+          shouldPrintFailedLookup = false;
+        }
+      } else if (error is TimeoutException) {
         throw CloudWatchException(
           message: 'A timeout occurred while trying to upload logs. Consider '
               'increasing requestTimeout.',
@@ -360,7 +367,6 @@ class Logger {
         throw error;
       }
     }
-    return false; // continue execution
   }
 
   /// Queues [sendLogs] until all logs are sent or error occurs

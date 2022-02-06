@@ -128,6 +128,7 @@ class CloudWatchHandler {
     if (cw != null) {
       return CloudWatch._(cw);
     }
+    return null;
   }
 
   /// Creates a CloudWatch instance.

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:aws_cloudwatch/src/logger.dart';
@@ -665,18 +666,49 @@ void main() {
           mockCloudWatch: true,
         );
       });
-      test('error null', () {
-        final bool res = cloudWatch.checkError(null);
-        expect(res, false);
+      test('error XMLHttpRequest error', () {
+        cloudWatch.checkError(Exception('XMLHttpRequest error'));
+        expect(cloudWatch.shouldPrintFailedLookup, false);
       });
-      test('error null', () {
-        final bool res =
-            cloudWatch.checkError(Exception('XMLHttpRequest error'));
-        expect(res, true);
+      test('error Failed host lookup', () {
+        cloudWatch.checkError(Exception('Failed host lookup'));
+        expect(cloudWatch.shouldPrintFailedLookup, false);
       });
-      test('error null', () {
-        final bool res = cloudWatch.checkError(Exception('Failed host lookup'));
-        expect(res, true);
+      test('error Failed host lookup then null', () {
+        cloudWatch.checkError(Exception('Failed host lookup'));
+        expect(cloudWatch.shouldPrintFailedLookup, false);
+        cloudWatch.checkError(null);
+        expect(cloudWatch.shouldPrintFailedLookup, true);
+      });
+      test('error timeout', () {
+        cloudWatch.shouldPrintFailedLookup = true;
+        try {
+          cloudWatch.checkError(TimeoutException(''));
+        } on CloudWatchException catch (e) {
+          expect(
+              e.message,
+              'A timeout occurred while trying to upload logs. '
+              'Consider increasing requestTimeout.');
+          expect(cloudWatch.shouldPrintFailedLookup, true);
+          return;
+        } catch (e) {
+          fail('Wrong exception was thrown');
+        }
+        fail('Exception was not thrown');
+      });
+      test('error general exception', () {
+        cloudWatch.shouldPrintFailedLookup = true;
+        try {
+          cloudWatch.checkError(Exception('General Exception'));
+        } on CloudWatchException {
+          fail('Wrong exception was thrown');
+        } catch (e) {
+          expect(e, isA<Exception>());
+          expect(e.toString(), 'Exception: General Exception');
+          expect(cloudWatch.shouldPrintFailedLookup, true);
+          return;
+        }
+        fail('Exception was not thrown');
       });
       test('raiseFailedLookups', () {
         cloudWatch.raiseFailedLookups = true;
@@ -833,6 +865,33 @@ void main() {
         final bool res = await cloudWatch.handleError(awsResponse);
         expect(res, true);
         expect(cloudWatch.sequenceToken, 'def');
+      });
+      test('InvalidParameterException', () async {
+        final AwsResponse awsResponse =
+            await AwsResponse.parseResponse(Response(
+          '{"__type": "InvalidParameterException", "message": "this is a test"}',
+          400,
+        ));
+        try {
+          final bool res = await cloudWatch.handleError(awsResponse);
+          expect(res, true);
+          expect(cloudWatch.sequenceToken, 'def');
+        } on CloudWatchException catch (e) {
+          expect(
+              e.message,
+              'An InvalidParameterException occurred! This is probably a bug! '
+              'Please report it at\n'
+              'https://github.com/Zsmerritt/Flutter_AWS_CloudWatch/issues/new \n'
+              'and it will be addressed promptly. \n'
+              'Message: this is a test Raw: {__type: InvalidParameterException, message: this is a test}');
+          expect(awsResponse.raw,
+              '{__type: InvalidParameterException, message: this is a test}');
+          expect(e.type, 'InvalidParameterException');
+          return;
+        } catch (e) {
+          fail('Wrong exception thrown!');
+        }
+        fail('Exception not thrown!');
       });
       test('unknown type', () async {
         final AwsResponse awsResponse =
