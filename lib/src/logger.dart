@@ -8,8 +8,11 @@ import 'package:http/http.dart';
 import 'package:synchronized/synchronized.dart';
 
 part 'log.dart';
+
 part 'log_stack.dart';
+
 part 'logger_handler.dart';
+
 part 'util.dart';
 
 /// An AWS CloudWatch class for sending logs more easily to AWS
