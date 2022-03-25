@@ -118,6 +118,16 @@ void main() {
         expect(splitStack.length, 2);
       });
 
+      test('MAX_BYTES_PER_MESSAGE', () {
+        final CloudWatchLogStack splitStack = CloudWatchLogStack(
+          largeMessageBehavior: CloudWatchLargeMessages.split,
+          maxBytesPerMessage: 5,
+        );
+        final List<String> logStrings = ['111112222233333'];
+        splitStack.addLogs(logStrings);
+        expect(splitStack.logStack.last.logs.length, 3);
+      });
+
       test('MAX_BYTE_BATCH_SIZE', () {
         final CloudWatchLogStack splitStack = CloudWatchLogStack(
           largeMessageBehavior: CloudWatchLargeMessages.split,

@@ -115,6 +115,21 @@ void main() {
       cw.requestTimeout = const Duration();
       expect(cw.requestTimeout.inSeconds, 0);
     });
+    test('useDynamicTimeout', () {
+      expect(cw.useDynamicTimeout, true);
+      cw.useDynamicTimeout = false;
+      expect(cw.useDynamicTimeout, false);
+    });
+    test('timeoutMultiplier', () {
+      expect(cw.timeoutMultiplier, 1.2);
+      cw.timeoutMultiplier = 2;
+      expect(cw.timeoutMultiplier, 2);
+    });
+    test('dynamicTimeoutMax', () {
+      expect(cw.dynamicTimeoutMax.inMinutes, 2);
+      cw.dynamicTimeoutMax = const Duration();
+      expect(cw.dynamicTimeoutMax.inSeconds, 0);
+    });
     test('retries', () {
       expect(cw.retries, 10);
       cw.retries = 0;

@@ -15,6 +15,9 @@ void main() {
         retries: 3,
         largeMessageBehavior: CloudWatchLargeMessages.truncate,
         raiseFailedLookups: false,
+        useDynamicTimeout: true,
+        dynamicTimeoutMax: const Duration(minutes: 2),
+        timeoutMultiplier: 1.2,
       );
     });
     test('mock constructor', () {
@@ -28,6 +31,9 @@ void main() {
         retries: 3,
         largeMessageBehavior: CloudWatchLargeMessages.truncate,
         raiseFailedLookups: false,
+        useDynamicTimeout: true,
+        dynamicTimeoutMax: const Duration(minutes: 2),
+        timeoutMultiplier: 1.2,
         mockFunction: (Request request) async {
           return Response('body', 200);
         },
@@ -47,6 +53,9 @@ void main() {
         retries: 3,
         largeMessageBehavior: CloudWatchLargeMessages.truncate,
         raiseFailedLookups: false,
+        useDynamicTimeout: true,
+        dynamicTimeoutMax: const Duration(minutes: 2),
+        timeoutMultiplier: 1.2,
       );
       test('empty strings', () {
         try {
@@ -95,6 +104,9 @@ void main() {
           retries: 10,
           largeMessageBehavior: CloudWatchLargeMessages.split,
           raiseFailedLookups: true,
+          useDynamicTimeout: true,
+          dynamicTimeoutMax: const Duration(minutes: 2),
+          timeoutMultiplier: 1.2,
           mockFunction: (Request request) async {
             return Response('body', 200);
           },
@@ -128,6 +140,9 @@ void main() {
         retries: 3,
         largeMessageBehavior: CloudWatchLargeMessages.truncate,
         raiseFailedLookups: false,
+        useDynamicTimeout: true,
+        dynamicTimeoutMax: const Duration(minutes: 2),
+        timeoutMultiplier: 1.2,
       );
       test('no instances', () {
         final Logger? nullCloudWatch = cloudWatchHandler.getInstance(
@@ -201,6 +216,9 @@ void main() {
           raiseFailedLookups: false,
           mockFunction: mockFunction,
           mockCloudWatch: true,
+          useDynamicTimeout: true,
+          dynamicTimeoutMax: const Duration(minutes: 2),
+          timeoutMultiplier: 1.2,
         );
         await handler.log(
           message: 'message',
@@ -226,6 +244,9 @@ void main() {
           raiseFailedLookups: false,
           mockFunction: mockFunction,
           mockCloudWatch: true,
+          useDynamicTimeout: true,
+          dynamicTimeoutMax: const Duration(minutes: 2),
+          timeoutMultiplier: 1.2,
         );
         await handler.logMany(
           messages: ['message'],
@@ -252,6 +273,9 @@ void main() {
         retries: 3,
         largeMessageBehavior: CloudWatchLargeMessages.truncate,
         raiseFailedLookups: false,
+        useDynamicTimeout: true,
+        dynamicTimeoutMax: const Duration(minutes: 2),
+        timeoutMultiplier: 1.2,
       );
       test('set - no instances', () {
         cloudWatchHandler.awsAccessKey = '';
@@ -283,6 +307,9 @@ void main() {
         retries: 3,
         largeMessageBehavior: CloudWatchLargeMessages.truncate,
         raiseFailedLookups: false,
+        useDynamicTimeout: true,
+        dynamicTimeoutMax: const Duration(minutes: 2),
+        timeoutMultiplier: 1.2,
       );
       test('set - no instances', () {
         cloudWatchHandler.awsSecretKey = '';
@@ -314,6 +341,9 @@ void main() {
         retries: 3,
         largeMessageBehavior: CloudWatchLargeMessages.truncate,
         raiseFailedLookups: false,
+        useDynamicTimeout: true,
+        dynamicTimeoutMax: const Duration(minutes: 2),
+        timeoutMultiplier: 1.2,
       );
       test('set - no instances', () {
         cloudWatchHandler.awsSessionToken = '';
@@ -345,6 +375,9 @@ void main() {
         retries: 3,
         largeMessageBehavior: CloudWatchLargeMessages.truncate,
         raiseFailedLookups: false,
+        useDynamicTimeout: true,
+        dynamicTimeoutMax: const Duration(minutes: 2),
+        timeoutMultiplier: 1.2,
       );
       test('set - no instances', () {
         cloudWatchHandler.delay = const Duration(seconds: 100);
@@ -376,6 +409,9 @@ void main() {
         retries: 3,
         largeMessageBehavior: CloudWatchLargeMessages.truncate,
         raiseFailedLookups: false,
+        useDynamicTimeout: true,
+        dynamicTimeoutMax: const Duration(minutes: 2),
+        timeoutMultiplier: 1.2,
       );
       test('set - no instances', () {
         cloudWatchHandler.requestTimeout = const Duration(seconds: 100);
@@ -396,6 +432,108 @@ void main() {
         expect(cw!.requestTimeout.inSeconds, 100);
       });
     });
+    group('timeoutMultiplier', () {
+      final LoggerHandler cloudWatchHandler = LoggerHandler(
+        awsAccessKey: 'awsAccessKey',
+        awsSecretKey: 'awsSecretKey',
+        region: 'region',
+        awsSessionToken: 'awsSessionToken',
+        delay: const Duration(),
+        requestTimeout: const Duration(seconds: 10),
+        retries: 3,
+        largeMessageBehavior: CloudWatchLargeMessages.truncate,
+        raiseFailedLookups: false,
+        useDynamicTimeout: true,
+        dynamicTimeoutMax: const Duration(minutes: 2),
+        timeoutMultiplier: 1.2,
+      );
+      test('set - no instances', () {
+        cloudWatchHandler.timeoutMultiplier = 2;
+        expect(cloudWatchHandler.timeoutMultiplier, 2);
+      });
+      test('set - instances', () {
+        cloudWatchHandler
+          ..createInstance(
+            logGroupName: 'logGroupName',
+            logStreamName: 'logStreamName',
+          )
+          ..timeoutMultiplier = 2;
+        expect(cloudWatchHandler.timeoutMultiplier, 2);
+        final Logger? cw = cloudWatchHandler.getInstance(
+          logGroupName: 'logGroupName',
+          logStreamName: 'logStreamName',
+        )!;
+        expect(cw!.timeoutMultiplier, 2);
+      });
+    });
+    group('useDynamicTimeout', () {
+      final LoggerHandler cloudWatchHandler = LoggerHandler(
+        awsAccessKey: 'awsAccessKey',
+        awsSecretKey: 'awsSecretKey',
+        region: 'region',
+        awsSessionToken: 'awsSessionToken',
+        delay: const Duration(),
+        requestTimeout: const Duration(seconds: 10),
+        retries: 3,
+        largeMessageBehavior: CloudWatchLargeMessages.truncate,
+        raiseFailedLookups: false,
+        useDynamicTimeout: true,
+        dynamicTimeoutMax: const Duration(minutes: 2),
+        timeoutMultiplier: 1.2,
+      );
+      test('set - no instances', () {
+        cloudWatchHandler.useDynamicTimeout = false;
+        expect(cloudWatchHandler.useDynamicTimeout, false);
+      });
+      test('set - instances', () {
+        cloudWatchHandler
+          ..createInstance(
+            logGroupName: 'logGroupName',
+            logStreamName: 'logStreamName',
+          )
+          ..useDynamicTimeout = false;
+        expect(cloudWatchHandler.useDynamicTimeout, false);
+        final Logger? cw = cloudWatchHandler.getInstance(
+          logGroupName: 'logGroupName',
+          logStreamName: 'logStreamName',
+        )!;
+        expect(cw!.useDynamicTimeout, false);
+      });
+    });
+    group('dynamicTimeoutMax', () {
+      final LoggerHandler cloudWatchHandler = LoggerHandler(
+        awsAccessKey: 'awsAccessKey',
+        awsSecretKey: 'awsSecretKey',
+        region: 'region',
+        awsSessionToken: 'awsSessionToken',
+        delay: const Duration(),
+        requestTimeout: const Duration(seconds: 10),
+        retries: 3,
+        largeMessageBehavior: CloudWatchLargeMessages.truncate,
+        raiseFailedLookups: false,
+        useDynamicTimeout: true,
+        dynamicTimeoutMax: const Duration(minutes: 2),
+        timeoutMultiplier: 1.2,
+      );
+      test('set - no instances', () {
+        cloudWatchHandler.dynamicTimeoutMax = const Duration(seconds: 100);
+        expect(cloudWatchHandler.dynamicTimeoutMax.inSeconds, 100);
+      });
+      test('set - instances', () {
+        cloudWatchHandler
+          ..createInstance(
+            logGroupName: 'logGroupName',
+            logStreamName: 'logStreamName',
+          )
+          ..dynamicTimeoutMax = const Duration(seconds: 100);
+        expect(cloudWatchHandler.dynamicTimeoutMax.inSeconds, 100);
+        final Logger? cw = cloudWatchHandler.getInstance(
+          logGroupName: 'logGroupName',
+          logStreamName: 'logStreamName',
+        )!;
+        expect(cw!.dynamicTimeoutMax.inSeconds, 100);
+      });
+    });
     group('largeMessageBehavior', () {
       final LoggerHandler cloudWatchHandler = LoggerHandler(
         awsAccessKey: 'awsAccessKey',
@@ -407,6 +545,9 @@ void main() {
         retries: 3,
         largeMessageBehavior: CloudWatchLargeMessages.truncate,
         raiseFailedLookups: false,
+        useDynamicTimeout: true,
+        dynamicTimeoutMax: const Duration(minutes: 2),
+        timeoutMultiplier: 1.2,
       );
       test('set - no instances', () {
         cloudWatchHandler.largeMessageBehavior = CloudWatchLargeMessages.split;
@@ -440,6 +581,9 @@ void main() {
         retries: 3,
         largeMessageBehavior: CloudWatchLargeMessages.truncate,
         raiseFailedLookups: false,
+        useDynamicTimeout: true,
+        dynamicTimeoutMax: const Duration(minutes: 2),
+        timeoutMultiplier: 1.2,
       );
       test('set - no instances', () {
         cloudWatchHandler.raiseFailedLookups = true;
@@ -471,6 +615,9 @@ void main() {
         retries: 3,
         largeMessageBehavior: CloudWatchLargeMessages.truncate,
         raiseFailedLookups: false,
+        useDynamicTimeout: true,
+        dynamicTimeoutMax: const Duration(minutes: 2),
+        timeoutMultiplier: 1.2,
       );
       test('set - no instances', () {
         cloudWatchHandler.retries = 0;

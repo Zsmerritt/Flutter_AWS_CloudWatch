@@ -152,6 +152,29 @@ class Logger {
   /// Used to stop excessive printing about failed lookups
   bool shouldPrintFailedLookup = true;
 
+  /// Whether to dynamically adjust the timeout or not
+  bool useDynamicTimeout;
+
+  /// How much to increase the timeout after a timeout occurs
+  double get timeoutMultiplier => _timeoutMultiplier;
+
+  /// How much to increase the timeout after a timeout occurs
+  set timeoutMultiplier(double val) => _timeoutMultiplier = max(val, 1);
+
+  /// Private version of timeoutMultiplier
+  double _timeoutMultiplier;
+
+  /// The maximum length dynamic timeouts can be
+  Duration get dynamicTimeoutMax => _dynamicTimeoutMax;
+
+  /// The maximum length dynamic timeouts can be
+  set dynamicTimeoutMax(Duration val) {
+    _dynamicTimeoutMax = val.isNegative ? const Duration() : val;
+  }
+
+  /// Private version of dynamicTimeoutMax
+  Duration _dynamicTimeoutMax;
+
   /// Private version of delay
   Duration _delay;
 
@@ -177,17 +200,24 @@ class Logger {
     required this.groupName,
     required this.streamName,
     required this.awsSessionToken,
-    required delay,
-    required requestTimeout,
-    required retries,
-    required largeMessageBehavior,
+    required Duration delay,
+    required Duration requestTimeout,
+    required int retries,
+    required CloudWatchLargeMessages largeMessageBehavior,
     required this.raiseFailedLookups,
+    required this.useDynamicTimeout,
+    required double timeoutMultiplier,
+    required Duration dynamicTimeoutMax,
     int maxBytesPerMessage = awsMaxBytesPerMessage,
     int maxBytesPerRequest = awsMaxBytesPerRequest,
     int maxMessagesPerRequest = awsMaxMessagesPerRequest,
     this.mockCloudWatch = false,
     this.mockFunction,
-  })  : _largeMessageBehavior = largeMessageBehavior,
+  })  : _dynamicTimeoutMax = !dynamicTimeoutMax.isNegative
+            ? dynamicTimeoutMax
+            : const Duration(),
+        _timeoutMultiplier = max(timeoutMultiplier, 1),
+        _largeMessageBehavior = largeMessageBehavior,
         _delay = !delay.isNegative ? delay : const Duration(),
         _requestTimeout =
             !requestTimeout.isNegative ? requestTimeout : const Duration(),

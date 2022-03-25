@@ -71,6 +71,21 @@ class CloudWatch {
 
   set raiseFailedLookups(bool rfl) => _cloudWatch.raiseFailedLookups = rfl;
 
+  /// Whether to dynamically adjust the timeout or not
+  bool get useDynamicTimeout => _cloudWatch.useDynamicTimeout;
+
+  set useDynamicTimeout(bool val) => _cloudWatch.useDynamicTimeout = val;
+
+  /// How much to increase the timeout after a timeout occurs
+  double get timeoutMultiplier => _cloudWatch.timeoutMultiplier;
+
+  set timeoutMultiplier(double val) => _cloudWatch.timeoutMultiplier = val;
+
+  /// The maximum length dynamic timeouts can be
+  Duration get dynamicTimeoutMax => _cloudWatch.dynamicTimeoutMax;
+
+  set dynamicTimeoutMax(Duration val) => _cloudWatch.dynamicTimeoutMax = val;
+
   // Logging Variables
   /// The log group the log stream will appear under
   String get groupName => _cloudWatch.groupName;
@@ -134,6 +149,9 @@ class CloudWatch {
     Duration delay = const Duration(),
     Duration requestTimeout = const Duration(seconds: 10),
     int retries = 3,
+    bool useDynamicTimeout = true,
+    double timeoutMultiplier = 1.2,
+    Duration dynamicTimeoutMax = const Duration(minutes: 2),
     CloudWatchLargeMessages largeMessageBehavior =
         CloudWatchLargeMessages.truncate,
     bool raiseFailedLookups = false,
@@ -149,6 +167,9 @@ class CloudWatch {
           awsSessionToken: awsSessionToken,
           delay: delay,
           requestTimeout: requestTimeout,
+          useDynamicTimeout: useDynamicTimeout,
+          timeoutMultiplier: timeoutMultiplier,
+          dynamicTimeoutMax: dynamicTimeoutMax,
           retries: retries,
           largeMessageBehavior: largeMessageBehavior,
           raiseFailedLookups: raiseFailedLookups,
