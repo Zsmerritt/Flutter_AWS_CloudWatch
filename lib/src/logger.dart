@@ -148,9 +148,11 @@ class Logger {
 
   set maxMessagesPerRequest(int val) => logStack.maxMessagesPerRequest = val;
 
-  /// Holds whether the last request succeeded or not.
-  /// Used to stop excessive printing about failed lookups
-  bool shouldPrintFailedLookup = true;
+  /// Some errors can occur several times and are out of our control such as
+  /// timeouts. This [errorsSeen] holds which errors have already been thrown
+  /// and stops them from being thrown again. This value is reset once a log has
+  /// successfully been sent.
+  Set<String> errorsSeen = {};
 
   /// Whether to dynamically adjust the timeout or not
   bool useDynamicTimeout;
@@ -374,24 +376,51 @@ class Logger {
   /// Checks info about [error] and returns whether execution should stop
   void checkError(dynamic error) {
     if (error == null) {
-      shouldPrintFailedLookup = true;
+      errorsSeen = {};
     } else {
       if (!raiseFailedLookups &&
           (error.toString().contains('XMLHttpRequest error') ||
               error.toString().contains('Failed host lookup'))) {
-        if (shouldPrintFailedLookup) {
+        if (!errorsSeen.contains('Failed host lookup')) {
           print(
             'CloudWatch: Failed host lookup! This usually means internet '
             'is unavailable but could also indicate a problem with the '
             'region $region.',
           );
-          shouldPrintFailedLookup = false;
+          errorsSeen.add('Failed host lookup');
         }
+        debugPrint(
+          2,
+          'CloudWatch: Failed host lookup! This usually means internet '
+          'is unavailable but could also indicate a problem with the '
+          'region $region.',
+        );
       } else if (error is TimeoutException) {
-        throw CloudWatchException(
-          message: 'A timeout occurred while trying to upload logs. Consider '
-              'increasing requestTimeout.',
-          stackTrace: StackTrace.current,
+        if (!errorsSeen.contains('TimeoutException')) {
+          print(
+            'A timeout occurred while trying to upload logs. The logs were '
+            'requeued and will be send next time but you may want to '
+            'consider increasing requestTimeout.',
+          );
+          errorsSeen.add('TimeoutException');
+        }
+        if (useDynamicTimeout && requestTimeout < _dynamicTimeoutMax) {
+          requestTimeout = Duration(
+            seconds: (requestTimeout.inSeconds * timeoutMultiplier).toInt(),
+          );
+          if (requestTimeout > _dynamicTimeoutMax) {
+            requestTimeout = _dynamicTimeoutMax;
+          }
+          debugPrint(
+            2,
+            'increased requestTimeout to ${requestTimeout.inSeconds} seconds',
+          );
+        }
+        debugPrint(
+          2,
+          'A timeout occurred while trying to upload logs. The logs were '
+          'requeued and will be send next time but you may want to '
+          'consider increasing requestTimeout.',
         );
       } else {
         throw error;

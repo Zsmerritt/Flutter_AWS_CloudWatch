@@ -793,36 +793,24 @@ void main() {
       });
       test('error XMLHttpRequest error', () {
         cloudWatch.checkError(Exception('XMLHttpRequest error'));
-        expect(cloudWatch.shouldPrintFailedLookup, false);
+        expect(cloudWatch.errorsSeen.contains('Failed host lookup'), true);
       });
       test('error Failed host lookup', () {
         cloudWatch.checkError(Exception('Failed host lookup'));
-        expect(cloudWatch.shouldPrintFailedLookup, false);
+        expect(cloudWatch.errorsSeen.contains('Failed host lookup'), true);
       });
       test('error Failed host lookup then null', () {
         cloudWatch.checkError(Exception('Failed host lookup'));
-        expect(cloudWatch.shouldPrintFailedLookup, false);
+        expect(cloudWatch.errorsSeen.contains('Failed host lookup'), true);
         cloudWatch.checkError(null);
-        expect(cloudWatch.shouldPrintFailedLookup, true);
+        expect(cloudWatch.errorsSeen.length, 0);
       });
       test('error timeout', () {
-        cloudWatch.shouldPrintFailedLookup = true;
-        try {
-          cloudWatch.checkError(TimeoutException(''));
-        } on CloudWatchException catch (e) {
-          expect(
-              e.message,
-              'A timeout occurred while trying to upload logs. '
-              'Consider increasing requestTimeout.');
-          expect(cloudWatch.shouldPrintFailedLookup, true);
-          return;
-        } catch (e) {
-          fail('Wrong exception was thrown');
-        }
-        fail('Exception was not thrown');
+        cloudWatch.checkError(TimeoutException(''));
+        expect(cloudWatch.errorsSeen.contains('TimeoutException'), true);
       });
       test('error general exception', () {
-        cloudWatch.shouldPrintFailedLookup = true;
+        cloudWatch.errorsSeen = {};
         try {
           cloudWatch.checkError(Exception('General Exception'));
         } on CloudWatchException {
@@ -830,7 +818,7 @@ void main() {
         } catch (e) {
           expect(e, isA<Exception>());
           expect(e.toString(), 'Exception: General Exception');
-          expect(cloudWatch.shouldPrintFailedLookup, true);
+          expect(cloudWatch.errorsSeen.length, 0);
           return;
         }
         fail('Exception was not thrown');
