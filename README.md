@@ -328,19 +328,37 @@ per request. Currently, (2021/09/12) that limit is 10,000 messages per request, 
 larger than 262,115 UTF8 bytes will be handled. By default, the middle of the message will be replaced with `...` to
 reduce the size to 262,116 UTF8 bytes. All other hard limits are handled automatically with pagination.
 
-### Requests Timing out
-Sometimes if the connection is poor, or the payload is very large requests can timeout. The first thing to try is 
-increasing the duration of the `requestTimeout` parameter. If that still doesn't solve the issue there are several other
-options that are aimed at decreasing the size of the payload. 
+### Requests Timing Out
+Sometimes, if the connection is poor, or the payload is very large, requests can timeout. Logs from requests that time 
+out aren't lost, and the request will be retried the next time a log is added to the queue. If this happens frequently 
+though, it can be a problem. 
 
-`maxBytesPerMessage` changes how large each message can be before [largeMessageBehavior] takes effect. 
-Min 5, Max 262116
+1)  Increasing the timeout
+The first thing to try is increasing the duration of the `requestTimeout` parameter. This increases the amount of time 
+requests have before timing out.
+    
 
-`maxBytesPerRequest` changes how many bytes can be sent in each API request before a second request is made. 
-Min 1, Max 1048576
+2)  Adjusting the dynamic timeout
+If increasing the request timeout doesn't work, you can try adjusting the dynamic timeout. With the dynamic timeout, as
+requests timeout, the timeout is slowly increased. The aim of this feature is to tune the timeout to the situation the 
+user is in. 
 
-`maxMessagesPerRequest` changes the maximum number of messages that can be sent in each API request. 
-Min 1, Max 10000
+    `useDynamicTimeout`: whether this feature is enabled. Default: true
+    
+    `timeoutMultiplier`: how much the timeout increases after a timeout. Default: 1.2  
+    
+    `dynamicTimeoutMax`: the upper bound for the `requestTimeout`. Default: 2 minutes
+
+
+3) Adjusting log limits
+If that still doesn't solve the issue, there are several other options that are aimed at decreasing the size of the 
+payload. 
+   
+    `maxBytesPerMessage`: how large each message can be before [largeMessageBehavior] takes effect. Min 5, Max 262116
+    
+    `maxBytesPerRequest`: how many bytes can be sent in each API request before a second request is made. Min 1, Max 1048576
+    
+    `maxMessagesPerRequest`: the maximum number of messages that can be sent in each API request. Min 1, Max 10000
 
 By default, all of these parameters are set to their maximum. Decreasing any of them will decrease the payload size and 
 cause more requests to be sent over a longer period. Usually this isn't an issue. If you don't have requests timing out
