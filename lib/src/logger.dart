@@ -8,8 +8,11 @@ import 'package:http/http.dart';
 import 'package:synchronized/synchronized.dart';
 
 part 'log.dart';
+
 part 'log_stack.dart';
+
 part 'logger_handler.dart';
+
 part 'util.dart';
 
 /// An AWS CloudWatch class for sending logs more easily to AWS
@@ -148,9 +151,34 @@ class Logger {
 
   set maxMessagesPerRequest(int val) => logStack.maxMessagesPerRequest = val;
 
-  /// Holds whether the last request succeeded or not.
-  /// Used to stop excessive printing about failed lookups
-  bool shouldPrintFailedLookup = true;
+  /// Some errors can occur several times and are out of our control such as
+  /// timeouts. This [errorsSeen] holds which errors have already been thrown
+  /// and stops them from being thrown again. This value is reset once a log has
+  /// successfully been sent.
+  Set<String> errorsSeen = {};
+
+  /// Whether to dynamically adjust the timeout or not
+  bool useDynamicTimeout;
+
+  /// How much to increase the timeout after a timeout occurs
+  double get timeoutMultiplier => _timeoutMultiplier;
+
+  /// How much to increase the timeout after a timeout occurs
+  set timeoutMultiplier(double val) => _timeoutMultiplier = max(val, 1);
+
+  /// Private version of timeoutMultiplier
+  double _timeoutMultiplier;
+
+  /// The maximum length dynamic timeouts can be
+  Duration get dynamicTimeoutMax => _dynamicTimeoutMax;
+
+  /// The maximum length dynamic timeouts can be
+  set dynamicTimeoutMax(Duration val) {
+    _dynamicTimeoutMax = val.isNegative ? const Duration() : val;
+  }
+
+  /// Private version of dynamicTimeoutMax
+  Duration _dynamicTimeoutMax;
 
   /// Private version of delay
   Duration _delay;
@@ -177,17 +205,24 @@ class Logger {
     required this.groupName,
     required this.streamName,
     required this.awsSessionToken,
-    required delay,
-    required requestTimeout,
-    required retries,
-    required largeMessageBehavior,
+    required Duration delay,
+    required Duration requestTimeout,
+    required int retries,
+    required CloudWatchLargeMessages largeMessageBehavior,
     required this.raiseFailedLookups,
+    required this.useDynamicTimeout,
+    required double timeoutMultiplier,
+    required Duration dynamicTimeoutMax,
     int maxBytesPerMessage = awsMaxBytesPerMessage,
     int maxBytesPerRequest = awsMaxBytesPerRequest,
     int maxMessagesPerRequest = awsMaxMessagesPerRequest,
     this.mockCloudWatch = false,
     this.mockFunction,
-  })  : _largeMessageBehavior = largeMessageBehavior,
+  })  : _dynamicTimeoutMax = !dynamicTimeoutMax.isNegative
+            ? dynamicTimeoutMax
+            : const Duration(),
+        _timeoutMultiplier = max(timeoutMultiplier, 1),
+        _largeMessageBehavior = largeMessageBehavior,
         _delay = !delay.isNegative ? delay : const Duration(),
         _requestTimeout =
             !requestTimeout.isNegative ? requestTimeout : const Duration(),
@@ -344,24 +379,51 @@ class Logger {
   /// Checks info about [error] and returns whether execution should stop
   void checkError(dynamic error) {
     if (error == null) {
-      shouldPrintFailedLookup = true;
+      errorsSeen = {};
     } else {
       if (!raiseFailedLookups &&
           (error.toString().contains('XMLHttpRequest error') ||
               error.toString().contains('Failed host lookup'))) {
-        if (shouldPrintFailedLookup) {
+        if (!errorsSeen.contains('Failed host lookup')) {
           print(
             'CloudWatch: Failed host lookup! This usually means internet '
             'is unavailable but could also indicate a problem with the '
             'region $region.',
           );
-          shouldPrintFailedLookup = false;
+          errorsSeen.add('Failed host lookup');
         }
+        debugPrint(
+          2,
+          'CloudWatch: Failed host lookup! This usually means internet '
+          'is unavailable but could also indicate a problem with the '
+          'region $region.',
+        );
       } else if (error is TimeoutException) {
-        throw CloudWatchException(
-          message: 'A timeout occurred while trying to upload logs. Consider '
-              'increasing requestTimeout.',
-          stackTrace: StackTrace.current,
+        if (!errorsSeen.contains('TimeoutException')) {
+          print(
+            'A timeout occurred while trying to upload logs. The logs were '
+            'requeued and will be send next time but you may want to '
+            'consider increasing requestTimeout.',
+          );
+          errorsSeen.add('TimeoutException');
+        }
+        if (useDynamicTimeout && requestTimeout < _dynamicTimeoutMax) {
+          requestTimeout = Duration(
+            seconds: (requestTimeout.inSeconds * timeoutMultiplier).toInt(),
+          );
+          if (requestTimeout > _dynamicTimeoutMax) {
+            requestTimeout = _dynamicTimeoutMax;
+          }
+          debugPrint(
+            2,
+            'increased requestTimeout to ${requestTimeout.inSeconds} seconds',
+          );
+        }
+        debugPrint(
+          2,
+          'A timeout occurred while trying to upload logs. The logs were '
+          'requeued and will be send next time but you may want to '
+          'consider increasing requestTimeout.',
         );
       } else {
         throw error;

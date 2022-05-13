@@ -20,6 +20,9 @@ void main() {
         retries: 3,
         largeMessageBehavior: CloudWatchLargeMessages.truncate,
         raiseFailedLookups: false,
+        useDynamicTimeout: true,
+        dynamicTimeoutMax: const Duration(minutes: 2),
+        timeoutMultiplier: 1.2,
       );
       expect(cloudWatch.groupName, 'groupName');
       expect(cloudWatch.streamName, 'streamName');
@@ -45,6 +48,9 @@ void main() {
         retries: 10,
         largeMessageBehavior: CloudWatchLargeMessages.split,
         raiseFailedLookups: true,
+        useDynamicTimeout: true,
+        dynamicTimeoutMax: const Duration(minutes: 2),
+        timeoutMultiplier: 1.2,
       );
       expect(cloudWatch.groupName, 'groupName');
       expect(cloudWatch.streamName, 'streamName');
@@ -70,6 +76,9 @@ void main() {
         retries: 3,
         largeMessageBehavior: CloudWatchLargeMessages.truncate,
         raiseFailedLookups: false,
+        useDynamicTimeout: true,
+        dynamicTimeoutMax: const Duration(minutes: 2),
+        timeoutMultiplier: 1.2,
       );
       expect(cloudWatch.delay.inSeconds, 0);
     });
@@ -86,6 +95,9 @@ void main() {
         retries: -10,
         largeMessageBehavior: CloudWatchLargeMessages.truncate,
         raiseFailedLookups: false,
+        useDynamicTimeout: true,
+        dynamicTimeoutMax: const Duration(minutes: 2),
+        timeoutMultiplier: 1.2,
       );
       expect(cloudWatch.retries, 0);
     });
@@ -103,6 +115,9 @@ void main() {
           retries: -10,
           largeMessageBehavior: CloudWatchLargeMessages.truncate,
           raiseFailedLookups: false,
+          useDynamicTimeout: true,
+          dynamicTimeoutMax: const Duration(minutes: 2),
+          timeoutMultiplier: 1.2,
         );
       } catch (e) {
         expect(e, isA<CloudWatchException>());
@@ -124,6 +139,9 @@ void main() {
           retries: -10,
           largeMessageBehavior: CloudWatchLargeMessages.truncate,
           raiseFailedLookups: false,
+          useDynamicTimeout: true,
+          dynamicTimeoutMax: const Duration(minutes: 2),
+          timeoutMultiplier: 1.2,
         );
       } catch (e) {
         expect(e, isA<CloudWatchException>());
@@ -147,6 +165,9 @@ void main() {
         retries: 3,
         largeMessageBehavior: CloudWatchLargeMessages.truncate,
         raiseFailedLookups: false,
+        useDynamicTimeout: true,
+        dynamicTimeoutMax: const Duration(minutes: 2),
+        timeoutMultiplier: 1.2,
       )..maxBytesPerMessage = 100;
       expect(cloudWatch.maxBytesPerMessage, 100);
     });
@@ -163,6 +184,9 @@ void main() {
         retries: 3,
         largeMessageBehavior: CloudWatchLargeMessages.truncate,
         raiseFailedLookups: false,
+        useDynamicTimeout: true,
+        dynamicTimeoutMax: const Duration(minutes: 2),
+        timeoutMultiplier: 1.2,
       )..maxBytesPerRequest = 100;
       expect(cloudWatch.maxBytesPerRequest, 100);
     });
@@ -179,6 +203,9 @@ void main() {
         retries: 3,
         largeMessageBehavior: CloudWatchLargeMessages.truncate,
         raiseFailedLookups: false,
+        useDynamicTimeout: true,
+        dynamicTimeoutMax: const Duration(minutes: 2),
+        timeoutMultiplier: 1.2,
       )..maxMessagesPerRequest = 100;
       expect(cloudWatch.maxMessagesPerRequest, 100);
     });
@@ -195,6 +222,9 @@ void main() {
         retries: 3,
         largeMessageBehavior: CloudWatchLargeMessages.truncate,
         raiseFailedLookups: false,
+        useDynamicTimeout: true,
+        dynamicTimeoutMax: const Duration(minutes: 2),
+        timeoutMultiplier: 1.2,
       )..delay = const Duration(seconds: -1);
       expect(cloudWatch.delay.inSeconds, 0);
     });
@@ -211,6 +241,9 @@ void main() {
         retries: 3,
         largeMessageBehavior: CloudWatchLargeMessages.truncate,
         raiseFailedLookups: false,
+        useDynamicTimeout: true,
+        dynamicTimeoutMax: const Duration(minutes: 2),
+        timeoutMultiplier: 1.2,
       )..delay = const Duration(seconds: 15);
       expect(cloudWatch.delay.inSeconds, 15);
     });
@@ -227,6 +260,9 @@ void main() {
         retries: 3,
         largeMessageBehavior: CloudWatchLargeMessages.truncate,
         raiseFailedLookups: false,
+        useDynamicTimeout: true,
+        dynamicTimeoutMax: const Duration(minutes: 2),
+        timeoutMultiplier: 1.2,
       )..requestTimeout = const Duration(seconds: -1);
       expect(cloudWatch.requestTimeout.inSeconds, 0);
     });
@@ -243,6 +279,9 @@ void main() {
         retries: 3,
         largeMessageBehavior: CloudWatchLargeMessages.truncate,
         raiseFailedLookups: false,
+        useDynamicTimeout: true,
+        dynamicTimeoutMax: const Duration(minutes: 2),
+        timeoutMultiplier: 1.2,
       )..requestTimeout = const Duration(seconds: 15);
       expect(cloudWatch.requestTimeout.inSeconds, 15);
     });
@@ -259,6 +298,9 @@ void main() {
         retries: 3,
         largeMessageBehavior: CloudWatchLargeMessages.truncate,
         raiseFailedLookups: false,
+        useDynamicTimeout: true,
+        dynamicTimeoutMax: const Duration(minutes: 2),
+        timeoutMultiplier: 1.2,
       )..verbosity = -1;
       expect(cloudWatch.verbosity, 0);
     });
@@ -275,6 +317,9 @@ void main() {
         retries: 3,
         largeMessageBehavior: CloudWatchLargeMessages.truncate,
         raiseFailedLookups: false,
+        useDynamicTimeout: true,
+        dynamicTimeoutMax: const Duration(minutes: 2),
+        timeoutMultiplier: 1.2,
       )..verbosity = 15;
       expect(cloudWatch.verbosity, 3);
     });
@@ -291,6 +336,9 @@ void main() {
         retries: 3,
         largeMessageBehavior: CloudWatchLargeMessages.truncate,
         raiseFailedLookups: false,
+        useDynamicTimeout: true,
+        dynamicTimeoutMax: const Duration(minutes: 2),
+        timeoutMultiplier: 1.2,
       )..verbosity = 2;
       expect(cloudWatch.verbosity, 2);
     });
@@ -307,6 +355,9 @@ void main() {
         retries: 3,
         largeMessageBehavior: CloudWatchLargeMessages.truncate,
         raiseFailedLookups: false,
+        useDynamicTimeout: true,
+        dynamicTimeoutMax: const Duration(minutes: 2),
+        timeoutMultiplier: 1.2,
       )..retries = -1;
       expect(cloudWatch.retries, 0);
     });
@@ -323,6 +374,9 @@ void main() {
         retries: 3,
         largeMessageBehavior: CloudWatchLargeMessages.truncate,
         raiseFailedLookups: false,
+        useDynamicTimeout: true,
+        dynamicTimeoutMax: const Duration(minutes: 2),
+        timeoutMultiplier: 1.2,
       )..retries = 15;
       expect(cloudWatch.retries, 15);
     });
@@ -339,6 +393,9 @@ void main() {
         retries: 3,
         largeMessageBehavior: CloudWatchLargeMessages.truncate,
         raiseFailedLookups: false,
+        useDynamicTimeout: true,
+        dynamicTimeoutMax: const Duration(minutes: 2),
+        timeoutMultiplier: 1.2,
       )..largeMessageBehavior = CloudWatchLargeMessages.split;
       expect(cloudWatch.largeMessageBehavior, CloudWatchLargeMessages.split);
       expect(cloudWatch.logStack.largeMessageBehavior,
@@ -357,6 +414,9 @@ void main() {
         retries: 3,
         largeMessageBehavior: CloudWatchLargeMessages.truncate,
         raiseFailedLookups: false,
+        useDynamicTimeout: true,
+        dynamicTimeoutMax: const Duration(minutes: 2),
+        timeoutMultiplier: 1.2,
       )..logGroupName = 'logGroupName';
       expect(cloudWatch.groupName, 'logGroupName');
     });
@@ -373,8 +433,49 @@ void main() {
         retries: 3,
         largeMessageBehavior: CloudWatchLargeMessages.truncate,
         raiseFailedLookups: false,
+        useDynamicTimeout: true,
+        dynamicTimeoutMax: const Duration(minutes: 2),
+        timeoutMultiplier: 1.2,
       )..logStreamName = 'logStreamName';
       expect(cloudWatch.streamName, 'logStreamName');
+    });
+    test('negative timeoutMultiplier', () {
+      final Logger cloudWatch = Logger(
+        awsAccessKey: 'awsAccessKey',
+        awsSecretKey: 'awsSecretKey',
+        region: 'region',
+        groupName: 'groupName',
+        streamName: 'streamName',
+        awsSessionToken: 'awsSessionToken',
+        delay: const Duration(),
+        requestTimeout: const Duration(seconds: 10),
+        retries: 3,
+        largeMessageBehavior: CloudWatchLargeMessages.truncate,
+        raiseFailedLookups: false,
+        useDynamicTimeout: true,
+        dynamicTimeoutMax: const Duration(minutes: 2),
+        timeoutMultiplier: 1.2,
+      )..timeoutMultiplier = -1;
+      expect(cloudWatch.timeoutMultiplier, 1);
+    });
+    test('negative dynamicTimeoutMax', () {
+      final Logger cloudWatch = Logger(
+        awsAccessKey: 'awsAccessKey',
+        awsSecretKey: 'awsSecretKey',
+        region: 'region',
+        groupName: 'groupName',
+        streamName: 'streamName',
+        awsSessionToken: 'awsSessionToken',
+        delay: const Duration(),
+        requestTimeout: const Duration(seconds: 10),
+        retries: 3,
+        largeMessageBehavior: CloudWatchLargeMessages.truncate,
+        raiseFailedLookups: false,
+        useDynamicTimeout: true,
+        dynamicTimeoutMax: const Duration(minutes: 2),
+        timeoutMultiplier: 1.2,
+      )..dynamicTimeoutMax = const Duration(seconds: -1);
+      expect(cloudWatch.dynamicTimeoutMax.inSeconds, 0);
     });
   });
 
@@ -393,6 +494,9 @@ void main() {
           retries: 3,
           largeMessageBehavior: CloudWatchLargeMessages.truncate,
           raiseFailedLookups: false,
+          useDynamicTimeout: true,
+          dynamicTimeoutMax: const Duration(minutes: 2),
+          timeoutMultiplier: 1.2,
         );
         final bool res =
             cloudWatch.debugPrint(1, 'this message wont be printed');
@@ -411,6 +515,9 @@ void main() {
           retries: 3,
           largeMessageBehavior: CloudWatchLargeMessages.truncate,
           raiseFailedLookups: false,
+          useDynamicTimeout: true,
+          dynamicTimeoutMax: const Duration(minutes: 2),
+          timeoutMultiplier: 1.2,
         )..verbosity = 1;
         bool res = cloudWatch.debugPrint(0, 'this message will be printed');
         expect(res, true);
@@ -430,6 +537,9 @@ void main() {
           retries: 3,
           largeMessageBehavior: CloudWatchLargeMessages.truncate,
           raiseFailedLookups: false,
+          useDynamicTimeout: true,
+          dynamicTimeoutMax: const Duration(minutes: 2),
+          timeoutMultiplier: 1.2,
         )..verbosity = 2;
         bool res = cloudWatch.debugPrint(1, 'this message will be printed');
         expect(res, true);
@@ -449,6 +559,9 @@ void main() {
           retries: 3,
           largeMessageBehavior: CloudWatchLargeMessages.truncate,
           raiseFailedLookups: false,
+          useDynamicTimeout: true,
+          dynamicTimeoutMax: const Duration(minutes: 2),
+          timeoutMultiplier: 1.2,
         )..verbosity = 3;
         bool res = cloudWatch.debugPrint(2, 'this message will be printed');
         expect(res, true);
@@ -472,6 +585,9 @@ void main() {
           largeMessageBehavior: CloudWatchLargeMessages.truncate,
           raiseFailedLookups: false,
           mockCloudWatch: true,
+          useDynamicTimeout: true,
+          dynamicTimeoutMax: const Duration(minutes: 2),
+          timeoutMultiplier: 1.2,
         );
       });
       test('request error', () async {
@@ -545,6 +661,9 @@ void main() {
           largeMessageBehavior: CloudWatchLargeMessages.truncate,
           raiseFailedLookups: false,
           mockCloudWatch: true,
+          useDynamicTimeout: true,
+          dynamicTimeoutMax: const Duration(minutes: 2),
+          timeoutMultiplier: 1.2,
         );
       });
       test('request error', () async {
@@ -618,6 +737,9 @@ void main() {
           largeMessageBehavior: CloudWatchLargeMessages.truncate,
           raiseFailedLookups: false,
           mockCloudWatch: true,
+          useDynamicTimeout: true,
+          dynamicTimeoutMax: const Duration(minutes: 2),
+          timeoutMultiplier: 1.2,
         );
       });
       test('empty logs', () {
@@ -664,40 +786,31 @@ void main() {
           largeMessageBehavior: CloudWatchLargeMessages.truncate,
           raiseFailedLookups: false,
           mockCloudWatch: true,
+          useDynamicTimeout: true,
+          dynamicTimeoutMax: const Duration(minutes: 2),
+          timeoutMultiplier: 1.2,
         );
       });
       test('error XMLHttpRequest error', () {
         cloudWatch.checkError(Exception('XMLHttpRequest error'));
-        expect(cloudWatch.shouldPrintFailedLookup, false);
+        expect(cloudWatch.errorsSeen.contains('Failed host lookup'), true);
       });
       test('error Failed host lookup', () {
         cloudWatch.checkError(Exception('Failed host lookup'));
-        expect(cloudWatch.shouldPrintFailedLookup, false);
+        expect(cloudWatch.errorsSeen.contains('Failed host lookup'), true);
       });
       test('error Failed host lookup then null', () {
         cloudWatch.checkError(Exception('Failed host lookup'));
-        expect(cloudWatch.shouldPrintFailedLookup, false);
+        expect(cloudWatch.errorsSeen.contains('Failed host lookup'), true);
         cloudWatch.checkError(null);
-        expect(cloudWatch.shouldPrintFailedLookup, true);
+        expect(cloudWatch.errorsSeen.length, 0);
       });
       test('error timeout', () {
-        cloudWatch.shouldPrintFailedLookup = true;
-        try {
-          cloudWatch.checkError(TimeoutException(''));
-        } on CloudWatchException catch (e) {
-          expect(
-              e.message,
-              'A timeout occurred while trying to upload logs. '
-              'Consider increasing requestTimeout.');
-          expect(cloudWatch.shouldPrintFailedLookup, true);
-          return;
-        } catch (e) {
-          fail('Wrong exception was thrown');
-        }
-        fail('Exception was not thrown');
+        cloudWatch.checkError(TimeoutException(''));
+        expect(cloudWatch.errorsSeen.contains('TimeoutException'), true);
       });
       test('error general exception', () {
-        cloudWatch.shouldPrintFailedLookup = true;
+        cloudWatch.errorsSeen = {};
         try {
           cloudWatch.checkError(Exception('General Exception'));
         } on CloudWatchException {
@@ -705,7 +818,7 @@ void main() {
         } catch (e) {
           expect(e, isA<Exception>());
           expect(e.toString(), 'Exception: General Exception');
-          expect(cloudWatch.shouldPrintFailedLookup, true);
+          expect(cloudWatch.errorsSeen.length, 0);
           return;
         }
         fail('Exception was not thrown');
@@ -718,6 +831,12 @@ void main() {
           return;
         }
         fail('raiseFailedLookups = true did not trigger an exception!');
+      });
+      test('requestTimeout > dynamicTimeoutMax', () {
+        cloudWatch
+          ..timeoutMultiplier = 10000
+          ..checkError(TimeoutException(''));
+        expect(cloudWatch.requestTimeout.inMinutes, 2);
       });
     });
     group('sendLogs', () {
@@ -736,6 +855,9 @@ void main() {
           largeMessageBehavior: CloudWatchLargeMessages.truncate,
           raiseFailedLookups: false,
           mockCloudWatch: true,
+          useDynamicTimeout: true,
+          dynamicTimeoutMax: const Duration(minutes: 2),
+          timeoutMultiplier: 1.2,
         );
       });
       test('logStack empty', () {
@@ -785,6 +907,9 @@ void main() {
           largeMessageBehavior: CloudWatchLargeMessages.truncate,
           raiseFailedLookups: false,
           mockCloudWatch: true,
+          useDynamicTimeout: true,
+          dynamicTimeoutMax: const Duration(minutes: 2),
+          timeoutMultiplier: 1.2,
         );
       });
       test('status 400 - no type', () async {
@@ -818,6 +943,9 @@ void main() {
           retries: 3,
           largeMessageBehavior: CloudWatchLargeMessages.truncate,
           raiseFailedLookups: false,
+          useDynamicTimeout: true,
+          dynamicTimeoutMax: const Duration(minutes: 2),
+          timeoutMultiplier: 1.2,
           mockCloudWatch: true,
           mockFunction: (Request request) async {
             return Response('', 200);

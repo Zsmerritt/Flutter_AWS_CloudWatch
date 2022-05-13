@@ -1,3 +1,11 @@
+## [0.5.4] - 2022/03/24
+
+* Added explicit types to constructor arguments that were missing them
+* Added dynamically adjust timeouts 
+* Reduced repeated CloudwatchException Timeout errors
+* Updated README with details about new features
+* Added unit tests
+
 ## [0.5.3] - 2022/02/06
 
 * Reduced repeated failed lookup printout 

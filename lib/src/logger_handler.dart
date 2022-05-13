@@ -94,6 +94,48 @@ class LoggerHandler {
   /// private version of [largeMessageBehavior]
   int _retries;
 
+  /// How much the timeout should be increased after a timeout
+  double get timeoutMultiplier => _timeoutMultiplier;
+
+  /// How much the timeout should be increased after a timeout
+  set timeoutMultiplier(double val) {
+    for (final Logger cw in logInstances.values) {
+      cw.timeoutMultiplier = val;
+    }
+    _timeoutMultiplier = val;
+  }
+
+  /// private version of [timeoutMultiplier]
+  double _timeoutMultiplier;
+
+  /// Whether dynamicTimeout is enabled
+  bool get useDynamicTimeout => _useDynamicTimeout;
+
+  /// Whether dynamicTimeout is enabled
+  set useDynamicTimeout(bool val) {
+    for (final Logger cw in logInstances.values) {
+      cw.useDynamicTimeout = val;
+    }
+    _useDynamicTimeout = val;
+  }
+
+  /// private version of [useDynamicTimeout]
+  bool _useDynamicTimeout;
+
+  /// Whether dynamicTimeout is enabled
+  Duration get dynamicTimeoutMax => _dynamicTimeoutMax;
+
+  /// Whether dynamicTimeout is enabled
+  set dynamicTimeoutMax(Duration val) {
+    for (final Logger cw in logInstances.values) {
+      cw.dynamicTimeoutMax = val;
+    }
+    _dynamicTimeoutMax = val;
+  }
+
+  /// private version of [useDynamicTimeout]
+  Duration _dynamicTimeoutMax;
+
   /// How messages larger than AWS limit should be handled. Default is truncate.
   CloudWatchLargeMessages get largeMessageBehavior => _largeMessageBehavior;
 
@@ -183,15 +225,18 @@ class LoggerHandler {
 
   /// CloudWatchHandler Constructor
   LoggerHandler({
-    required awsAccessKey,
-    required awsSecretKey,
+    required String awsAccessKey,
+    required String awsSecretKey,
     required this.region,
-    required awsSessionToken,
-    required delay,
-    required requestTimeout,
-    required retries,
-    required largeMessageBehavior,
-    required raiseFailedLookups,
+    required String? awsSessionToken,
+    required Duration delay,
+    required Duration requestTimeout,
+    required int retries,
+    required CloudWatchLargeMessages largeMessageBehavior,
+    required bool raiseFailedLookups,
+    required bool useDynamicTimeout,
+    required Duration dynamicTimeoutMax,
+    required double timeoutMultiplier,
     this.mockCloudWatch = false,
     this.mockFunction,
     int maxBytesPerMessage = awsMaxBytesPerMessage,
@@ -202,6 +247,9 @@ class LoggerHandler {
         _awsSessionToken = awsSessionToken,
         _delay = delay,
         _requestTimeout = requestTimeout,
+        _useDynamicTimeout = useDynamicTimeout,
+        _dynamicTimeoutMax = dynamicTimeoutMax,
+        _timeoutMultiplier = timeoutMultiplier,
         _retries = max(0, retries),
         _largeMessageBehavior = largeMessageBehavior,
         _raiseFailedLookups = raiseFailedLookups,
@@ -285,6 +333,9 @@ class LoggerHandler {
       maxMessagesPerRequest: maxMessagesPerRequest,
       mockCloudWatch: mockCloudWatch,
       mockFunction: mockFunction,
+      dynamicTimeoutMax: dynamicTimeoutMax,
+      useDynamicTimeout: useDynamicTimeout,
+      timeoutMultiplier: timeoutMultiplier,
     );
     logInstances[instanceName] = instance;
     return instance;

@@ -54,6 +54,21 @@ class CloudWatchHandler {
   /// Whether exceptions should be raised on failed lookups (usually no internet)
   set raiseFailedLookups(bool val) => _handler.raiseFailedLookups = val;
 
+  /// Whether to dynamically adjust the timeout or not
+  bool get useDynamicTimeout => _handler.useDynamicTimeout;
+
+  set useDynamicTimeout(bool val) => _handler.useDynamicTimeout = val;
+
+  /// How much to increase the timeout after a timeout occurs
+  double get timeoutMultiplier => _handler.timeoutMultiplier;
+
+  set timeoutMultiplier(double val) => _handler.timeoutMultiplier = val;
+
+  /// The maximum length dynamic timeouts can be
+  Duration get dynamicTimeoutMax => _handler.dynamicTimeoutMax;
+
+  set dynamicTimeoutMax(Duration val) => _handler.dynamicTimeoutMax = val;
+
   /// Changes how large each message can be before [largeMessageBehavior] takes
   /// effect. Min 5, Max 262116
   ///
@@ -88,12 +103,16 @@ class CloudWatchHandler {
     required awsAccessKey,
     required awsSecretKey,
     required region,
-    awsSessionToken,
-    delay = const Duration(),
-    requestTimeout = const Duration(seconds: 10),
+    String? awsSessionToken,
+    Duration delay = const Duration(),
+    Duration requestTimeout = const Duration(seconds: 10),
+    bool useDynamicTimeout = true,
+    double timeoutMultiplier = 1.2,
+    Duration dynamicTimeoutMax = const Duration(minutes: 2),
     retries = 3,
-    largeMessageBehavior = CloudWatchLargeMessages.truncate,
-    raiseFailedLookups = false,
+    CloudWatchLargeMessages largeMessageBehavior =
+        CloudWatchLargeMessages.truncate,
+    bool raiseFailedLookups = false,
     int maxBytesPerMessage = awsMaxBytesPerMessage,
     int maxBytesPerRequest = awsMaxBytesPerRequest,
     int maxMessagesPerRequest = awsMaxMessagesPerRequest,
@@ -104,6 +123,9 @@ class CloudWatchHandler {
           awsSessionToken: awsSessionToken,
           delay: delay,
           requestTimeout: requestTimeout,
+          useDynamicTimeout: useDynamicTimeout,
+          timeoutMultiplier: timeoutMultiplier,
+          dynamicTimeoutMax: dynamicTimeoutMax,
           retries: retries,
           largeMessageBehavior: largeMessageBehavior,
           raiseFailedLookups: raiseFailedLookups,
