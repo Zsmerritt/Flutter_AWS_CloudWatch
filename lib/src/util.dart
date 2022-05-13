@@ -35,22 +35,33 @@ class CloudWatchException implements Exception {
   String? message;
   StackTrace? stackTrace;
   String? type;
+  int? statusCode;
   String? raw;
 
   /// A custom error to identify CloudWatch errors more easily
   ///
   /// message: the cause of the error
   /// stackTrace: the stack trace of the error
-  CloudWatchException(
-      {required this.message, required this.stackTrace, this.type, this.raw});
+  CloudWatchException({
+    required this.message,
+    required this.stackTrace,
+    this.type,
+    this.statusCode,
+    this.raw,
+  });
 
   /// CloudWatchException toString
   @override
   String toString() {
-    if (type != null) {
-      return 'CloudWatchException - type: $type, message: $message';
+    final StringBuffer buffer = StringBuffer('CloudWatchException - ');
+    if (statusCode != null) {
+      buffer.write('statusCode: $statusCode, ');
     }
-    return 'CloudWatchException - message: $message';
+    if (type != null) {
+      buffer.write('type: $type, ');
+    }
+    buffer.write('message: $message');
+    return buffer.toString();
   }
 }
 

@@ -489,6 +489,7 @@ class Logger {
       throw CloudWatchException(
         message: awsResponse.message,
         type: awsResponse.type,
+        statusCode: awsResponse.statusCode,
         stackTrace: StackTrace.current,
         raw: awsResponse.raw,
       );
