@@ -322,6 +322,7 @@ class Logger {
           throw CloudWatchException(
             message: response.message,
             type: response.type,
+            statusCode: statusCode,
             stackTrace: StackTrace.current,
             raw: response.raw,
           );
@@ -623,6 +624,7 @@ class Logger {
             'and it will be addressed promptly. \n'
             'Message: ${awsResponse.message} Raw: ${awsResponse.raw}',
         stackTrace: StackTrace.current,
+        statusCode: awsResponse.statusCode,
         raw: awsResponse.raw,
         type: 'InvalidParameterException',
       );
