@@ -1,3 +1,7 @@
+## [0.5.5] - 2022/05/13
+
+* Added response status code to CloudWatchException
+
 ## [0.5.4] - 2022/03/24
 
 * Added explicit types to constructor arguments that were missing them
