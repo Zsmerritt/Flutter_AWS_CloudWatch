@@ -26,17 +26,25 @@ void main() {
           message: 'message',
           stackTrace: StackTrace.empty,
         );
+        expect(exception.message, 'message');
+        expect(exception.stackTrace, StackTrace.empty);
         expect(exception.type == null, true);
         expect(exception.raw == null, true);
+        expect(exception.statusCode == null, true);
       });
       test('maximum', () {
         final CloudWatchException exception = CloudWatchException(
-            message: 'message',
-            stackTrace: StackTrace.empty,
-            type: 'type',
-            raw: 'raw');
+          message: 'message',
+          stackTrace: StackTrace.empty,
+          type: 'type',
+          raw: 'raw',
+          statusCode: 200,
+        );
+        expect(exception.message, 'message');
+        expect(exception.stackTrace, StackTrace.empty);
         expect(exception.type, 'type');
         expect(exception.raw, 'raw');
+        expect(exception.statusCode, 200);
       });
     });
     group('toString', () {
@@ -52,13 +60,15 @@ void main() {
       });
       test('maximum', () {
         final CloudWatchException exception = CloudWatchException(
-            message: 'message',
-            stackTrace: StackTrace.empty,
-            type: 'type',
-            raw: 'raw');
+          message: 'message',
+          stackTrace: StackTrace.empty,
+          type: 'type',
+          raw: 'raw',
+          statusCode: 200,
+        );
         expect(
           exception.toString(),
-          'CloudWatchException - type: type, message: message',
+          'CloudWatchException - statusCode: 200, type: type, message: message',
         );
       });
     });
