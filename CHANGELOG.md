@@ -1,3 +1,7 @@
+## [0.5.6+1] - 2022/09/20
+
+* Fixed failing test
+
 ## [0.5.6] - 2022/09/20
 
 * Added timestamped message hash and message number to split messages
