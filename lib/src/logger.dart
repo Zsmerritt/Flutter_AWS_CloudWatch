@@ -4,6 +4,7 @@ import 'dart:math';
 
 import 'package:aws_request/aws_request.dart';
 import 'package:aws_request/testing.dart';
+import 'package:crypto/crypto.dart';
 import 'package:http/http.dart';
 import 'package:synchronized/synchronized.dart';
 

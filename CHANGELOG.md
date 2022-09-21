@@ -1,3 +1,7 @@
+## [0.5.6] - 2022/09/20
+
+* Added timestamped message hash and message number to split messages
+
 ## [0.5.5] - 2022/05/13
 
 * Added response status code to CloudWatchException

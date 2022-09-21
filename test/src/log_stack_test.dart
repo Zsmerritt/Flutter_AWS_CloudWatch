@@ -8,6 +8,10 @@ void main() {
     expect(awsMaxBytesPerMessage, 262116);
     expect(awsMaxBytesPerRequest, 1048576);
     expect(awsMaxMessagesPerRequest, 10000);
+    expect(splitMessageOverheadBytes, 21);
+    expect(awsMinBytesPerMessage, splitMessageOverheadBytes + 1);
+    expect(awsMinBytesPerRequest, 1);
+    expect(awsMinMessagesPerRequest, 1);
   });
 
   test('constructor', () {
@@ -132,7 +136,7 @@ void main() {
         final CloudWatchLogStack splitStack = CloudWatchLogStack(
           largeMessageBehavior: CloudWatchLargeMessages.split,
         )..addLogs(['test' * awsMaxBytesPerMessage * 2]);
-        expect(splitStack.length, 2);
+        expect(splitStack.length, 3);
         expect(splitStack.logStack[0].logs.length, 4);
         expect(
           splitStack.logStack[0].logs[0]['message'].length,
@@ -169,6 +173,12 @@ void main() {
           awsMaxBytesPerMessage,
         );
         expect(splitStack.logStack[1].messageSize, 1048568);
+        expect(splitStack.logStack[2].logs.length, 1);
+        expect(
+          splitStack.logStack[2].logs[0]['message'].length,
+          189,
+        );
+        expect(splitStack.logStack[2].messageSize, 215);
       });
 
       test('split', () {
@@ -176,7 +186,8 @@ void main() {
           largeMessageBehavior: CloudWatchLargeMessages.split,
         )
           // test splitting large message into smaller chunks
-          ..addLogs(['test' * awsMaxBytesPerMessage]);
+          ..addLogs(
+              ['test' * (awsMaxBytesPerMessage - splitMessageOverheadBytes)]);
         expect(splitStack.length, 1);
         expect(splitStack.logStack[0].logs.length, 4);
         expect(
@@ -335,7 +346,8 @@ void main() {
     });
     group('calculateMidpoint', () {
       test('no split', () {
-        final String msg = '1' * (awsMaxBytesPerMessage - 1);
+        final String msg =
+            '1' * (awsMaxBytesPerMessage - 1 - splitMessageOverheadBytes);
         final List<int> bytes = utf8.encode(msg);
         final List<List<int>> result = CloudWatchLogStack().split(bytes);
         expect(result.length, 1);

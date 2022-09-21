@@ -1,8 +1,12 @@
 part of 'logger.dart';
 
+/// Package Limits
+// Accounts for 10 digit hash and up to 9999 split messages
+const int splitMessageOverheadBytes = 21;
+
 /// AWS Hard Limits
 const int awsMaxBytesPerMessage = 262116;
-const int awsMinBytesPerMessage = 5;
+const int awsMinBytesPerMessage = splitMessageOverheadBytes + 1;
 const int awsMaxBytesPerRequest = 1048576;
 const int awsMinBytesPerRequest = 1;
 const int awsMaxMessagesPerRequest = 10000;
@@ -153,14 +157,24 @@ class CloudWatchLogStack {
 
   /// Splits message into smaller chunks
   List<List<int>> split(List<int> bytes) {
-    List<int> newBytes = bytes;
+    final int messageSize = maxBytesPerMessage - splitMessageOverheadBytes;
+    final int numMessages = (bytes.length / messageSize).ceil();
+
+    final int timestamp = DateTime.now().millisecondsSinceEpoch;
+    // grab first 10 of hash. used to collate messages
+    final String hash =
+        sha1.convert(bytes + [timestamp]).toString().substring(0, 10);
     final List<List<int>> res = [];
-    while (newBytes.length > maxBytesPerMessage) {
-      res.add(newBytes.sublist(0, maxBytesPerMessage));
-      newBytes = newBytes.sublist(maxBytesPerMessage);
-    }
-    if (newBytes.isNotEmpty) {
-      res.add(newBytes);
+    final String paddedTotal = numMessages.toString().padLeft(4, '0');
+    int startIndex = 0;
+    for (int x = 0; x < numMessages; x++) {
+      final String paddedCurrent = (x + 1).toString().padLeft(4, '0');
+      final List<int> prefix = utf8.encode(
+        '$hash $paddedCurrent/$paddedTotal:',
+      );
+      final int newMessageSize = min(messageSize, bytes.length - startIndex);
+      res.add(prefix + bytes.sublist(startIndex, startIndex + newMessageSize));
+      startIndex += newMessageSize;
     }
     return res;
   }

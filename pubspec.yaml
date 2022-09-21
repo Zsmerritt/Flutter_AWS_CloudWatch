@@ -1,6 +1,6 @@
 name: aws_cloudwatch
 description: An easy, lightweight, and convenient way to reliably send logs to AWS CloudWatch.
-version: 0.5.5
+version: 0.5.6
 homepage: https://github.com/Zsmerritt/Flutter_AWS_CloudWatch
 
 environment:
@@ -9,7 +9,8 @@ environment:
 dependencies:
   aws_request: ^0.4.0 # Make request to AWS
   synchronized: ^3.0.0 # Synchronize requests to ensure valid keys
-  http: ^0.13.0 # Http package for parsing AWS responses correctly on multiple platforms
+  http: ^0.13.0 # Http package for parsing AWS responses correctly on Multiple Platforms
+  crypto: ^3.0.0 # Messages hashes used to collate split messages
 
 dev_dependencies:
   test: ^1.16.0
