@@ -146,7 +146,7 @@ class CloudWatch {
     required String groupName,
     required String streamName,
     String? awsSessionToken,
-    Duration delay = const Duration(),
+    Duration delay = const Duration(milliseconds: 200),
     Duration requestTimeout = const Duration(seconds: 10),
     int retries = 3,
     bool useDynamicTimeout = true,

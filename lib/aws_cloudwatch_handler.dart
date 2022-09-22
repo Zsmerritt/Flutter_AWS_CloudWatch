@@ -104,7 +104,7 @@ class CloudWatchHandler {
     required awsSecretKey,
     required region,
     String? awsSessionToken,
-    Duration delay = const Duration(),
+    Duration delay = const Duration(milliseconds: 200),
     Duration requestTimeout = const Duration(seconds: 10),
     bool useDynamicTimeout = true,
     double timeoutMultiplier = 1.2,
