@@ -1,6 +1,7 @@
 ## [0.5.7] - 2022/09/21
 
 * Updated default message delay to 200ms
+* Updated default `largeMessageBehavior` to split
 * Updated documentation
 
 ## [0.5.6+1] - 2022/09/20
