@@ -18,7 +18,7 @@ class CloudWatchLogStack {
   CloudWatchLargeMessages largeMessageBehavior;
 
   /// Changes how large each message can be before [largeMessageBehavior] takes
-  /// effect. Min 5, Max 262116
+  /// effect. Min 22, Max 262116
   ///
   /// These overrides change when messages are sent. No need to mess with them
   /// unless you're running into issues

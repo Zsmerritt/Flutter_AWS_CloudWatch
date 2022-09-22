@@ -157,40 +157,11 @@ void log(String logString) {
 }
 ~~~
 
-### Example 2
-
-Here's an example of using aws_cloudwatch to send a CloudWatch log with a 200-millisecond delay to avoid rate limiting:
-
-~~~dart
-import 'package:aws_cloudwatch/aws_cloudwatch.dart';
-
-// AWS Variables
-const String awsAccessKeyId = 'ExampleKey';
-const String awsSecretAccessKey = 'ExampleSecret';
-const String region = 'us-west-2';
-
-// Logging Variables
-const String groupName = 'LogGroupExample';
-const String streamName = 'LogStreamExample';
-CloudWatch cloudWatch = CloudWatch(
-  awsAccessKey: awsAccessKeyId,
-  awsSecretKey: awsSecretAccessKey,
-  region: region,
-  groupName: groupName,
-  streamName: streamName,
-  delay: const Duration(milliseconds: 200),
-);
-
-void log(String logString) {
-  cloudWatch.log(logString);
-}
-~~~
-
 By adding a 200-millisecond delay, aws_cloudwatch will send more logs at a time and will be limited to sending api
 requests at most once every 200 milliseconds. This can reduce the chance of hitting the AWS CloudWatch logging rate
 limit of 5 requests per second per log stream.
 
-### Example 3
+### Example 2
 
 Here is an example of how to capture all errors in flutter and send them to CloudWatch. First create this file and name
 it `errorLog.dart`
@@ -288,12 +259,10 @@ sessionToken on a CloudWatchHandler will update the sessionToken on all CloudWat
 ### Avoiding AWS Cloudwatch API Rate Limiting
 
 AWS has a rate limit of 5 log requests per second per log stream. You may hit this limit rather
-quickly if you have a high volume of logs. It is highly recommended to include the optional delay parameter with a value
-of `Duration(milliseconds: 200)` to avoid hitting this upper limit. With a delay, logs will continue to collect, but the
+quickly if you have a high volume of logs. It is highly recommended to keep this value at the default 200 milliseconds 
+to avoid hitting this upper limit. With a delay, logs will continue to collect, but the
 api calls will be limited to `1 / delay` per second. For example, a delay of 200 milliseconds would result in a maximum
 of 5 api requests per second. At the moment there is no way to increase this limit.
-
-Example 2 shows how to add a delay. The default delay is `Duration(milliseconds: 0)`.
 
 ### Retrying Failed Requests
 
@@ -322,11 +291,11 @@ Log group names have the following limits:
 
 ### Message Size and Length Limits
 
-AWS has hard limits on the amount of messages, length of individual messages, and overall length of message data sent
-per request. Currently, (2021/09/12) that limit is 10,000 messages per request, 262,116 UTF8 bytes per message, and
-1,048,576 total message UTF8 bytes per request. The optional parameter `largeMessageBehavior` specifies how messages
-larger than 262,115 UTF8 bytes will be handled. By default, the middle of the message will be replaced with `...` to
-reduce the size to 262,116 UTF8 bytes. All other hard limits are handled automatically with pagination.
+AWS has hard limits on the amount of messages, overall length of message data sent
+per request, and length of individual messages. The first two can be handled automatically with pagination however the
+last requires special handling. The optional parameter `largeMessageBehavior` specifies how messages
+larger than the limit will be handled. By default, the message will be broken up and paginated over several
+log entries with a timestamped message hash to collate them, and a message number like so: `JKNA9ANF23 0001/0045:[LOG_MESSAGE]`
 
 ### Requests Timing Out
 Sometimes, if the connection is poor, or the payload is very large, requests can timeout. Logs from requests that time 
@@ -354,7 +323,7 @@ user is in.
 If that still doesn't solve the issue, there are several other options that are aimed at decreasing the size of the 
 payload. 
    
-    `maxBytesPerMessage`: how large each message can be before [largeMessageBehavior] takes effect. Min 5, Max 262116
+    `maxBytesPerMessage`: how large each message can be before `largeMessageBehavior` takes effect. Min 22, Max 262116
     
     `maxBytesPerRequest`: how many bytes can be sent in each API request before a second request is made. Min 1, Max 1048576
     
@@ -362,7 +331,7 @@ payload.
 
 By default, all of these parameters are set to their maximum. Decreasing any of them will decrease the payload size and 
 cause more requests to be sent over a longer period. Usually this isn't an issue. If you don't have requests timing out
-it is inadvisable to change these parameters from their defaults.
+then it is inadvisable to change these parameters from their defaults.
 
 
 ## MIT License
