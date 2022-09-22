@@ -16,7 +16,7 @@ void main() {
 
   test('constructor', () {
     final CloudWatchLogStack logStack = CloudWatchLogStack();
-    expect(logStack.largeMessageBehavior, CloudWatchLargeMessages.truncate);
+    expect(logStack.largeMessageBehavior, CloudWatchLargeMessages.split);
     expect(logStack.length, 0);
     expect(logStack.logStack.length, 0);
   });
@@ -217,7 +217,9 @@ void main() {
       });
 
       test('truncate', () {
-        final CloudWatchLogStack truncateStack = CloudWatchLogStack();
+        final CloudWatchLogStack truncateStack = CloudWatchLogStack(
+          largeMessageBehavior: CloudWatchLargeMessages.truncate,
+        );
         // test truncating large message
         final List<String> logStrings = ['test' * awsMaxBytesPerMessage];
         truncateStack.addLogs(logStrings);

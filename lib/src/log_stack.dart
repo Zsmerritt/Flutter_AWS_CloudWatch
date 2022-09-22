@@ -67,7 +67,7 @@ class CloudWatchLogStack {
 
   /// CloudWatchLogStack constructor
   CloudWatchLogStack({
-    this.largeMessageBehavior = CloudWatchLargeMessages.truncate,
+    this.largeMessageBehavior = CloudWatchLargeMessages.split,
     int maxBytesPerMessage = awsMaxBytesPerMessage,
     int maxBytesPerRequest = awsMaxBytesPerRequest,
     int maxMessagesPerRequest = awsMaxMessagesPerRequest,

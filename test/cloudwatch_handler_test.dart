@@ -17,7 +17,7 @@ void main() {
       expect(cw.delay.inSeconds, 0);
       expect(cw.requestTimeout.inSeconds, 10);
       expect(cw.retries, 3);
-      expect(cw.largeMessageBehavior, CloudWatchLargeMessages.truncate);
+      expect(cw.largeMessageBehavior, CloudWatchLargeMessages.split);
       expect(cw.raiseFailedLookups, false);
     });
     test('max constructor', () {

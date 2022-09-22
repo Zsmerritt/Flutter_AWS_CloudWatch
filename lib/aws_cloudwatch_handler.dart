@@ -111,7 +111,7 @@ class CloudWatchHandler {
     Duration dynamicTimeoutMax = const Duration(minutes: 2),
     retries = 3,
     CloudWatchLargeMessages largeMessageBehavior =
-        CloudWatchLargeMessages.truncate,
+        CloudWatchLargeMessages.split,
     bool raiseFailedLookups = false,
     int maxBytesPerMessage = awsMaxBytesPerMessage,
     int maxBytesPerRequest = awsMaxBytesPerRequest,
