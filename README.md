@@ -16,7 +16,7 @@
         <img alt="License" src="https://img.shields.io/github/license/Zsmerritt/Flutter_AWS_CloudWatch?logo=open-source-initiative&logoColor=white">
     </a>
     <a href="https://github.com/Zsmerritt/Flutter_AWS_CloudWatch/actions/workflows/dart.yml">
-        <img alt="CI pipeline status" src="https://github.com/Zsmerritt/Flutter_AWS_CloudWatch/actions/workflows/dart.yml/badge.svg">
+        <img alt="CI pipeline status" src="https://github.com/Zsmerritt/Flutter_AWS_CloudWatch/actions/workflows/dart.yml/badge.svg?branch=main">
     </a>
     <a href="https://codecov.io/gh/Zsmerritt/Flutter_AWS_CloudWatch">
       <img src="https://codecov.io/gh/Zsmerritt/Flutter_AWS_CloudWatch/branch/main/graph/badge.svg?token=IYYGJNJEA1"/>
@@ -24,7 +24,7 @@
 </p>
 
 <p align="center">
-  An easy, lightweight, and convenient way to reliably send logs to AWS CloudWatch.
+  An easy and lightweight turnkey solution for logging with AWS CloudWatch
 </p>
 
 ---
@@ -52,7 +52,7 @@
 </p>
 
 <p align="center">
-    If you have feedback or have a use case that isn't covered feel free to open an issue.
+    If you have feedback or a use case that isn't covered please open an issue.
 </p>
 
 ## Getting Started
@@ -281,13 +281,13 @@ in your app's `android/app/src/main/AndroidManifest.xml`
 
 ### Using Temporary Credentials
 
-Temporary credentials are supported as of version 0.4.6. Use the optional parameter sessionToken to specify your session
+Temporary credentials are also supported. Use the optional parameter sessionToken to specify your session
 token. Expired credentials can be updated by setting the CloudWatch instance sessionToken variable. Setting the 
 sessionToken on a CloudWatchHandler will update the sessionToken on all CloudWatch instances it manages.
 
 ### Avoiding AWS Cloudwatch API Rate Limiting
 
-As of now (2021/09/12), AWS has a rate limit of 5 log requests per second per log stream. You may hit this limit rather
+AWS has a rate limit of 5 log requests per second per log stream. You may hit this limit rather
 quickly if you have a high volume of logs. It is highly recommended to include the optional delay parameter with a value
 of `Duration(milliseconds: 200)` to avoid hitting this upper limit. With a delay, logs will continue to collect, but the
 api calls will be limited to `1 / delay` per second. For example, a delay of 200 milliseconds would result in a maximum
@@ -310,13 +310,13 @@ that the provided region has a typo.
 
 ### Log Groups and Log Streams
 
-Log stream names currently (2021/09/12) have the following limits:
+Log stream names have the following limits:
 
 * Log stream names must be unique within the log group.
 * Log stream names can be between 1 and 512 characters long.
 * The ':' (colon) and '*' (asterisk) characters are not allowed.
 
-Log group names currently (2021/09/12) have the following limits:
+Log group names have the following limits:
 
 * Log group names can be between 1 and 512 characters long and match to `^[\.\-_/#A-Za-z0-9]+$`.
 
@@ -333,24 +333,24 @@ Sometimes, if the connection is poor, or the payload is very large, requests can
 out aren't lost, and the request will be retried the next time a log is added to the queue. If this happens frequently 
 though, it can be a problem. 
 
-1)  Increasing the timeout
+1)  Increasing the timeout -
 The first thing to try is increasing the duration of the `requestTimeout` parameter. This increases the amount of time 
 requests have before timing out.
     
 
-2)  Adjusting the dynamic timeout
+2)  Adjusting the dynamic timeout -
 If increasing the request timeout doesn't work, you can try adjusting the dynamic timeout. With the dynamic timeout, as
 requests timeout, the timeout is slowly increased. The aim of this feature is to tune the timeout to the situation the 
 user is in. 
 
     `useDynamicTimeout`: whether this feature is enabled. Default: true
     
-    `timeoutMultiplier`: how much the timeout increases after a timeout. Default: 1.2  
+    `timeoutMultiplier`: factor by which the timeout increases after a timeout. Default: 1.2  
     
     `dynamicTimeoutMax`: the upper bound for the `requestTimeout`. Default: 2 minutes
 
 
-3) Adjusting log limits
+3) Adjusting log limits -
 If that still doesn't solve the issue, there are several other options that are aimed at decreasing the size of the 
 payload. 
    

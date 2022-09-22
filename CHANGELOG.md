@@ -1,3 +1,7 @@
+## [0.5.6+2] - 2022/09/21
+
+* Updated documentation
+
 ## [0.5.6+1] - 2022/09/20
 
 * Fixed failing test
