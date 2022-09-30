@@ -24,7 +24,7 @@
 </p>
 
 <p align="center">
-  An easy and lightweight turnkey solution for logging with AWS CloudWatch
+  A easy, lightweight, turnkey solution for logging with AWS CloudWatch
 </p>
 
 ---
@@ -57,26 +57,27 @@
 
 ## Getting Started
 
-Create a CloudWatch instance and then send a log
+Create a CloudWatch instance, then send a log
 
 ~~~dart
 import 'package:aws_cloudwatch/aws_cloudwatch.dart';
 
-CloudWatchHandler logging = CloudWatchHandler(
+CloudWatch cloudwatch = CloudWatch(
   awsAccessKey: _awsAccessKeyId,
   awsSecretKey: _awsSecretAccessKey,
   region: _region,
-  delay: const Duration(milliseconds: 200),
+  groupName: 'groupName',
+  streamName: 'streamName',
 );
 
-void main() {
-  cloudWatch.log('Hello World');
+void logHelloWorld() {
+  cloudWatch.log('Hello World!');
 }
 ~~~
 
 ### Quick Start
 
-This is the quick start file. It is also location in example/aws_cloudwatch.dart
+This is the quick start file. It is also location in `example/aws_cloudwatch.dart`
 
 ~~~dart
 import 'package:aws_cloudwatch/aws_cloudwatch.dart';
@@ -88,7 +89,7 @@ import 'package:intl/intl.dart';
 
 const String _awsAccessKeyId = 'YOUR_ACCESS_KEY';
 const String _awsSecretAccessKey = 'YOUR_SECRET_ACCESS_KEY';
-const String _region = 'YOUR_REGION_CODE'; // (us-west-1, us-east-2, etc)
+const String _region = 'YOUR_REGION_NAME'; // (us-west-1, us-east-2, etc)
 const String _logGroup = 'DESIRED_LOG_GROUP_NAME';
 const String _errorGroup = 'DESIRED_ERROR_LOG_GROUP_NAME';
 
@@ -98,7 +99,6 @@ CloudWatchHandler logging = CloudWatchHandler(
   awsAccessKey: _awsAccessKeyId,
   awsSecretKey: _awsSecretAccessKey,
   region: _region,
-  delay: const Duration(milliseconds: 200),
 );
 
 String logStreamName = '';
@@ -122,16 +122,16 @@ void log(String logString, {bool isError = false}) {
 }
 ~~~
 
-Then just import this file somewhere in your code and call `log('HELLO WORLD');`. The package will handle creating the
-log groups and log streams on its own. The way the quick start file is set up, you will end up with one log group for
-standard logging and another for errors. Both with have the same log stream name. To automatically send logs for all
-flutter errors see example 3.
+Then just import this file somewhere in your code and call `log('HELLO WORLD');`. `aws_cloudwatch` will 
+create the log groups and log streams on its own. with this quick start file, you will have one 
+log group for standard logging and another for errors. Both with have the same log stream name. To automatically send 
+logs for all flutter errors see example 2 below.
 
 ## Examples
 
 ### Example 1
 
-Here's an example of using aws_cloudwatch to send a CloudWatch PutLogEvent request:
+Here's an example of using `CloudWatch` from `aws_cloudwatch` to send a log:
 
 ~~~dart
 import 'package:aws_cloudwatch/aws_cloudwatch.dart';
@@ -157,13 +157,13 @@ void log(String logString) {
 }
 ~~~
 
-By adding a 200-millisecond delay, aws_cloudwatch will send more logs at a time and will be limited to sending api
-requests at most once every 200 milliseconds. This can reduce the chance of hitting the AWS CloudWatch logging rate
-limit of 5 requests per second per log stream.
+The `CloudWatch` class is used when sending logs to one stream or group. If you need to send logs to multiple
+streams or groups, use the `CloudWatchHandler` class and specify the log group and stream names when calling `.log()`. 
+`CloudWatchHandler`will take care of the rest.
 
 ### Example 2
 
-Here is an example of how to capture all errors in flutter and send them to CloudWatch. First create this file and name
+This example shows how to capture all errors in flutter and send them to CloudWatch. First create this file and name
 it `errorLog.dart`
 
 ~~~dart
@@ -239,7 +239,8 @@ void main() {
 }
 ~~~
 
-To send normal logs, import the logging file anywhere and call `log('Hello world!');`
+To send normal logs, import the logging file anywhere and call `log('Hello world!');`. Any uncaught exceptions will 
+automatically be uploaded to AWS CloudWatch in a separate log group for errors with the exception and stacktrace.
 
 ## Important Notes:
 
@@ -252,22 +253,21 @@ in your app's `android/app/src/main/AndroidManifest.xml`
 
 ### Using Temporary Credentials
 
-Temporary credentials are also supported. Use the optional parameter sessionToken to specify your session
-token. Expired credentials can be updated by setting the CloudWatch instance sessionToken variable. Setting the 
-sessionToken on a CloudWatchHandler will update the sessionToken on all CloudWatch instances it manages.
+Temporary credentials are supported. Use the optional parameter `sessionToken` to specify your session
+token. Expired credentials can be updated by setting the CloudWatch instance `sessionToken` variable. Setting the 
+sessionToken on a CloudWatchHandler will update the `sessionToken` on all CloudWatch instances it manages.
 
 ### Avoiding AWS Cloudwatch API Rate Limiting
 
-AWS has a rate limit of 5 log requests per second per log stream. You may hit this limit rather
-quickly if you have a high volume of logs. It is highly recommended to keep this value at the default 200 milliseconds 
-to avoid hitting this upper limit. With a delay, logs will continue to collect, but the
+AWS has a rate limit of 5 log requests per second per log stream. To prevent hitting this rate limit, a delay is added between API requests.
+By default, this delay is set to 200 millisecond. With a delay, logs will continue to be collected, but the
 api calls will be limited to `1 / delay` per second. For example, a delay of 200 milliseconds would result in a maximum
-of 5 api requests per second. At the moment there is no way to increase this limit.
+of 5 API requests per second.
 
 ### Retrying Failed Requests
 
-Sometimes API requests can fail. This is especially true for mobile devices going in and out of cell service. Both the
-CloudWatch constructor and the CloudWatchHandler constructor can take the optional parameter `retries` indicating how
+Sometimes API requests fail. This is especially true for mobile devices going in and out of cell service. Both the
+`CloudWatch` constructor and the `CloudWatchHandler` constructor can take the optional parameter `retries` indicating how
 many times an api request will be attempted before giving up. The default retries value is 3.
 
 ### Failed DNS Lookups
@@ -289,49 +289,46 @@ Log group names have the following limits:
 
 * Log group names can be between 1 and 512 characters long and match to `^[\.\-_/#A-Za-z0-9]+$`.
 
-### Message Size and Length Limits
+### Message Size Limits
 
-AWS has hard limits on the amount of messages, overall length of message data sent
-per request, and length of individual messages. The first two can be handled automatically with pagination however the
-last requires special handling. The optional parameter `largeMessageBehavior` specifies how messages
+AWS has hard limits on the length of individual messages. The optional parameter `largeMessageBehavior` specifies how messages
 larger than the limit will be handled. By default, the message will be broken up and paginated over several
 log entries with a timestamped message hash to collate them, and a message number like so: `JKNA9ANF23 0001/0045:[LOG_MESSAGE]`
 
 ### Requests Timing Out
-Sometimes, if the connection is poor, or the payload is very large, requests can timeout. Logs from requests that time 
-out aren't lost, and the request will be retried the next time a log is added to the queue. If this happens frequently 
-though, it can be a problem. 
+Sometimes, if the connection is poor or the payload is very large, requests can timeout. Logs from requests that time 
+out aren't lost, and the request will be retried the next time a log is added to the queue. Here are some debugging 
+steps to take if you are running into this issue frequently:
 
-1)  Increasing the timeout -
+1)  Increase the timeout -
 The first thing to try is increasing the duration of the `requestTimeout` parameter. This increases the amount of time 
 requests have before timing out.
     
 
-2)  Adjusting the dynamic timeout -
+2)  Adjust the dynamic timeout -
 If increasing the request timeout doesn't work, you can try adjusting the dynamic timeout. With the dynamic timeout, as
 requests timeout, the timeout is slowly increased. The aim of this feature is to tune the timeout to the situation the 
 user is in. 
 
     `useDynamicTimeout`: whether this feature is enabled. Default: true
     
-    `timeoutMultiplier`: factor by which the timeout increases after a timeout. Default: 1.2  
+    `timeoutMultiplier`: the factor by which the timeout increases after a timeout. Default: 1.2  
     
     `dynamicTimeoutMax`: the upper bound for the `requestTimeout`. Default: 2 minutes
 
 
-3) Adjusting log limits -
+3) Adjust log limits -
 If that still doesn't solve the issue, there are several other options that are aimed at decreasing the size of the 
 payload. 
    
-    `maxBytesPerMessage`: how large each message can be before `largeMessageBehavior` takes effect. Min 22, Max 262116
+    `maxBytesPerMessage`: how many bytes each message can be before `largeMessageBehavior` takes effect. Min 22, Max 262116
     
-    `maxBytesPerRequest`: how many bytes can be sent in each API request before a second request is made. Min 1, Max 1048576
+    `maxBytesPerRequest`: how many bytes can be sent in each API request before messages are paginated. Min 1, Max 1048576
     
     `maxMessagesPerRequest`: the maximum number of messages that can be sent in each API request. Min 1, Max 10000
 
-By default, all of these parameters are set to their maximum. Decreasing any of them will decrease the payload size and 
-cause more requests to be sent over a longer period. Usually this isn't an issue. If you don't have requests timing out
-then it is inadvisable to change these parameters from their defaults.
+    By default, these parameters are set to their maximum. Decreasing any of them will decrease the payload size and 
+    increase pagination.
 
 
 ## MIT License

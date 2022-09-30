@@ -1,3 +1,7 @@
+## [0.5.7+1] - 2022/09/21
+
+* Updated README and fixed examples
+
 ## [0.5.7] - 2022/09/21
 
 * Updated default message delay to 200ms
