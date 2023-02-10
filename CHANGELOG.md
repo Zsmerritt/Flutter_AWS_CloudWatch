@@ -1,6 +1,7 @@
 ## [0.5.7+2] - 2023/02/09
 
 * Formatted project to comply with new dart formatting rules
+* Minor housekeeping to fix running tests & lint deprecations
 
 ## [0.5.7+1] - 2022/09/21
 
