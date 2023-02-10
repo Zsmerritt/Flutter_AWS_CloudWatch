@@ -113,7 +113,6 @@ class CloudWatchLogStack {
   /// Implements chosen largeMessageBehaviour
   void fixMessage(List<int> bytes, int time, String msg) {
     switch (largeMessageBehavior) {
-
       /// Truncate message by replacing middle with "..."
       case CloudWatchLargeMessages.truncate:
         addToStack(time, truncate(bytes));

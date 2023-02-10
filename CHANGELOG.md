@@ -1,3 +1,7 @@
+## [0.5.7+2] - 2023/02/09
+
+* Formatted project to comply with new dart formatting rules
+
 ## [0.5.7+1] - 2022/09/21
 
 * Updated README and fixed examples
