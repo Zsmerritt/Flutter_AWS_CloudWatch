@@ -179,7 +179,7 @@ void main() {
       try {
         await cw.log('test');
       } catch (e) {
-        expect(e.toString().contains('SocketException'), true);
+        expect(e.toString().contains('Failed host lookup'), true);
         return;
       }
       fail('raiseFailedLookups: true didnt catch failed lookup');
@@ -188,7 +188,7 @@ void main() {
       try {
         await cw.logMany(['test']);
       } catch (e) {
-        expect(e.toString().contains('SocketException'), true);
+        expect(e.toString().contains('Failed host lookup'), true);
         return;
       }
       fail('raiseFailedLookups: true didnt catch failed lookup');

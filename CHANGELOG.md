@@ -1,3 +1,9 @@
+## [0.6.0] - 2023/05/31
+
+* Updated to aws_request 0.5.0 to support `intl` 0.18.0+
+* Fixed tests broken by dart update
+* Removed deprecated analysis options
+
 ## [0.5.7+2] - 2023/02/09
 
 * Formatted project to comply with new dart formatting rules
