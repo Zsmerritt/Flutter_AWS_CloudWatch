@@ -1,3 +1,9 @@
+## [1.0.0] - 2023/05/31
+
+* Requires Dart 3.0 or later
+* Updated to `aws_request` ^1.0.0
+* Updated to `http` ^1.0.0
+
 ## [0.6.0] - 2023/05/31
 
 * Updated to aws_request 0.5.0 to support `intl` 0.18.0+
