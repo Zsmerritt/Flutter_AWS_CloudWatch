@@ -1,13 +1,13 @@
 name: aws_cloudwatch
 description: An easy, lightweight, turnkey solution for logging with AWS CloudWatch
-version: 1.0.0
+version: 1.0.1
 homepage: https://github.com/Zsmerritt/Flutter_AWS_CloudWatch
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
 
 dependencies:
-  aws_request: ^1.0.0 # Make request to AWS
+  aws_request: ^1.0.1 # Make request to AWS
   synchronized: ^3.0.0 # Synchronize requests to ensure valid keys
   http: ^1.0.0 # Http package for parsing AWS responses correctly on Multiple Platforms
   crypto: ^3.0.0 # Message hashes used to collate split messages
