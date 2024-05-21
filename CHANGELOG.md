@@ -1,3 +1,7 @@
+## [1.0.1] - 2024/05/20
+
+* Updated to `aws_request` ^1.0.1
+
 ## [1.0.0] - 2023/05/31
 
 * Requires Dart 3.0 or later
