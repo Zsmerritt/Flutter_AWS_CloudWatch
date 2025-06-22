@@ -82,7 +82,6 @@ linter:
     - null_closures
     - only_throw_errors
     - overridden_fields
-    - package_api_docs
     - package_names
     - package_prefixed_library_names
     - parameter_assignments
