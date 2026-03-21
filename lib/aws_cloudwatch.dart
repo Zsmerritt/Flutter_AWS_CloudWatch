@@ -59,7 +59,7 @@ class CloudWatch {
 
   set retries(int r) => _cloudWatch.retries = r;
 
-  /// How messages larger than AWS limit should be handled. Default is truncate.
+  /// How messages larger than AWS limit should be handled. Default is split.
   CloudWatchLargeMessages get largeMessageBehavior =>
       _cloudWatch.largeMessageBehavior;
 
@@ -109,7 +109,7 @@ class CloudWatch {
   set logStreamName(String val) => streamName = val;
 
   /// Changes how large each message can be before [largeMessageBehavior] takes
-  /// effect. Min 5, Max 262116
+  /// effect. Min 22, Max 1048550
   ///
   /// These overrides change when messages are sent. No need to mess with them
   /// unless you're running into issues

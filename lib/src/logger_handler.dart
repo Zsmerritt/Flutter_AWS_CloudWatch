@@ -136,10 +136,10 @@ class LoggerHandler {
   /// private version of [useDynamicTimeout]
   Duration _dynamicTimeoutMax;
 
-  /// How messages larger than AWS limit should be handled. Default is truncate.
+  /// How messages larger than AWS limit should be handled. Default is split.
   CloudWatchLargeMessages get largeMessageBehavior => _largeMessageBehavior;
 
-  /// How messages larger than AWS limit should be handled. Default is truncate.
+  /// How messages larger than AWS limit should be handled. Default is split.
   set largeMessageBehavior(CloudWatchLargeMessages val) {
     for (final Logger cw in logInstances.values) {
       cw.largeMessageBehavior = val;
@@ -165,7 +165,7 @@ class LoggerHandler {
   bool _raiseFailedLookups;
 
   /// Changes how large each message can be before [largeMessageBehavior] takes
-  /// effect. Min 5, Max 262116
+  /// effect. Min 22, Max 1048550
   ///
   /// These overrides change when messages are sent. No need to mess with them
   /// unless you're running into issues

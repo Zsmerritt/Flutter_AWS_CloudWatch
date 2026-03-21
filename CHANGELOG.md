@@ -1,3 +1,25 @@
+## [2.0.0] - 2026/03/21
+
+### Breaking changes
+
+* **Dependency:** Requires `aws_request` **^2.0.0** (drops the transitive `intl` dependency from older `aws_request` releases). `MockAwsRequest` now uses a named-parameter constructor; this package’s mock path was updated accordingly.
+* **CloudWatch Logs sequence tokens:** `PutLogEvents` requests no longer include `sequenceToken`, and client-side handling for `InvalidSequenceTokenException` and `DataAlreadyAcceptedException` has been removed. If you relied on the previous retry/token-sync behavior, validate logging under concurrent or high-throughput use.
+* **`AwsResponse`:** `nextSequenceToken` and `expectedSequenceToken` were removed from the parsed response model (primarily internal; update any code that imported or inspected these fields).
+
+### Features
+
+* **Larger log events:** Default maximum message size now matches the current AWS per-event limit (~1 MiB). `awsMaxBytesPerMessage` is **1,048,550** bytes (previously 262,116). Split/batch logic and tests were updated accordingly.
+
+### Documentation
+
+* **README:** Restructured with API tables, clearer temporary credential flow (`awsSessionToken`), updated throttling notes, and documentation for the ~1 MiB message limit and tuning parameters.
+* **Doc fixes:** Public docs now state that the default `largeMessageBehavior` is **`split`** (not `truncate`) and that per-message overrides use a minimum of **22** bytes and maximum **1,048,550** bytes.
+
+### Fixes
+
+* **Example:** `example/aws_cloudwatch_quickstart.dart` now sends errors to `_errorGroup` and normal logs to `_logGroup` (the two branches were reversed).
+
+
 ## [1.1.0] - 2025/06/21
 
 * Updated to `aws_request` ^1.1.0

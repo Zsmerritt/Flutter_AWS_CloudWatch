@@ -55,10 +55,10 @@ class Logger {
     _retries = d >= 0 ? d : 0;
   }
 
-  /// How messages larger than AWS limit should be handled. Default is truncate.
+  /// How messages larger than AWS limit should be handled. Default is split.
   CloudWatchLargeMessages get largeMessageBehavior => _largeMessageBehavior;
 
-  /// How messages larger than AWS limit should be handled. Default is truncate.
+  /// How messages larger than AWS limit should be handled. Default is split.
   set largeMessageBehavior(CloudWatchLargeMessages val) {
     _largeMessageBehavior = val;
     logStack.largeMessageBehavior = val;
@@ -119,14 +119,11 @@ class Logger {
   /// Verbosity for debugging
   int _verbosity = 0;
 
-  /// Token provided by aws to ensure logs are received in the correct order
-  String? sequenceToken;
-
   /// Synchronous lock to enforce synchronous request order
   Lock lock = Lock();
 
   /// Changes how large each message can be before [largeMessageBehavior] takes
-  /// effect. Min 5, Max 262116
+  /// effect. Min 22, Max 1048550
   ///
   /// These overrides change when messages are sent. No need to mess with them
   /// unless you're running into issues
@@ -336,7 +333,7 @@ class Logger {
     }
   }
 
-  /// Creates a json log events string and adds the sequence token if available
+  /// Creates a json log events string
   String createBody(List<Map<String, dynamic>> logsToSend) {
     debugPrint(
       2,
@@ -347,13 +344,6 @@ class Logger {
       'logGroupName': groupName,
       'logStreamName': streamName,
     };
-    if (sequenceToken != null) {
-      body['sequenceToken'] = sequenceToken;
-      debugPrint(
-        2,
-        'CloudWatch INFO: Adding sequence token',
-      );
-    }
     final String jsonBody = jsonEncode(body);
     debugPrint(
       2,
@@ -502,9 +492,9 @@ class Logger {
     dynamic awsRequest;
     if (mockCloudWatch) {
       awsRequest = MockAwsRequest(
-        awsAccessKey,
-        awsSecretKey,
-        region,
+        awsAccessKey: awsAccessKey,
+        awsSecretKey: awsSecretKey,
+        region: region,
         service: 'logs',
         timeout: requestTimeout,
         mockFunction: mockFunction!,
@@ -539,7 +529,6 @@ class Logger {
         1,
         'CloudWatch Info: $awsResponse',
       );
-      sequenceToken = awsResponse.nextSequenceToken;
       return true;
     } else {
       if (awsResponse.type != null) {
@@ -564,18 +553,7 @@ class Logger {
   ///
   /// returns whether the error was recovered from or not
   Future<bool> handleError(AwsResponse awsResponse) async {
-    if (awsResponse.type == 'InvalidSequenceTokenException' &&
-        awsResponse.expectedSequenceToken != sequenceToken) {
-      // bad sequence token
-      // Sometimes happen when requests are sent in quick succession
-      // Attempt to recover
-      sequenceToken = awsResponse.expectedSequenceToken;
-      debugPrint(
-        0,
-        'CloudWatch Info: Found incorrect sequence token. Attempting to fix.',
-      );
-      return false;
-    } else if (awsResponse.type == 'ResourceNotFoundException' &&
+    if (awsResponse.type == 'ResourceNotFoundException' &&
         awsResponse.message == 'The specified log stream does not exist.') {
       // LogStream not present
       // Sometimes happens with debuggers / hot reloads
@@ -599,17 +577,6 @@ class Logger {
       logGroupCreated = false;
       await createLogGroup();
       return false;
-    } else if (awsResponse.type == 'DataAlreadyAcceptedException') {
-      // This log set has already been sent.
-      // Sometimes happens with debuggers / hot reloads
-      // Update the sequence token just in case.
-      // A previous request was already successful => return true
-      debugPrint(
-        0,
-        'CloudWatch Info: Data Already Sent',
-      );
-      sequenceToken = awsResponse.expectedSequenceToken;
-      return true;
     } else if (awsResponse.type == 'InvalidParameterException') {
       // If this is hit its probably a bug! Please report it!
       // Usually these arent recoverable unfortunately

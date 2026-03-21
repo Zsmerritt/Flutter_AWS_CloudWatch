@@ -1,16 +1,19 @@
 name: aws_cloudwatch
 description: An easy, lightweight, turnkey solution for logging with AWS CloudWatch
-version: 1.1.0
+version: 2.0.0
 homepage: https://github.com/Zsmerritt/Flutter_AWS_CloudWatch
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
 
 dependencies:
-  aws_request: ^1.1.0 # Make request to AWS
+  aws_request: ^2.0.0 # Make request to AWS
   synchronized: ^3.0.0 # Synchronize requests to ensure valid keys
   http: ^1.0.0 # Http package for parsing AWS responses correctly on Multiple Platforms
   crypto: ^3.0.0 # Message hashes used to collate split messages
 
 dev_dependencies:
-  test: ^1.24.0
+  # Dart 3.8+ SDKs only ship frontend_server_aot.dart.snapshot; client 4.x
+  # selects it. test_core still allows 3.x, so we pin the transitive explicitly.
+  frontend_server_client: ^4.0.0
+  test: ^1.25.5

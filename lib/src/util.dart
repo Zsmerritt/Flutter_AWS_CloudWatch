@@ -5,10 +5,10 @@ const String groupNameRegexPattern = r'^[\.\-_/#A-Za-z0-9]+$';
 const String streamNameRegexPattern = r'^[^:*]*$';
 
 /// Enum representing what should happen to messages that are too big
-/// to be sent as a single message. This limit is 262118 utf8 bytes
+/// to be sent as a single message. This limit is 1048550 utf8 bytes
 ///
-/// truncate: Replace the middle of the message with "...", making it 262118
-///           utf8 bytes long. This is the default value.
+/// truncate: Replace the middle of the message with "...", making it fit within
+///           the max message size. This is the default value.
 ///
 /// ignore: Ignore large messages. They will not be sent
 ///
@@ -16,8 +16,8 @@ const String streamNameRegexPattern = r'^[^:*]*$';
 ///
 /// error: Throw an error when a large message is encountered
 enum CloudWatchLargeMessages {
-  /// Replace the middle of the message with "...", making it 262118 utf8 bytes
-  /// long. This is the default value.
+  /// Replace the middle of the message with "...", making it fit within
+  /// the max message size.
   truncate,
 
   /// Ignore large messages. They will not be sent
@@ -110,8 +110,6 @@ class AwsResponse {
   int statusCode;
   String? type;
   String? message;
-  String? nextSequenceToken;
-  String? expectedSequenceToken;
   String? raw;
 
   AwsResponse._(this.statusCode);
@@ -125,17 +123,11 @@ class AwsResponse {
       );
       result.raw = reply.toString();
       if (reply != null) {
-        if (reply.containsKey('nextSequenceToken')) {
-          result.nextSequenceToken = reply['nextSequenceToken'];
-        }
         if (reply.containsKey('__type')) {
           result.type = reply['__type'];
         }
         if (reply.containsKey('message')) {
           result.message = reply['message'];
-        }
-        if (reply.containsKey('expectedSequenceToken')) {
-          result.expectedSequenceToken = reply['expectedSequenceToken'];
         }
       }
     }
@@ -152,12 +144,6 @@ class AwsResponse {
     }
     if (message != null) {
       sb.write(', message: $message');
-    }
-    if (expectedSequenceToken != null) {
-      sb.write(', expectedSequenceToken: $expectedSequenceToken');
-    }
-    if (nextSequenceToken != null) {
-      sb.write(', nextSequenceToken: $nextSequenceToken');
     }
     return sb.toString();
   }

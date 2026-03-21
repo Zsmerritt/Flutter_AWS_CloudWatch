@@ -760,13 +760,12 @@ void main() {
           '"logStreamName":"streamName"}',
         );
       });
-      test('sequenceToken', () {
-        cloudWatch.sequenceToken = 'abc';
+      test('empty logs', () {
         final String res = cloudWatch.createBody([]);
         expect(
           res,
           '{"logEvents":[],"logGroupName":"groupName",'
-          '"logStreamName":"streamName","sequenceToken":"abc"}',
+          '"logStreamName":"streamName"}',
         );
       });
     });
@@ -923,7 +922,7 @@ void main() {
       });
       test('status 400 - type', () async {
         final bool res = await cloudWatch.handleResponse(
-          Response('{"__type": "InvalidSequenceTokenException"}', 400),
+          Response('{"__type": "UnknownType"}', 400),
         );
         expect(res, false);
       });
@@ -952,17 +951,6 @@ void main() {
           },
         );
       });
-      test('InvalidSequenceTokenException', () async {
-        final AwsResponse awsResponse =
-            await AwsResponse.parseResponse(Response(
-          '{"__type": "InvalidSequenceTokenException", '
-          '"expectedSequenceToken":"abc"}',
-          400,
-        ));
-        final bool res = await cloudWatch.handleError(awsResponse);
-        expect(res, false);
-        expect(cloudWatch.sequenceToken, 'abc');
-      });
       test('ResourceNotFoundException', () async {
         final AwsResponse awsResponse =
             await AwsResponse.parseResponse(Response(
@@ -983,17 +971,6 @@ void main() {
         final bool res = await cloudWatch.handleError(awsResponse);
         expect(res, false);
       });
-      test('DataAlreadyAcceptedException', () async {
-        final AwsResponse awsResponse =
-            await AwsResponse.parseResponse(Response(
-          '{"__type": "DataAlreadyAcceptedException", '
-          '"expectedSequenceToken":"def"}',
-          400,
-        ));
-        final bool res = await cloudWatch.handleError(awsResponse);
-        expect(res, true);
-        expect(cloudWatch.sequenceToken, 'def');
-      });
       test('InvalidParameterException', () async {
         final AwsResponse awsResponse =
             await AwsResponse.parseResponse(Response(
@@ -1001,9 +978,7 @@ void main() {
           400,
         ));
         try {
-          final bool res = await cloudWatch.handleError(awsResponse);
-          expect(res, true);
-          expect(cloudWatch.sequenceToken, 'def');
+          await cloudWatch.handleError(awsResponse);
         } on CloudWatchException catch (e) {
           expect(
               e.message,

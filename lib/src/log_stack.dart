@@ -5,7 +5,7 @@ part of 'logger.dart';
 const int splitMessageOverheadBytes = 21;
 
 /// AWS Hard Limits
-const int awsMaxBytesPerMessage = 262116;
+const int awsMaxBytesPerMessage = 1048550;
 const int awsMinBytesPerMessage = splitMessageOverheadBytes + 1;
 const int awsMaxBytesPerRequest = 1048576;
 const int awsMinBytesPerRequest = 1;
@@ -18,7 +18,7 @@ class CloudWatchLogStack {
   CloudWatchLargeMessages largeMessageBehavior;
 
   /// Changes how large each message can be before [largeMessageBehavior] takes
-  /// effect. Min 22, Max 262116
+  /// effect. Min 22, Max 1048550
   ///
   /// These overrides change when messages are sent. No need to mess with them
   /// unless you're running into issues

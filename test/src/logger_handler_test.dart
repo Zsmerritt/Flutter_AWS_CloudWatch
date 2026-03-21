@@ -199,7 +199,7 @@ void main() {
         if (request.body.contains('CreateLogStream')) {
           return Response('', 200);
         } else {
-          return Response('{"nextSequenceToken":"123412341234"}', 200);
+          return Response('', 200);
         }
       }
 
@@ -229,7 +229,7 @@ void main() {
           logGroupName: 'logGroupName',
           logStreamName: 'logStreamName',
         )!;
-        expect(cw.sequenceToken, '123412341234');
+        expect(cw.logStack.length, 0);
       });
       test('logMany', () async {
         final LoggerHandler handler = LoggerHandler(
@@ -257,7 +257,7 @@ void main() {
           logGroupName: 'logGroupName',
           logStreamName: 'logStreamName',
         )!;
-        expect(cw.sequenceToken, '123412341234');
+        expect(cw.logStack.length, 0);
       });
     });
   });
