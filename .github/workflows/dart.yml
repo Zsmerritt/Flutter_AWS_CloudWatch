@@ -3,45 +3,46 @@
 # separate terms of service, privacy policy, and support
 # documentation.
 
-name: CI Pipeline
+name: CI
 
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
+
       - uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
-
-      # Note: This workflow uses the latest stable version of the Dart SDK.
-      # You can specify other versions if desired, see documentation here:
-      # https://github.com/dart-lang/setup-dart/blob/main/README.md
-      - uses: dart-lang/setup-dart@v1
+          channel: stable
+          cache: true
 
       - name: Install dependencies
         run: flutter pub get
 
-      # Uncomment this step to verify the use of 'dart format' on each commit.
       - name: Verify formatting
         run: dart format --output=none --set-exit-if-changed .
 
-      # Consider passing '--fatal-infos' for slightly stricter analysis.
       - name: Analyze project source
         run: dart analyze
 
-      # Your project will need to have tests in test/ and a dependency on
-      # package:test for this step to succeed. Note that Flutter projects will
-      # want to change this to 'flutter test'.
-      - name: Run tests
-        run: flutter test
+      - name: Run tests with coverage
+        run: flutter test --coverage
 
-      - name: Collect coverage
-        run: flutter test --coverage .
-      - uses: codecov/codecov-action@v2
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage/lcov.info
+          disable_search: true

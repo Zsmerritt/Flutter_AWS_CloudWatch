@@ -150,7 +150,8 @@ void main() {
             splitStack.logStack[i].logs[0]['message'].length,
             awsMaxBytesPerMessage,
           );
-          expect(splitStack.logStack[i].messageSize, awsMaxBytesPerMessage + 26);
+          expect(
+              splitStack.logStack[i].messageSize, awsMaxBytesPerMessage + 26);
         }
         // Last batch: 1 smaller message (21 byte prefix + 168 byte remainder)
         expect(splitStack.logStack[8].logs.length, 1);
