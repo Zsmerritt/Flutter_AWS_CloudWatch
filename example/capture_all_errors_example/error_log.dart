@@ -1,5 +1,4 @@
 import 'package:aws_cloudwatch/aws_cloudwatch.dart';
-import 'package:intl/intl.dart';
 
 // AWS Variables
 const String awsAccessKeyId = 'ExampleKey';
@@ -18,12 +17,17 @@ CloudWatchHandler logging = CloudWatchHandler(
 
 String logStreamName = '';
 
+String _utcLogStreamTimestamp() {
+  final DateTime t = DateTime.now().toUtc();
+  String two(int n) => n.toString().padLeft(2, '0');
+  return '${t.year}-${two(t.month)}-${two(t.day)} '
+      '${two(t.hour)}-${two(t.minute)}-${two(t.second)}';
+}
+
 // You may want to edit this function to suit your needs
 String _getLogStreamName() {
-  if (logStreamName == '') {
-    logStreamName = DateFormat('yyyy-MM-dd HH-mm-ss').format(
-      DateTime.now().toUtc(),
-    );
+  if (logStreamName.isEmpty) {
+    logStreamName = _utcLogStreamTimestamp();
   }
   return logStreamName;
 }

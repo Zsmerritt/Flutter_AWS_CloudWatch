@@ -1,3 +1,9 @@
+## [2.0.0+1] - 2026/03/21
+
+* **Build only:** No API or runtime behavior changes versus `2.0.0`.
+* **Analysis:** `analysis_options.yaml` now includes `package:lints/core.yaml`; added a `lints` dev dependency. `CloudWatchHandler` constructor parameters use explicit types for stricter public API checks.
+* **Examples:** Replaced `intl` timestamp formatting with UTC `DateTime` formatting; example `pubspec.yaml` uses `path: ../` for local development, `publish_to: none`, and a `lints` dev dependency so nested-package tooling resolves the shared analysis config.
+
 ## [2.0.0] - 2026/03/21
 
 ### Breaking changes

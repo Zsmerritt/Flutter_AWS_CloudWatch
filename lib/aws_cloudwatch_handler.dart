@@ -100,16 +100,16 @@ class CloudWatchHandler {
 
   /// CloudWatchHandler Constructor
   CloudWatchHandler({
-    required awsAccessKey,
-    required awsSecretKey,
-    required region,
+    required String awsAccessKey,
+    required String awsSecretKey,
+    required String region,
     String? awsSessionToken,
     Duration delay = const Duration(milliseconds: 200),
     Duration requestTimeout = const Duration(seconds: 10),
     bool useDynamicTimeout = true,
     double timeoutMultiplier = 1.2,
     Duration dynamicTimeoutMax = const Duration(minutes: 2),
-    retries = 3,
+    int retries = 3,
     CloudWatchLargeMessages largeMessageBehavior =
         CloudWatchLargeMessages.split,
     bool raiseFailedLookups = false,

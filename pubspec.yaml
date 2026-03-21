@@ -1,6 +1,6 @@
 name: aws_cloudwatch
 description: An easy, lightweight, turnkey solution for logging with AWS CloudWatch
-version: 2.0.0
+version: 2.0.0+1
 homepage: https://github.com/Zsmerritt/Flutter_AWS_CloudWatch
 
 environment:
@@ -16,4 +16,6 @@ dev_dependencies:
   # Dart 3.8+ SDKs only ship frontend_server_aot.dart.snapshot; client 4.x
   # selects it. test_core still allows 3.x, so we pin the transitive explicitly.
   frontend_server_client: ^4.0.0
+  # Resolve to latest compatible (6.x on Dart 3.8+, 5.x on 3.6–3.7) for package:lints/core.yaml.
+  lints: '>=5.1.1 <7.0.0'
   test: ^1.25.5

@@ -3,10 +3,11 @@
 #
 # The issues identified by the analyzer are surfaced in the UI of Dart-enabled
 # IDEs (https://dart.dev/tools#ides-and-editors). The analyzer can also be
-# invoked from the command line by running `flutter analyze`.
+# invoked from the command line by running `dart analyze` or `flutter analyze`.
+#
+# Include official core lints (same set pub.dev / pana refers to as lints_core).
 
-# The following line activates a set of recommended lints for Flutter apps,
-# packages, and plugins designed to encourage good coding practices.
+include: package:lints/core.yaml
 
 analyzer:
   errors:
