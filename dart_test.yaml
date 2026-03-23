@@ -1,0 +1,4 @@
+# VM-only is default for this package; integration tests share AWS resources and
+# should be run serially, e.g.:
+#   dart test test/integration --concurrency=1
+test_on: vm

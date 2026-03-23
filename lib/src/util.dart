@@ -65,29 +65,30 @@ class CloudWatchException implements Exception {
   }
 }
 
-/// Heuristic match for [ResourceNotFoundException](https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_ResourceNotFoundException.html) when the log stream is missing.
-///
-/// Known limitation: only English phrases containing both "log stream" and
-/// "not exist" trigger auto-recovery. Other service message shapes surface
-/// through normal error handling (no silent swallow).
-bool resourceNotFoundMessageImpliesMissingLogStream(String? message) {
+bool _resourceNotFoundImpliesMissing(String? message, String resourceLower) {
   final String? m = message?.toLowerCase();
-  if (m == null) {
+  if (m == null || m.isEmpty) {
     return false;
   }
-  return m.contains('log stream') && m.contains('not exist');
+  if (!m.contains(resourceLower)) {
+    return false;
+  }
+  return m.contains('does not exist') ||
+      m.contains('not exist') ||
+      m.contains('not found');
+}
+
+/// Heuristic match for [ResourceNotFoundException](https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_ResourceNotFoundException.html) when the log stream is missing.
+///
+/// Matches common AWS English messages (e.g. "The specified log stream does not exist.").
+/// Non-English or unusual phrasing may not trigger auto-recovery.
+bool resourceNotFoundMessageImpliesMissingLogStream(String? message) {
+  return _resourceNotFoundImpliesMissing(message, 'log stream');
 }
 
 /// Heuristic match for ResourceNotFoundException when the log group is missing.
-///
-/// Same limitation as [resourceNotFoundMessageImpliesMissingLogStream]: requires
-/// "log group" and "not exist" in the message for recovery.
 bool resourceNotFoundMessageImpliesMissingLogGroup(String? message) {
-  final String? m = message?.toLowerCase();
-  if (m == null) {
-    return false;
-  }
-  return m.contains('log group') && m.contains('not exist');
+  return _resourceNotFoundImpliesMissing(message, 'log group');
 }
 
 /// Validates [streamName] based on aws restrictions
@@ -133,10 +134,16 @@ void validateName(String name, String type, String pattern) {
 /// Validates [InputLogEvent](https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_InputLogEvent.html)
 /// shape and [PutLogEvents](https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html)
 /// batch rules: at least one event, each `timestamp` / `message` valid, max 24h
-/// span between earliest and latest timestamp.
+/// span between earliest and latest timestamp, and timestamps not more than
+/// 2 hours in the future or older than 14 days relative to [nowUtc] (AWS may
+/// also reject events that exceed the log group's retention; that is not
+/// checked here).
 ///
 /// Does not reorder events. Throws [CloudWatchException] when validation fails.
-void validatePutLogEventsBatch(List<Map<String, dynamic>> logsToSend) {
+void validatePutLogEventsBatch(
+  List<Map<String, dynamic>> logsToSend, {
+  DateTime? nowUtc,
+}) {
   if (logsToSend.isEmpty) {
     throw CloudWatchException(
       message:
@@ -160,6 +167,39 @@ void validatePutLogEventsBatch(List<Map<String, dynamic>> logsToSend) {
       );
     }
     final int ts = tsRaw;
+    // InputLogEvent.timestamp — valid range minimum 0 (milliseconds since epoch).
+    // https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_InputLogEvent.html
+    if (ts < 0) {
+      throw CloudWatchException(
+        message:
+            'PutLogEvents InputLogEvent.timestamp must be >= 0 (milliseconds '
+            'since Unix epoch).',
+        stackTrace: StackTrace.current,
+      );
+    }
+    final DateTime now = (nowUtc ?? DateTime.now()).toUtc();
+    final int maxFutureMs =
+        now.millisecondsSinceEpoch + const Duration(hours: 2).inMilliseconds;
+    final int minPastMs =
+        now.millisecondsSinceEpoch - const Duration(days: 14).inMilliseconds;
+    if (ts > maxFutureMs) {
+      throw CloudWatchException(
+        message:
+            'PutLogEvents rejects events more than 2 hours in the future '
+            '(relative to client clock). '
+            'https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html',
+        stackTrace: StackTrace.current,
+      );
+    }
+    if (ts < minPastMs) {
+      throw CloudWatchException(
+        message:
+            'PutLogEvents rejects events older than 14 days (relative to client '
+            'clock) or beyond log group retention. '
+            'https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html',
+        stackTrace: StackTrace.current,
+      );
+    }
     if (first) {
       minTs = ts;
       maxTs = ts;
@@ -199,13 +239,11 @@ void validatePutLogEventsBatch(List<Map<String, dynamic>> logsToSend) {
 List<Map<String, dynamic>> orderPutLogEventsBatch(
   List<Map<String, dynamic>> logsToSend,
 ) {
-  final List<Map<String, dynamic>> ordered =
-      List<Map<String, dynamic>>.from(logsToSend);
-  ordered.sort(
-    (Map<String, dynamic> a, Map<String, dynamic> b) =>
-        (a['timestamp'] as int).compareTo(b['timestamp'] as int),
-  );
-  return ordered;
+  return List<Map<String, dynamic>>.from(logsToSend)
+    ..sort(
+      (Map<String, dynamic> a, Map<String, dynamic> b) =>
+          (a['timestamp'] as int).compareTo(b['timestamp'] as int),
+    );
 }
 
 /// An aws response object class that holds common response elements

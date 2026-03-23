@@ -270,6 +270,63 @@ class Logger {
     );
   }
 
+  /// Deletes this log stream ([DeleteLogStream](https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_DeleteLogStream.html)).
+  ///
+  /// When [ignoreNotFound] is true, [ResourceNotFoundException] is ignored (idempotent cleanup).
+  Future<void> deleteLogStream({bool ignoreNotFound = true}) async {
+    final Response result = await sendRequest(
+      body: jsonEncode({
+        'logGroupName': groupName,
+        'logStreamName': streamName,
+      }),
+      target: 'Logs_20140328.DeleteLogStream',
+    );
+    if (result.statusCode == 200) {
+      logStreamCreated = false;
+      return;
+    }
+    final AwsResponse awsResponse = await AwsResponse.parseResponse(result);
+    if (ignoreNotFound && awsResponse.type == 'ResourceNotFoundException') {
+      logStreamCreated = false;
+      return;
+    }
+    throw CloudWatchException(
+      message: awsResponse.message,
+      type: awsResponse.type,
+      statusCode: awsResponse.statusCode,
+      stackTrace: StackTrace.current,
+      raw: awsResponse.raw,
+    );
+  }
+
+  /// Deletes this log group ([DeleteLogGroup](https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_DeleteLogGroup.html)).
+  ///
+  /// When [ignoreNotFound] is true, [ResourceNotFoundException] is ignored (idempotent cleanup).
+  Future<void> deleteLogGroup({bool ignoreNotFound = true}) async {
+    final Response result = await sendRequest(
+      body: jsonEncode({'logGroupName': groupName}),
+      target: 'Logs_20140328.DeleteLogGroup',
+    );
+    if (result.statusCode == 200) {
+      logGroupCreated = false;
+      logStreamCreated = false;
+      return;
+    }
+    final AwsResponse awsResponse = await AwsResponse.parseResponse(result);
+    if (ignoreNotFound && awsResponse.type == 'ResourceNotFoundException') {
+      logGroupCreated = false;
+      logStreamCreated = false;
+      return;
+    }
+    throw CloudWatchException(
+      message: awsResponse.message,
+      type: awsResponse.type,
+      statusCode: awsResponse.statusCode,
+      stackTrace: StackTrace.current,
+      raw: awsResponse.raw,
+    );
+  }
+
   /// Creates a specified log resource
   ///
   /// and throws a [CloudWatchException] if it cant.
@@ -338,17 +395,20 @@ class Logger {
   }
 
   /// Creates a json log events string
-  String createBody(List<Map<String, dynamic>> logsToSend) {
+  ///
+  /// [nowUtc] is used only for client-side PutLogEvents timestamp window checks
+  /// (2 hours future / 14 days past); defaults to [DateTime.now] in UTC.
+  String createBody(
+    List<Map<String, dynamic>> logsToSend, {
+    DateTime? nowUtc,
+  }) {
     debugPrint(
       2,
       'CloudWatch INFO: Generating CloudWatch request body',
     );
-    validatePutLogEventsBatch(logsToSend);
+    validatePutLogEventsBatch(logsToSend, nowUtc: nowUtc);
     final List<Map<String, dynamic>> ordered =
         orderPutLogEventsBatch(logsToSend);
-    // PutLogEvents optional request `entity` and entity rejection fields in the
-    // response are intentionally unsupported; this client only sends
-    // logGroupName, logStreamName, and logEvents.
     // https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html
     final Map<String, dynamic> body = {
       'logEvents': ordered,
@@ -497,13 +557,9 @@ class Logger {
     required String target,
   }) async {
     final Map<String, String> headers = {'x-amz-target': target};
-    final Map<String, String> queryString = {};
     if (awsSessionToken != null) {
       // Must match signedHeaders entry; aws_request looks up headers by exact key.
       headers['x-amz-security-token'] = awsSessionToken!;
-    }
-    if (requestTimeout.inSeconds > 0 && requestTimeout.inSeconds < 604800) {
-      queryString['X-Amz-Expires'] = requestTimeout.inSeconds.toString();
     }
     dynamic awsRequest;
     if (mockCloudWatch) {
@@ -531,7 +587,6 @@ class Logger {
       type: AwsRequestType.post,
       jsonBody: body,
       headers: headers,
-      queryString: queryString,
       signedHeaders: signedHeaders,
     );
   }
@@ -591,7 +646,7 @@ class Logger {
   ///
   /// returns whether the error was recovered from or not
   Future<bool> handleError(AwsResponse awsResponse) async {
-    // ResourceNotFound recovery: message-shape heuristics only (see util.dart).
+    // ResourceNotFound recovery: message-shape heuristics (see util.dart).
     if (awsResponse.type == 'ResourceNotFoundException' &&
         resourceNotFoundMessageImpliesMissingLogStream(awsResponse.message)) {
       // LogStream not present

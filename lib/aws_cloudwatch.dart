@@ -202,4 +202,16 @@ class CloudWatch {
   Future<void> logMany(List<String> logStrings) async {
     await _cloudWatch.log(logStrings);
   }
+
+  /// Deletes this log stream ([DeleteLogStream](https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_DeleteLogStream.html)).
+  ///
+  /// When [ignoreNotFound] is true, [ResourceNotFoundException] is ignored (idempotent cleanup).
+  Future<void> deleteLogStream({bool ignoreNotFound = true}) =>
+      _cloudWatch.deleteLogStream(ignoreNotFound: ignoreNotFound);
+
+  /// Deletes this log group ([DeleteLogGroup](https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_DeleteLogGroup.html)).
+  ///
+  /// When [ignoreNotFound] is true, [ResourceNotFoundException] is ignored (idempotent cleanup).
+  Future<void> deleteLogGroup({bool ignoreNotFound = true}) =>
+      _cloudWatch.deleteLogGroup(ignoreNotFound: ignoreNotFound);
 }

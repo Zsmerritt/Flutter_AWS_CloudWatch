@@ -306,6 +306,78 @@ class LoggerHandler {
     await instance.log(messages);
   }
 
+  /// Builds a [Logger] for API calls (e.g. delete) without registering it in [logInstances].
+  Logger _loggerForApi({
+    required String logGroupName,
+    required String logStreamName,
+  }) {
+    validateLogGroupName(logGroupName);
+    validateLogStreamName(logStreamName);
+    return Logger(
+      awsAccessKey: awsAccessKey,
+      awsSecretKey: awsSecretKey,
+      region: region,
+      groupName: logGroupName,
+      streamName: logStreamName,
+      awsSessionToken: awsSessionToken,
+      delay: delay,
+      requestTimeout: requestTimeout,
+      retries: retries,
+      largeMessageBehavior: largeMessageBehavior,
+      raiseFailedLookups: raiseFailedLookups,
+      maxBytesPerMessage: maxBytesPerMessage,
+      maxBytesPerRequest: maxBytesPerRequest,
+      maxMessagesPerRequest: maxMessagesPerRequest,
+      mockCloudWatch: mockCloudWatch,
+      mockFunction: mockFunction,
+      dynamicTimeoutMax: dynamicTimeoutMax,
+      useDynamicTimeout: useDynamicTimeout,
+      timeoutMultiplier: timeoutMultiplier,
+    );
+  }
+
+  /// Deletes a log stream ([DeleteLogStream](https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_DeleteLogStream.html)).
+  ///
+  /// Uses the cached [Logger] for this group/stream when present; otherwise
+  /// issues the request with handler credentials. Removes the instance from
+  /// [logInstances] after a successful call.
+  ///
+  /// When [ignoreNotFound] is true, [ResourceNotFoundException] is ignored.
+  Future<void> deleteLogStream({
+    required String logGroupName,
+    required String logStreamName,
+    bool ignoreNotFound = true,
+  }) async {
+    final String instanceName = '$logGroupName.$logStreamName';
+    final Logger? cached = logInstances[instanceName];
+    final Logger logger = cached ??
+        _loggerForApi(
+          logGroupName: logGroupName,
+          logStreamName: logStreamName,
+        );
+    await logger.deleteLogStream(ignoreNotFound: ignoreNotFound);
+    logInstances.remove(instanceName);
+  }
+
+  /// Deletes a log group ([DeleteLogGroup](https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_DeleteLogGroup.html)).
+  ///
+  /// Removes every [Logger] in [logInstances] whose [Logger.groupName] matches
+  /// after a successful call.
+  ///
+  /// When [ignoreNotFound] is true, [ResourceNotFoundException] is ignored.
+  Future<void> deleteLogGroup({
+    required String logGroupName,
+    bool ignoreNotFound = true,
+  }) async {
+    validateLogGroupName(logGroupName);
+    final Logger logger = _loggerForApi(
+      logGroupName: logGroupName,
+      logStreamName: '_',
+    );
+    await logger.deleteLogGroup(ignoreNotFound: ignoreNotFound);
+    logInstances.removeWhere((_, Logger v) => v.groupName == logGroupName);
+  }
+
   /// Creates a CloudWatch instance.
   ///
   /// Calling any log function will call this as needed automatically

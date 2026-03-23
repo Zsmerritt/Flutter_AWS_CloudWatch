@@ -199,4 +199,26 @@ class CloudWatchHandler {
       logStreamName: logStreamName,
     );
   }
+
+  /// Deletes a log stream. See [LoggerHandler.deleteLogStream].
+  Future<void> deleteLogStream({
+    required String logGroupName,
+    required String logStreamName,
+    bool ignoreNotFound = true,
+  }) =>
+      _handler.deleteLogStream(
+        logGroupName: logGroupName,
+        logStreamName: logStreamName,
+        ignoreNotFound: ignoreNotFound,
+      );
+
+  /// Deletes a log group. See [LoggerHandler.deleteLogGroup].
+  Future<void> deleteLogGroup({
+    required String logGroupName,
+    bool ignoreNotFound = true,
+  }) =>
+      _handler.deleteLogGroup(
+        logGroupName: logGroupName,
+        ignoreNotFound: ignoreNotFound,
+      );
 }

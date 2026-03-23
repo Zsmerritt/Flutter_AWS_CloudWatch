@@ -5,6 +5,8 @@
 // - PutLogEvents: https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html
 // - CreateLogGroup: https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_CreateLogGroup.html
 // - CreateLogStream: https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_CreateLogStream.html
+// - DeleteLogGroup: https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_DeleteLogGroup.html
+// - DeleteLogStream: https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_DeleteLogStream.html
 // - Making requests (JSON POST): same guide as other AWS JSON services; SigV4 signing is implemented by package:aws_request.
 
 import 'dart:convert';
@@ -14,6 +16,10 @@ import 'package:http/http.dart';
 import 'package:test/test.dart';
 
 import 'strict_put_log_events_mock.dart';
+
+/// Fixed reference time for tests that use historical or synthetic timestamps
+/// (PutLogEvents client window: within 14 days past and 2 hours future of [nowUtc]).
+final DateTime _complianceAnchorUtc = DateTime.utc(2025, 1, 15, 12, 0, 0);
 
 /// Extracts the SignedHeaders list from an AWS SigV4 Authorization header value.
 List<String> signedHeaderNamesFromAuthorization(String? authorization) {
@@ -78,10 +84,16 @@ void main() {
           );
           const int ts = 1396035378988;
           // Distinct ascending timestamps so createBody sort matches stable order.
-          final String body = logger.createBody([
-            {'timestamp': ts, 'message': 'Example event 1'},
-            {'timestamp': ts + 1, 'message': 'Example event 2'},
-          ]);
+          final String body = logger.createBody(
+            [
+              {'timestamp': ts, 'message': 'Example event 1'},
+              {'timestamp': ts + 1, 'message': 'Example event 2'},
+            ],
+            nowUtc: DateTime.fromMillisecondsSinceEpoch(
+              ts + const Duration(hours: 1).inMilliseconds,
+              isUtc: true,
+            ),
+          );
           final Object? decoded = jsonDecode(body);
           expect(decoded, isA<Map>());
           final Map<String, dynamic> map = decoded! as Map<String, dynamic>;
@@ -103,9 +115,12 @@ void main() {
             groupName: 'g',
             streamName: 's',
           );
-          final String body = logger.createBody([
-            {'timestamp': 0, 'message': 'café 日本語'},
-          ]);
+          final String body = logger.createBody(
+            [
+              {'timestamp': 0, 'message': 'café 日本語'},
+            ],
+            nowUtc: DateTime.utc(1970, 1, 1, 0, 0, 1),
+          );
           final Map<String, dynamic> map =
               jsonDecode(body) as Map<String, dynamic>;
           expect(map['logEvents'][0]['message'], 'café 日本語');
@@ -134,16 +149,46 @@ void main() {
         const int t1 = 100;
         const int t2 = 500;
         const int t3 = 300;
-        final String body = logger.createBody([
-          {'timestamp': t2, 'message': 'b'},
-          {'timestamp': t1, 'message': 'a'},
-          {'timestamp': t3, 'message': 'c'},
-        ]);
+        final String body = logger.createBody(
+          [
+            {'timestamp': t2, 'message': 'b'},
+            {'timestamp': t1, 'message': 'a'},
+            {'timestamp': t3, 'message': 'c'},
+          ],
+          nowUtc: DateTime.utc(1970, 1, 1, 0, 0, 1),
+        );
         final List<dynamic> events =
             (jsonDecode(body) as Map<String, dynamic>)['logEvents']! as List;
         expect(events[0]['timestamp'], t1);
         expect(events[1]['timestamp'], t3);
         expect(events[2]['timestamp'], t2);
+      });
+
+      // InputLogEvent — timestamp valid range minimum 0.
+      test('createBody rejects negative timestamp', () {
+        final Logger logger = _baseLogger(
+          groupName: 'g',
+          streamName: 's',
+        );
+        expect(
+          () => logger.createBody([
+            {'timestamp': -1, 'message': 'm'},
+          ]),
+          throwsA(isA<CloudWatchException>()),
+        );
+      });
+
+      test('createBody rejects non-int timestamp', () {
+        final Logger logger = _baseLogger(
+          groupName: 'g',
+          streamName: 's',
+        );
+        expect(
+          () => logger.createBody([
+            {'timestamp': 'not-an-int', 'message': 'm'},
+          ]),
+          throwsA(isA<CloudWatchException>()),
+        );
       });
 
       // PutLogEvents: batch cannot span more than 24 hours.
@@ -153,16 +198,84 @@ void main() {
           groupName: 'g',
           streamName: 's',
         );
-        final int start = 1700000000000;
+        final DateTime anchor = DateTime.utc(2025, 6, 15, 12, 0, 0);
+        final int start = DateTime.utc(2025, 6, 1, 12, 0, 0).millisecondsSinceEpoch;
         final int end = start + const Duration(hours: 24).inMilliseconds + 1;
         expect(
-          () => logger.createBody([
-            {'timestamp': end, 'message': 'late'},
-            {'timestamp': start, 'message': 'early'},
-          ]),
+          () => logger.createBody(
+            [
+              {'timestamp': end, 'message': 'late'},
+              {'timestamp': start, 'message': 'early'},
+            ],
+            nowUtc: anchor,
+          ),
           throwsA(isA<CloudWatchException>()),
         );
       });
+
+      test(
+        'createBody rejects timestamp more than 2 hours in the future (client check)',
+        () {
+          final Logger logger = _baseLogger(groupName: 'g', streamName: 's');
+          final DateTime now = _complianceAnchorUtc;
+          final int future = now.millisecondsSinceEpoch +
+              const Duration(hours: 2).inMilliseconds +
+              1;
+          expect(
+            () => logger.createBody(
+              [
+                {'timestamp': future, 'message': 'x'},
+              ],
+              nowUtc: now,
+            ),
+            throwsA(isA<CloudWatchException>()),
+          );
+        },
+      );
+
+      test(
+        'createBody rejects timestamp older than 14 days (client check)',
+        () {
+          final Logger logger = _baseLogger(groupName: 'g', streamName: 's');
+          final DateTime now = _complianceAnchorUtc;
+          final int old = now.millisecondsSinceEpoch -
+              const Duration(days: 14).inMilliseconds -
+              1;
+          expect(
+            () => logger.createBody(
+              [
+                {'timestamp': old, 'message': 'x'},
+              ],
+              nowUtc: now,
+            ),
+            throwsA(isA<CloudWatchException>()),
+          );
+        },
+      );
+
+      test(
+        'ResourceNotFound English variants: does not exist / not found',
+        () {
+          expect(
+            resourceNotFoundMessageImpliesMissingLogStream(
+              'The specified log stream does not exist.',
+            ),
+            isTrue,
+          );
+          expect(
+            resourceNotFoundMessageImpliesMissingLogStream(
+              'The specified log stream was not found.',
+            ),
+            isTrue,
+          );
+          expect(
+            resourceNotFoundMessageImpliesMissingLogGroup(
+              'The specified log group does not exist.',
+            ),
+            isTrue,
+          );
+        },
+      );
 
       // InputLogEvent — message minimum length 1.
       test('addLogs rejects empty string message', () {
@@ -192,9 +305,12 @@ void main() {
             },
           );
           await logger.sendRequest(
-            body: logger.createBody([
-              {'timestamp': 1, 'message': 'm'},
-            ]),
+            body: logger.createBody(
+              [
+                {'timestamp': 1, 'message': 'm'},
+              ],
+              nowUtc: DateTime.utc(1970, 1, 1, 0, 0, 2),
+            ),
             target: 'Logs_20140328.PutLogEvents',
           );
           expect(captured, isNotNull);
@@ -288,8 +404,10 @@ void main() {
         },
       );
 
+      // X-Amz-Expires is for presigned query-string auth, not JSON POST + Authorization.
+      // https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_sigv-create-signed-request.html
       test(
-        'requestTimeout in range adds X-Amz-Expires query (library behavior)',
+        'sendRequest does not add X-Amz-Expires (client timeout is not presign expiry)',
         () async {
           Request? captured;
           final Logger logger = _baseLogger(
@@ -304,7 +422,7 @@ void main() {
             body: '{}',
             target: 'Logs_20140328.PutLogEvents',
           );
-          expect(captured!.url.queryParameters['X-Amz-Expires'], '10');
+          expect(captured!.url.queryParameters.containsKey('X-Amz-Expires'), isFalse);
         },
       );
     });
@@ -322,9 +440,16 @@ void main() {
               return Response('{}', 200);
             },
           );
-          final String body = logger.createBody([
-            {'timestamp': 1396035378988, 'message': 'Example event 1'},
-          ]);
+          const int ts = 1396035378988;
+          final String body = logger.createBody(
+            [
+              {'timestamp': ts, 'message': 'Example event 1'},
+            ],
+            nowUtc: DateTime.fromMillisecondsSinceEpoch(
+              ts + const Duration(hours: 1).inMilliseconds,
+              isUtc: true,
+            ),
+          );
           await logger.sendRequest(
             body: body,
             target: 'Logs_20140328.PutLogEvents',
@@ -394,13 +519,15 @@ void main() {
       // entity fields; JSON must still parse and succeed when only entity rejection
       // metadata is present.
       // https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html
+      // RejectedEntityInfo shape is { "errorType": "..." } per API reference.
+      // https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_RejectedEntityInfo.html
       test(
-        '200 with rejectedEntityInfo does not crash (contents not parsed)',
+        '200 with rejectedEntityInfo does not crash (library does not parse entity fields)',
         () async {
           final Logger logger = _baseLogger(groupName: 'g', streamName: 's');
           final bool ok = await logger.handleResponse(
             Response(
-              '{"rejectedEntityInfo":{"errorRecords":[{"errorCode":"E","message":"m"}]}}',
+              '{"rejectedEntityInfo":{"errorType":"InvalidEntity"}}',
               200,
               headers: {'content-type': 'application/x-amz-json-1.1'},
             ),
@@ -496,9 +623,9 @@ void main() {
           final Logger logger = _baseLogger(
             groupName: 'g',
             streamName: 's',
-          );
-          logger.largeMessageBehavior = CloudWatchLargeMessages.split;
-          logger.maxBytesPerMessage = 80;
+          )
+            ..largeMessageBehavior = CloudWatchLargeMessages.split
+            ..maxBytesPerMessage = 80;
           final String big = List<String>.filled(500, 'x').join();
           logger.logStack.addLogs([big]);
           final CloudWatchLog batch = logger.logStack.pop();
@@ -521,10 +648,12 @@ void main() {
           streamName: 's',
           mockFunction: strictPutLogEventsMock(),
         );
+        final int base = DateTime.now().toUtc().millisecondsSinceEpoch;
         final List<Map<String, dynamic>> events =
             List<Map<String, dynamic>>.generate(
           10000,
-          (int i) => <String, dynamic>{'timestamp': 1 + i, 'message': 'x'},
+          (int i) =>
+              <String, dynamic>{'timestamp': base + i, 'message': 'x'},
         );
         final Response r = await logger.sendRequest(
           body: logger.createBody(events),
@@ -539,10 +668,12 @@ void main() {
           streamName: 's',
           mockFunction: strictPutLogEventsMock(),
         );
+        final int base = DateTime.now().toUtc().millisecondsSinceEpoch;
         final List<Map<String, dynamic>> events =
             List<Map<String, dynamic>>.generate(
           10001,
-          (int i) => <String, dynamic>{'timestamp': 1 + i, 'message': 'x'},
+          (int i) =>
+              <String, dynamic>{'timestamp': base + i, 'message': 'x'},
         );
         final Response r = await logger.sendRequest(
           body: logger.createBody(events),
@@ -551,28 +682,56 @@ void main() {
         expect(r.statusCode, 400);
       });
 
-      test('strict mock rejects UTF-8 body larger than 1048576 bytes', () async {
-        final Logger logger = _baseLogger(
-          groupName: 'g',
-          streamName: 's',
-          mockFunction: strictPutLogEventsMock(),
-        );
-        // Single-event message large enough that full JSON UTF-8 body exceeds limit.
-        final String huge = List<String>.filled(1048500, 'a').join();
-        final String body = jsonEncode(<String, dynamic>{
-          'logGroupName': 'g',
-          'logStreamName': 's',
-          'logEvents': <Map<String, dynamic>>[
-            <String, dynamic>{'timestamp': 1, 'message': huge},
-          ],
-        });
-        expect(utf8.encode(body).length, greaterThan(1048576));
-        final Response r = await logger.sendRequest(
-          body: body,
-          target: kPutLogEventsTarget,
-        );
-        expect(r.statusCode, 400);
-      });
+      // PutLogEvents: 1048576 limit is sum(UTF-8 messages) + 26 per event, not raw JSON size.
+      test(
+        'strict mock accepts JSON body over 1048576 when logical batch is within limit',
+        () async {
+          final Logger logger = _baseLogger(
+            groupName: 'g',
+            streamName: 's',
+            mockFunction: strictPutLogEventsMock(),
+          );
+          final String huge = List<String>.filled(1048500, 'a').join();
+          final int ts = DateTime.now().toUtc().millisecondsSinceEpoch;
+          final String body = jsonEncode(<String, dynamic>{
+            'logGroupName': 'g',
+            'logStreamName': 's',
+            'logEvents': <Map<String, dynamic>>[
+              <String, dynamic>{'timestamp': ts, 'message': huge},
+            ],
+          });
+          expect(utf8.encode(body).length, greaterThan(1048576));
+          final Response r = await logger.sendRequest(
+            body: body,
+            target: kPutLogEventsTarget,
+          );
+          expect(r.statusCode, 200);
+        },
+      );
+
+      test(
+        'strict mock rejects when sum(message UTF-8) + 26*n exceeds 1048576',
+        () async {
+          final Logger logger = _baseLogger(
+            groupName: 'g',
+            streamName: 's',
+            mockFunction: strictPutLogEventsMock(),
+          );
+          final String tooBig = List<String>.filled(1048551, 'b').join();
+          final int ts = DateTime.now().toUtc().millisecondsSinceEpoch;
+          final Response r = await logger.sendRequest(
+            body: jsonEncode(<String, dynamic>{
+              'logGroupName': 'g',
+              'logStreamName': 's',
+              'logEvents': <Map<String, dynamic>>[
+                <String, dynamic>{'timestamp': ts, 'message': tooBig},
+              ],
+            }),
+            target: kPutLogEventsTarget,
+          );
+          expect(r.statusCode, 400);
+        },
+      );
 
       test('strict mock rejects empty message string', () async {
         final Logger logger = _baseLogger(
@@ -580,11 +739,12 @@ void main() {
           streamName: 's',
           mockFunction: strictPutLogEventsMock(),
         );
+        final int ts = DateTime.now().toUtc().millisecondsSinceEpoch;
         final String body = jsonEncode(<String, dynamic>{
           'logGroupName': 'g',
           'logStreamName': 's',
           'logEvents': <Map<String, dynamic>>[
-            <String, dynamic>{'timestamp': 1, 'message': ''},
+            <String, dynamic>{'timestamp': ts, 'message': ''},
           ],
         });
         final Response r = await logger.sendRequest(
@@ -707,6 +867,61 @@ void main() {
           final Map<String, dynamic> decoded =
               jsonDecode(captured!.body) as Map<String, dynamic>;
           expect(decoded['logStreamName'], r'a\b\c');
+        },
+      );
+    });
+  });
+
+  group('CloudWatch Logs — DeleteLogGroup', () {
+    group('request construction', () {
+      test(
+        'DeleteLogGroup uses x-amz-target Logs_20140328.DeleteLogGroup',
+        () async {
+          Request? captured;
+          final Logger logger = _baseLogger(
+            groupName: 'my-log-group',
+            streamName: 's',
+            mockFunction: (Request r) async {
+              captured = r;
+              return Response('{}', 200);
+            },
+          );
+          await logger.deleteLogGroup();
+          expect(headerValue(captured!, 'x-amz-target'),
+              'Logs_20140328.DeleteLogGroup');
+          expect(
+            jsonDecode(captured!.body) as Map<String, dynamic>,
+            {'logGroupName': 'my-log-group'},
+          );
+        },
+      );
+    });
+  });
+
+  group('CloudWatch Logs — DeleteLogStream', () {
+    group('request construction', () {
+      test(
+        'DeleteLogStream uses x-amz-target Logs_20140328.DeleteLogStream',
+        () async {
+          Request? captured;
+          final Logger logger = _baseLogger(
+            groupName: 'my-log-group',
+            streamName: 'my-stream',
+            mockFunction: (Request r) async {
+              captured = r;
+              return Response('{}', 200);
+            },
+          );
+          await logger.deleteLogStream();
+          expect(headerValue(captured!, 'x-amz-target'),
+              'Logs_20140328.DeleteLogStream');
+          expect(
+            jsonDecode(captured!.body) as Map<String, dynamic>,
+            {
+              'logGroupName': 'my-log-group',
+              'logStreamName': 'my-stream',
+            },
+          );
         },
       );
     });

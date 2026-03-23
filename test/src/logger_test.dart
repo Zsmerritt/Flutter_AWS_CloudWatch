@@ -722,6 +722,171 @@ void main() {
         fail('Log stream creation recovered from unrecoverable error');
       });
     });
+    group('deleteLogStream', () {
+      late Logger cloudWatch;
+      setUpAll(() {
+        cloudWatch = Logger(
+          awsAccessKey: 'awsAccessKey',
+          awsSecretKey: 'awsSecretKey',
+          region: 'region',
+          groupName: 'groupName',
+          streamName: 'streamName',
+          awsSessionToken: 'awsSessionToken',
+          delay: const Duration(),
+          requestTimeout: const Duration(seconds: 10),
+          retries: 3,
+          largeMessageBehavior: CloudWatchLargeMessages.truncate,
+          raiseFailedLookups: false,
+          mockCloudWatch: true,
+          useDynamicTimeout: true,
+          dynamicTimeoutMax: const Duration(minutes: 2),
+          timeoutMultiplier: 1.2,
+        );
+      });
+      test('request error', () async {
+        cloudWatch.mockFunction = (Request request) async {
+          throw Exception('Big bad exception');
+        };
+        try {
+          await cloudWatch.deleteLogStream();
+        } catch (e) {
+          return;
+        }
+        fail('Exception did not propagate');
+      });
+      test('HTTP 200 clears logStreamCreated', () async {
+        cloudWatch
+          ..logStreamCreated = true
+          ..mockFunction = (Request request) async {
+            return Response('', 200);
+          };
+        await cloudWatch.deleteLogStream();
+        expect(cloudWatch.logStreamCreated, false);
+      });
+      test('ResourceNotFoundException ignored when ignoreNotFound is true',
+          () async {
+        cloudWatch.mockFunction = (Request request) async {
+          return Response(
+            '{"__type":"ResourceNotFoundException","message":"gone"}',
+            400,
+          );
+        };
+        await cloudWatch.deleteLogStream(ignoreNotFound: true);
+        expect(cloudWatch.logStreamCreated, false);
+      });
+      test('ResourceNotFoundException throws when ignoreNotFound is false',
+          () async {
+        cloudWatch.mockFunction = (Request request) async {
+          return Response(
+            '{"__type":"ResourceNotFoundException","message":"gone"}',
+            400,
+          );
+        };
+        try {
+          await cloudWatch.deleteLogStream(ignoreNotFound: false);
+        } catch (e) {
+          expect(e, isA<CloudWatchException>());
+          return;
+        }
+        fail('Expected CloudWatchException');
+      });
+      test('Other error throws', () async {
+        cloudWatch.mockFunction = (Request request) async {
+          return Response('{"__type":"AccessDeniedException"}', 403);
+        };
+        try {
+          await cloudWatch.deleteLogStream();
+        } catch (e) {
+          expect(e, isA<CloudWatchException>());
+          return;
+        }
+        fail('Expected CloudWatchException');
+      });
+    });
+    group('deleteLogGroup', () {
+      late Logger cloudWatch;
+      setUpAll(() {
+        cloudWatch = Logger(
+          awsAccessKey: 'awsAccessKey',
+          awsSecretKey: 'awsSecretKey',
+          region: 'region',
+          groupName: 'groupName',
+          streamName: 'streamName',
+          awsSessionToken: 'awsSessionToken',
+          delay: const Duration(),
+          requestTimeout: const Duration(seconds: 10),
+          retries: 3,
+          largeMessageBehavior: CloudWatchLargeMessages.truncate,
+          raiseFailedLookups: false,
+          mockCloudWatch: true,
+          useDynamicTimeout: true,
+          dynamicTimeoutMax: const Duration(minutes: 2),
+          timeoutMultiplier: 1.2,
+        );
+      });
+      test('request error', () async {
+        cloudWatch.mockFunction = (Request request) async {
+          throw Exception('Big bad exception');
+        };
+        try {
+          await cloudWatch.deleteLogGroup();
+        } catch (e) {
+          return;
+        }
+        fail('Exception did not propagate');
+      });
+      test('HTTP 200 clears logGroupCreated and logStreamCreated', () async {
+        cloudWatch
+          ..logGroupCreated = true
+          ..logStreamCreated = true
+          ..mockFunction = (Request request) async {
+            return Response('', 200);
+          };
+        await cloudWatch.deleteLogGroup();
+        expect(cloudWatch.logGroupCreated, false);
+        expect(cloudWatch.logStreamCreated, false);
+      });
+      test('ResourceNotFoundException ignored when ignoreNotFound is true',
+          () async {
+        cloudWatch.mockFunction = (Request request) async {
+          return Response(
+            '{"__type":"ResourceNotFoundException","message":"gone"}',
+            400,
+          );
+        };
+        await cloudWatch.deleteLogGroup(ignoreNotFound: true);
+        expect(cloudWatch.logGroupCreated, false);
+        expect(cloudWatch.logStreamCreated, false);
+      });
+      test('ResourceNotFoundException throws when ignoreNotFound is false',
+          () async {
+        cloudWatch.mockFunction = (Request request) async {
+          return Response(
+            '{"__type":"ResourceNotFoundException","message":"gone"}',
+            400,
+          );
+        };
+        try {
+          await cloudWatch.deleteLogGroup(ignoreNotFound: false);
+        } catch (e) {
+          expect(e, isA<CloudWatchException>());
+          return;
+        }
+        fail('Expected CloudWatchException');
+      });
+      test('Other error throws', () async {
+        cloudWatch.mockFunction = (Request request) async {
+          return Response('{"__type":"AccessDeniedException"}', 403);
+        };
+        try {
+          await cloudWatch.deleteLogGroup();
+        } catch (e) {
+          expect(e, isA<CloudWatchException>());
+          return;
+        }
+        fail('Expected CloudWatchException');
+      });
+    });
     group('createBody', () {
       late Logger cloudWatch;
       setUpAll(() {
@@ -760,10 +925,16 @@ void main() {
       test('createBody logEvents match InputLogEvent timestamp and message shape', () {
         const int ts1 = 1396035378988;
         const int ts2 = 1396035378990;
-        final String res = cloudWatch.createBody([
-          {'timestamp': ts2, 'message': 'second'},
-          {'timestamp': ts1, 'message': 'first'},
-        ]);
+        final String res = cloudWatch.createBody(
+          [
+            {'timestamp': ts2, 'message': 'second'},
+            {'timestamp': ts1, 'message': 'first'},
+          ],
+          nowUtc: DateTime.fromMillisecondsSinceEpoch(
+            ts2 + const Duration(hours: 1).inMilliseconds,
+            isUtc: true,
+          ),
+        );
         final Map<String, dynamic> decoded =
             jsonDecode(res) as Map<String, dynamic>;
         final List<dynamic> events = decoded['logEvents']! as List<dynamic>;
@@ -894,6 +1065,30 @@ void main() {
         }
         fail('Exception was not thrown!');
       });
+      test(
+        '200 with rejectedLogEventsInfo prepends batch and rethrows',
+        () async {
+          cloudWatch.mockFunction = (Request request) async {
+            return Response(
+              '{"nextSequenceToken":"t","rejectedLogEventsInfo":'
+              '{"tooNewLogEventStartIndex":0}}',
+              200,
+            );
+          };
+          cloudWatch.logStack.addLogs(['test']);
+          expect(cloudWatch.logStack.length, 1);
+          try {
+            await cloudWatch.sendLogs();
+          } catch (e) {
+            expect(e, isA<CloudWatchException>());
+            final CloudWatchException ex = e as CloudWatchException;
+            expect(ex.type, 'RejectedLogEventsInfo');
+            expect(cloudWatch.logStack.length, 1);
+            return;
+          }
+          fail('Expected CloudWatchException');
+        },
+      );
       test('Send Not Mocked Logs', () async {
         cloudWatch
           ..mockCloudWatch = false
@@ -1034,6 +1229,59 @@ void main() {
         final bool res = await cloudWatch.handleError(awsResponse);
         expect(res, false);
       });
+    });
+  });
+
+  group('LoggerHandler', () {
+    LoggerHandler newMockHandler() {
+      return LoggerHandler(
+        awsAccessKey: 'a',
+        awsSecretKey: 's',
+        region: 'us-east-1',
+        awsSessionToken: null,
+        delay: const Duration(),
+        requestTimeout: const Duration(seconds: 10),
+        retries: 1,
+        largeMessageBehavior: CloudWatchLargeMessages.truncate,
+        raiseFailedLookups: false,
+        useDynamicTimeout: true,
+        dynamicTimeoutMax: const Duration(minutes: 2),
+        timeoutMultiplier: 1.2,
+        mockCloudWatch: true,
+        mockFunction: (Request r) async => Response('', 200),
+      );
+    }
+
+    test('deleteLogStream removes cached instance', () async {
+      final LoggerHandler h = newMockHandler()
+        ..createInstance(logGroupName: 'g', logStreamName: 'st');
+      expect(h.logInstances.length, 1);
+      await h.deleteLogStream(logGroupName: 'g', logStreamName: 'st');
+      expect(h.logInstances.length, 0);
+    });
+
+    test('deleteLogStream without cached instance', () async {
+      final LoggerHandler h = newMockHandler();
+      await h.deleteLogStream(logGroupName: 'g', logStreamName: 'st');
+      expect(h.logInstances.length, 0);
+    });
+
+    test('deleteLogGroup removes all instances in group', () async {
+      final LoggerHandler h = newMockHandler()
+        ..createInstance(logGroupName: 'g', logStreamName: 's1')
+        ..createInstance(logGroupName: 'g', logStreamName: 's2');
+      expect(h.logInstances.length, 2);
+      await h.deleteLogGroup(logGroupName: 'g');
+      expect(h.logInstances.length, 0);
+    });
+
+    test('deleteLogGroup leaves other groups intact', () async {
+      final LoggerHandler h = newMockHandler()
+        ..createInstance(logGroupName: 'g1', logStreamName: 's')
+        ..createInstance(logGroupName: 'g2', logStreamName: 's');
+      await h.deleteLogGroup(logGroupName: 'g1');
+      expect(h.logInstances.length, 1);
+      expect(h.logInstances.values.first.groupName, 'g2');
     });
   });
 }
