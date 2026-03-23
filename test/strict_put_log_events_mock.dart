@@ -37,7 +37,8 @@ Future<Response> Function(Request request) strictPutLogEventsMock({
   Future<Response> Function(Request request)? delegate,
 }) {
   return (Request r) async {
-    final String? target = r.headers['x-amz-target'] ?? r.headers['X-Amz-Target'];
+    final String? target =
+        r.headers['x-amz-target'] ?? r.headers['X-Amz-Target'];
     if (target != kPutLogEventsTarget) {
       if (delegate != null) {
         return delegate(r);

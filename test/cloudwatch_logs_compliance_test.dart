@@ -103,7 +103,8 @@ void main() {
           final List<dynamic> events = map['logEvents']! as List<dynamic>;
           expect(events.length, 2);
           expect(events[0], {'timestamp': ts, 'message': 'Example event 1'});
-          expect(events[1], {'timestamp': ts + 1, 'message': 'Example event 2'});
+          expect(
+              events[1], {'timestamp': ts + 1, 'message': 'Example event 2'});
         },
       );
 
@@ -199,7 +200,8 @@ void main() {
           streamName: 's',
         );
         final DateTime anchor = DateTime.utc(2025, 6, 15, 12, 0, 0);
-        final int start = DateTime.utc(2025, 6, 1, 12, 0, 0).millisecondsSinceEpoch;
+        final int start =
+            DateTime.utc(2025, 6, 1, 12, 0, 0).millisecondsSinceEpoch;
         final int end = start + const Duration(hours: 24).inMilliseconds + 1;
         expect(
           () => logger.createBody(
@@ -422,7 +424,8 @@ void main() {
             body: '{}',
             target: 'Logs_20140328.PutLogEvents',
           );
-          expect(captured!.url.queryParameters.containsKey('X-Amz-Expires'), isFalse);
+          expect(captured!.url.queryParameters.containsKey('X-Amz-Expires'),
+              isFalse);
         },
       );
     });
@@ -468,7 +471,8 @@ void main() {
 
     group('mock service — response handling', () {
       // API_PutLogEvents — HTTP 200 success.
-      test('handleResponse returns true on 200 with empty JSON object', () async {
+      test('handleResponse returns true on 200 with empty JSON object',
+          () async {
         final Logger logger = _baseLogger(groupName: 'g', streamName: 's');
         final bool ok = await logger.handleResponse(Response('{}', 200));
         expect(ok, isTrue);
@@ -599,7 +603,8 @@ void main() {
           final Logger logger = _baseLogger(groupName: 'g', streamName: 's');
           logger.logStack.addLogs(['a']);
           expect(logger.logStack.length, 1);
-          expect(logger.logStack.logStack.first.messageSize, utf8.encode('a').length + 26);
+          expect(logger.logStack.logStack.first.messageSize,
+              utf8.encode('a').length + 26);
         },
       );
 
@@ -609,8 +614,7 @@ void main() {
         () {
           final Logger logger = _baseLogger(groupName: 'g', streamName: 's');
           logger.logStack.addLogs(['first', 'second']);
-          final List<Map<String, dynamic>> logs =
-              logger.logStack.pop().logs;
+          final List<Map<String, dynamic>> logs = logger.logStack.pop().logs;
           expect(logs.length, 2);
           expect(logs[0]['timestamp'], logs[1]['timestamp']);
         },
@@ -642,7 +646,8 @@ void main() {
     // https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html
     // https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_InputLogEvent.html
     group('strict PutLogEvents mock', () {
-      test('library sendRequest with 10000 events passes strict mock', () async {
+      test('library sendRequest with 10000 events passes strict mock',
+          () async {
         final Logger logger = _baseLogger(
           groupName: 'g',
           streamName: 's',
@@ -652,8 +657,7 @@ void main() {
         final List<Map<String, dynamic>> events =
             List<Map<String, dynamic>>.generate(
           10000,
-          (int i) =>
-              <String, dynamic>{'timestamp': base + i, 'message': 'x'},
+          (int i) => <String, dynamic>{'timestamp': base + i, 'message': 'x'},
         );
         final Response r = await logger.sendRequest(
           body: logger.createBody(events),
@@ -672,8 +676,7 @@ void main() {
         final List<Map<String, dynamic>> events =
             List<Map<String, dynamic>>.generate(
           10001,
-          (int i) =>
-              <String, dynamic>{'timestamp': base + i, 'message': 'x'},
+          (int i) => <String, dynamic>{'timestamp': base + i, 'message': 'x'},
         );
         final Response r = await logger.sendRequest(
           body: logger.createBody(events),

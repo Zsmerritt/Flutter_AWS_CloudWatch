@@ -146,8 +146,7 @@ void validatePutLogEventsBatch(
 }) {
   if (logsToSend.isEmpty) {
     throw CloudWatchException(
-      message:
-          'PutLogEvents requires at least one log event; logEvents array '
+      message: 'PutLogEvents requires at least one log event; logEvents array '
           'cannot be empty.',
       stackTrace: StackTrace.current,
     );
@@ -184,8 +183,7 @@ void validatePutLogEventsBatch(
         now.millisecondsSinceEpoch - const Duration(days: 14).inMilliseconds;
     if (ts > maxFutureMs) {
       throw CloudWatchException(
-        message:
-            'PutLogEvents rejects events more than 2 hours in the future '
+        message: 'PutLogEvents rejects events more than 2 hours in the future '
             '(relative to client clock). '
             'https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html',
         stackTrace: StackTrace.current,

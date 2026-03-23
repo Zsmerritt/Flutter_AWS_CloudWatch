@@ -91,18 +91,14 @@ class _LiveAwsConfig {
   final String? sessionToken;
 
   bool get isComplete =>
-      accessKeyId.isNotEmpty &&
-      secretAccessKey.isNotEmpty &&
-      region.isNotEmpty;
+      accessKeyId.isNotEmpty && secretAccessKey.isNotEmpty && region.isNotEmpty;
 }
 
 _LiveAwsConfig? _readConfig(Map<String, String> env) {
   final String key = env['AWS_ACCESS_KEY_ID'] ?? '';
-  final String secret = env['AWS_SECRET_ACCESS_KEY'] ??
-      env['AWS_SECRET_KEY'] ??
-      '';
-  final String region =
-      env['AWS_REGION'] ?? env['AWS_DEFAULT_REGION'] ?? '';
+  final String secret =
+      env['AWS_SECRET_ACCESS_KEY'] ?? env['AWS_SECRET_KEY'] ?? '';
+  final String region = env['AWS_REGION'] ?? env['AWS_DEFAULT_REGION'] ?? '';
   if (key.isEmpty || secret.isEmpty || region.isEmpty) {
     return null;
   }
@@ -122,8 +118,7 @@ void main() {
 
   final int runId = DateTime.now().millisecondsSinceEpoch;
   final int nonce = Random().nextInt(1 << 20);
-  final String logGroupName =
-      '/aws/flutter-aws-cloudwatch/it-$runId-$nonce';
+  final String logGroupName = '/aws/flutter-aws-cloudwatch/it-$runId-$nonce';
   final String logStreamPrimary = 'it-stream-$runId-$nonce';
   final String logStreamSecondary = 'it-stream-b-$runId-$nonce';
 
@@ -224,8 +219,7 @@ void main() {
       'CloudWatch: single event at max message size (UTF-8 bytes)',
       () async {
         primary.requestTimeout = const Duration(minutes: 3);
-        final String maxMsg =
-            ''.padRight(awsMaxBytesPerMessage, 'x');
+        final String maxMsg = ''.padRight(awsMaxBytesPerMessage, 'x');
         expect(utf8.encode(maxMsg).length, awsMaxBytesPerMessage);
         await primary.log(maxMsg);
       },
@@ -233,15 +227,14 @@ void main() {
           ? 'Set AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, '
               'AWS_REGION (or AWS_DEFAULT_REGION); optional .env in package root'
           : false,
-      timeout: Timeout(const Duration(minutes: 5)),
+      timeout: const Timeout(Duration(minutes: 5)),
     );
 
     test(
       'CloudWatchHandler: log and logMany to two streams in same group',
       () async {
         await handler.log(
-          message:
-              'handler single ${DateTime.now().toUtc().toIso8601String()}',
+          message: 'handler single ${DateTime.now().toUtc().toIso8601String()}',
           logGroupName: logGroupName,
           logStreamName: logStreamPrimary,
         );

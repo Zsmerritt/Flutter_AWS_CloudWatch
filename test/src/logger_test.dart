@@ -922,7 +922,9 @@ void main() {
       });
       // InputLogEvent: timestamp (Number, ms since epoch), message (String, min 1).
       // https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_InputLogEvent.html
-      test('createBody logEvents match InputLogEvent timestamp and message shape', () {
+      test(
+          'createBody logEvents match InputLogEvent timestamp and message shape',
+          () {
         const int ts1 = 1396035378988;
         const int ts2 = 1396035378990;
         final String res = cloudWatch.createBody(

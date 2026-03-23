@@ -1,8 +1,31 @@
-## [2.0.0+1] - 2026/03/21
+## [2.1.0] - 2026/03/22
 
-* **Build only:** No API or runtime behavior changes versus `2.0.0`.
-* **Analysis:** `analysis_options.yaml` now includes `package:lints/core.yaml`; added a `lints` dev dependency. `CloudWatchHandler` constructor parameters use explicit types for stricter public API checks.
-* **Examples:** Replaced `intl` timestamp formatting with UTC `DateTime` formatting; example `pubspec.yaml` uses `path: ../` for local development, `publish_to: none`, and a `lints` dev dependency so nested-package tooling resolves the shared analysis config.
+### Features
+
+* **Delete APIs:** `deleteLogStream` and `deleteLogGroup` on `CloudWatch`, `CloudWatchHandler`, and `Logger` ([DeleteLogStream](https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_DeleteLogStream.html) / [DeleteLogGroup](https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_DeleteLogGroup.html)). Optional `ignoreNotFound` treats `ResourceNotFoundException` as success for idempotent cleanup. `CloudWatchHandler` removes matching cached loggers after success.
+* **Concurrency:** `Logger` uses a `synchronized` `Lock` so overlapping `log` calls serialize `sendLogs` / PutLogEvents work against the shared `logStack` (avoids races between pop/prepend and AWS calls).
+* **PutLogEvents validation:** `validatePutLogEventsBatch` and `orderPutLogEventsBatch` enforce client-side checks aligned with AWS (non-empty batch, `timestamp` / `message` shape, 24h batch span, future and retention window heuristics). Invalid batches fail before the request is sent.
+* **Partial HTTP 200 responses:** If PutLogEvents returns HTTP 200 with `rejectedLogEventsInfo`, the client throws `CloudWatchException` with `type: RejectedLogEventsInfo` (and requeues the batch when appropriate).
+
+### Fixes
+
+* **Request signing:** Stopped sending `X-Amz-Expires` on CloudWatch Logs requests (it was conflated with HTTP timeout; not appropriate for this API).
+* **Temporary credentials:** `x-amz-security-token` uses the exact header key `aws_request` expects when building `signedHeaders`.
+
+### Error recovery
+
+* **Resource not found:** Message-shape heuristics (`resourceNotFoundMessageImpliesMissingLogStream` / `resourceNotFoundMessageImpliesMissingLogGroup`) refine auto-recovery when AWS reports missing log stream or log group.
+
+### Dependencies
+
+* Requires **aws_request** `^2.1.0`.
+
+### Tooling, analysis, and tests
+
+* **Analysis:** `analysis_options.yaml` includes `package:lints/core.yaml` plus an expanded custom lint rule set; added a `lints` dev dependency. `CloudWatchHandler` constructor parameters use explicit types for stricter public API checks.
+* **Tests:** Added `cloudwatch_logs_compliance_test.dart`, `strict_put_log_events_mock.dart`, and `test/integration/live_aws_cloudwatch_logs_test.dart` (opt-in live AWS); extended unit tests. Added `dart_test.yaml` (`test_on: vm`); run integration tests serially, e.g. `dart test test/integration --concurrency=1`.
+* **Examples:** UTC `DateTime` timestamps (no `intl`); example `pubspec.yaml` uses `path: ../`, `publish_to: none`, and a `lints` dev dependency for nested-package analysis.
+* **Repository:** `.gitignore` includes `.cursor/`, `.vscode/`, and `.env*`.
 
 ## [2.0.0] - 2026/03/21
 
