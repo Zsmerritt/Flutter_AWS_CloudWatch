@@ -237,5 +237,26 @@ void main() {
       }
       fail('raiseFailedLookups: true didnt catch failed lookup');
     });
+    test('deleteLogStream', () async {
+      try {
+        await cw.deleteLogStream(
+          logGroupName: 'logGroupName',
+          logStreamName: 'logStreamName',
+        );
+      } catch (e) {
+        expect(e.toString().contains('Failed host lookup'), true);
+        return;
+      }
+      fail('raiseFailedLookups: true didnt catch failed lookup');
+    });
+    test('deleteLogGroup', () async {
+      try {
+        await cw.deleteLogGroup(logGroupName: 'logGroupName');
+      } catch (e) {
+        expect(e.toString().contains('Failed host lookup'), true);
+        return;
+      }
+      fail('raiseFailedLookups: true didnt catch failed lookup');
+    });
   });
 }
