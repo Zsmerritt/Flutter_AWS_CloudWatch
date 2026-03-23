@@ -7,8 +7,8 @@ environment:
   sdk: '>=3.0.0 <4.0.0'
 
 dependencies:
-  aws_request: ^2.0.0 # Make request to AWS
-  synchronized: ^3.0.0 # Synchronize requests to ensure valid keys
+  aws_request: ^2.1.0 # Make request to AWS
+  synchronized: ^3.0.0 # Async mutex: one sendLogs at a time (logStack + PutLogEvents)
   http: ^1.0.0 # Http package for parsing AWS responses correctly on Multiple Platforms
   crypto: ^3.0.0 # Message hashes used to collate split messages
 

@@ -113,6 +113,13 @@ void main() {
         expect(truncateStack.length, 0);
       });
 
+      test('empty string message throws (InputLogEvent min length 1)', () {
+        expect(
+          () => CloudWatchLogStack().addLogs(['']),
+          throwsA(isA<CloudWatchException>()),
+        );
+      });
+
       test('MAX_MESSAGES_PER_BATCH', () {
         final CloudWatchLogStack splitStack = CloudWatchLogStack(
           largeMessageBehavior: CloudWatchLargeMessages.split,

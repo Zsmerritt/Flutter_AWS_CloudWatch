@@ -119,7 +119,8 @@ class Logger {
   /// Verbosity for debugging
   int _verbosity = 0;
 
-  /// Synchronous lock to enforce synchronous request order
+  /// Serializes [sendLogs] so [logStack] pop/prepend and each PutLogEvents run
+  /// one at a time (avoids races when multiple [log] calls overlap).
   Lock lock = Lock();
 
   /// Changes how large each message can be before [largeMessageBehavior] takes
@@ -249,7 +250,10 @@ class Logger {
   /// Throws [CloudWatchException] if API returns something other than 200
   Future<void> createLogStream() async {
     await createLogResource(
-      body: '{"logGroupName": "$groupName","logStreamName": "$streamName"}',
+      body: jsonEncode({
+        'logGroupName': groupName,
+        'logStreamName': streamName,
+      }),
       target: 'Logs_20140328.CreateLogStream',
       type: 'LogStream',
     );
@@ -260,7 +264,7 @@ class Logger {
   /// Throws [CloudWatchException] if API returns something other than 200
   Future<void> createLogGroup() async {
     await createLogResource(
-      body: '{"logGroupName": "$groupName"}',
+      body: jsonEncode({'logGroupName': groupName}),
       target: 'Logs_20140328.CreateLogGroup',
       type: 'LogGroup',
     );
@@ -339,8 +343,15 @@ class Logger {
       2,
       'CloudWatch INFO: Generating CloudWatch request body',
     );
+    validatePutLogEventsBatch(logsToSend);
+    final List<Map<String, dynamic>> ordered =
+        orderPutLogEventsBatch(logsToSend);
+    // PutLogEvents optional request `entity` and entity rejection fields in the
+    // response are intentionally unsupported; this client only sends
+    // logGroupName, logStreamName, and logEvents.
+    // https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html
     final Map<String, dynamic> body = {
-      'logEvents': logsToSend,
+      'logEvents': ordered,
       'logGroupName': groupName,
       'logStreamName': streamName,
     };
@@ -456,6 +467,10 @@ class Logger {
         );
         success = await handleResponse(response);
       } catch (e) {
+        if (e is CloudWatchException && e.type == 'RejectedLogEventsInfo') {
+          logStack.prepend(_logs);
+          rethrow;
+        }
         debugPrint(
           0,
           'CloudWatch ERROR: Failed making AwsRequest. Retrying ${i + 1}',
@@ -484,7 +499,8 @@ class Logger {
     final Map<String, String> headers = {'x-amz-target': target};
     final Map<String, String> queryString = {};
     if (awsSessionToken != null) {
-      headers['X-Amz-Security-Token'] = awsSessionToken!;
+      // Must match signedHeaders entry; aws_request looks up headers by exact key.
+      headers['x-amz-security-token'] = awsSessionToken!;
     }
     if (requestTimeout.inSeconds > 0 && requestTimeout.inSeconds < 604800) {
       queryString['X-Amz-Expires'] = requestTimeout.inSeconds.toString();
@@ -508,12 +524,15 @@ class Logger {
         timeout: requestTimeout,
       );
     }
+    final List<String> signedHeaders = awsSessionToken != null
+        ? ['x-amz-target', 'x-amz-security-token']
+        : ['x-amz-target'];
     return await awsRequest.send(
       type: AwsRequestType.post,
       jsonBody: body,
       headers: headers,
       queryString: queryString,
-      signedHeaders: ['x-amz-target'],
+      signedHeaders: signedHeaders,
     );
   }
 
@@ -525,6 +544,25 @@ class Logger {
   ) async {
     final AwsResponse awsResponse = await AwsResponse.parseResponse(response);
     if (awsResponse.statusCode == 200) {
+      // PutLogEvents may return HTTP 200 with rejectedLogEventsInfo (partial failure).
+      // https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html
+      // https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_RejectedLogEventsInfo.html
+      if (awsResponse.hasRejectedLogEvents) {
+        debugPrint(
+          0,
+          'CloudWatch ERROR: PutLogEvents rejected some log events: '
+          '${awsResponse.rejectedLogEventsInfo}',
+        );
+        throw CloudWatchException(
+          message:
+              'PutLogEvents partially rejected events. rejectedLogEventsInfo: '
+              '${awsResponse.rejectedLogEventsInfo}',
+          stackTrace: StackTrace.current,
+          type: 'RejectedLogEventsInfo',
+          statusCode: 200,
+          raw: awsResponse.raw,
+        );
+      }
       debugPrint(
         1,
         'CloudWatch Info: $awsResponse',
@@ -553,8 +591,9 @@ class Logger {
   ///
   /// returns whether the error was recovered from or not
   Future<bool> handleError(AwsResponse awsResponse) async {
+    // ResourceNotFound recovery: message-shape heuristics only (see util.dart).
     if (awsResponse.type == 'ResourceNotFoundException' &&
-        awsResponse.message == 'The specified log stream does not exist.') {
+        resourceNotFoundMessageImpliesMissingLogStream(awsResponse.message)) {
       // LogStream not present
       // Sometimes happens with debuggers / hot reloads
       // Attempt to recover
@@ -566,7 +605,7 @@ class Logger {
       await createLogStream();
       return false;
     } else if (awsResponse.type == 'ResourceNotFoundException' &&
-        awsResponse.message == 'The specified log group does not exist.') {
+        resourceNotFoundMessageImpliesMissingLogGroup(awsResponse.message)) {
       // LogGroup not present
       // Sometimes happens with debuggers / hot reloads
       // Attempt to recover

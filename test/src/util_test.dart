@@ -184,6 +184,40 @@ void main() {
           '{__type: type, message: message}',
         );
       });
+      test(
+        'rejectedLogEventsInfo populates hasRejectedLogEvents when indices present',
+        () async {
+          final Response response = Response(
+            '{"rejectedLogEventsInfo":{"tooNewLogEventStartIndex":0}}',
+            200,
+          );
+          final AwsResponse res = await AwsResponse.parseResponse(response);
+          expect(res.hasRejectedLogEvents, isTrue);
+          expect(res.rejectedLogEventsInfo!['tooNewLogEventStartIndex'], 0);
+        },
+      );
+      test(
+        'empty rejectedLogEventsInfo map does not set hasRejectedLogEvents',
+        () async {
+          final Response response = Response(
+            '{"rejectedLogEventsInfo":{}}',
+            200,
+          );
+          final AwsResponse res = await AwsResponse.parseResponse(response);
+          expect(res.hasRejectedLogEvents, isFalse);
+        },
+      );
+      test(
+        'rejectedLogEventsInfo keys with null values are not rejections',
+        () async {
+          final Response response = Response(
+            '{"rejectedLogEventsInfo":{"tooNewLogEventStartIndex":null}}',
+            200,
+          );
+          final AwsResponse res = await AwsResponse.parseResponse(response);
+          expect(res.hasRejectedLogEvents, isFalse);
+        },
+      );
     });
     group('toString', () {
       test('empty body', () async {

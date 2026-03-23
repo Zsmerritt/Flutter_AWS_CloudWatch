@@ -65,6 +65,31 @@ class CloudWatchException implements Exception {
   }
 }
 
+/// Heuristic match for [ResourceNotFoundException](https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_ResourceNotFoundException.html) when the log stream is missing.
+///
+/// Known limitation: only English phrases containing both "log stream" and
+/// "not exist" trigger auto-recovery. Other service message shapes surface
+/// through normal error handling (no silent swallow).
+bool resourceNotFoundMessageImpliesMissingLogStream(String? message) {
+  final String? m = message?.toLowerCase();
+  if (m == null) {
+    return false;
+  }
+  return m.contains('log stream') && m.contains('not exist');
+}
+
+/// Heuristic match for ResourceNotFoundException when the log group is missing.
+///
+/// Same limitation as [resourceNotFoundMessageImpliesMissingLogStream]: requires
+/// "log group" and "not exist" in the message for recovery.
+bool resourceNotFoundMessageImpliesMissingLogGroup(String? message) {
+  final String? m = message?.toLowerCase();
+  if (m == null) {
+    return false;
+  }
+  return m.contains('log group') && m.contains('not exist');
+}
+
 /// Validates [streamName] based on aws restrictions
 ///
 /// Throws [CloudWatchException] if bad name is found
@@ -105,6 +130,84 @@ void validateName(String name, String type, String pattern) {
   }
 }
 
+/// Validates [InputLogEvent](https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_InputLogEvent.html)
+/// shape and [PutLogEvents](https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html)
+/// batch rules: at least one event, each `timestamp` / `message` valid, max 24h
+/// span between earliest and latest timestamp.
+///
+/// Does not reorder events. Throws [CloudWatchException] when validation fails.
+void validatePutLogEventsBatch(List<Map<String, dynamic>> logsToSend) {
+  if (logsToSend.isEmpty) {
+    throw CloudWatchException(
+      message:
+          'PutLogEvents requires at least one log event; logEvents array '
+          'cannot be empty.',
+      stackTrace: StackTrace.current,
+    );
+  }
+  int minTs = 0;
+  int maxTs = 0;
+  bool first = true;
+  for (final Map<String, dynamic> log in logsToSend) {
+    final Object? tsRaw = log['timestamp'];
+    if (tsRaw is! int) {
+      throw CloudWatchException(
+        message:
+            'PutLogEvents InputLogEvent.timestamp must be an int (milliseconds '
+            'since Unix epoch). '
+            'https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_InputLogEvent.html',
+        stackTrace: StackTrace.current,
+      );
+    }
+    final int ts = tsRaw;
+    if (first) {
+      minTs = ts;
+      maxTs = ts;
+      first = false;
+    } else {
+      if (ts < minTs) {
+        minTs = ts;
+      }
+      if (ts > maxTs) {
+        maxTs = ts;
+      }
+    }
+    final Object? msg = log['message'];
+    if (msg is! String || msg.isEmpty) {
+      throw CloudWatchException(
+        message:
+            'PutLogEvents InputLogEvent.message must be a non-empty string. '
+            'https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_InputLogEvent.html',
+        stackTrace: StackTrace.current,
+      );
+    }
+  }
+  if (maxTs - minTs > const Duration(hours: 24).inMilliseconds) {
+    throw CloudWatchException(
+      message:
+          'PutLogEvents rejects batches spanning more than 24 hours between '
+          'the earliest and latest event timestamp. '
+          'https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html',
+      stackTrace: StackTrace.current,
+    );
+  }
+}
+
+/// Returns a new list of the same maps sorted by `timestamp` ascending.
+///
+/// Call [validatePutLogEventsBatch] first so every `timestamp` is an [int].
+List<Map<String, dynamic>> orderPutLogEventsBatch(
+  List<Map<String, dynamic>> logsToSend,
+) {
+  final List<Map<String, dynamic>> ordered =
+      List<Map<String, dynamic>>.from(logsToSend);
+  ordered.sort(
+    (Map<String, dynamic> a, Map<String, dynamic> b) =>
+        (a['timestamp'] as int).compareTo(b['timestamp'] as int),
+  );
+  return ordered;
+}
+
 /// An aws response object class that holds common response elements
 class AwsResponse {
   int statusCode;
@@ -112,24 +215,60 @@ class AwsResponse {
   String? message;
   String? raw;
 
+  /// Present on PutLogEvents 200 when the response includes rejection metadata.
+  Map<String, dynamic>? rejectedLogEventsInfo;
+
   AwsResponse._(this.statusCode);
+
+  /// True when the service reported at least one rejected log event index.
+  ///
+  /// See [RejectedLogEventsInfo](https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_RejectedLogEventsInfo.html).
+  bool get hasRejectedLogEvents {
+    if (rejectedLogEventsInfo == null || rejectedLogEventsInfo!.isEmpty) {
+      return false;
+    }
+    const List<String> keys = <String>[
+      'expiredLogEventEndIndex',
+      'tooNewLogEventStartIndex',
+      'tooOldLogEventEndIndex',
+    ];
+    for (final String k in keys) {
+      final dynamic v = rejectedLogEventsInfo![k];
+      // RejectedLogEventsInfo indices are numbers; null/absent means no rejection.
+      if (v is num) {
+        return true;
+      }
+    }
+    return false;
+  }
 
   /// Attempts to parse aws response into its type and message parts
   static Future<AwsResponse> parseResponse(Response response) async {
     final AwsResponse result = AwsResponse._(response.statusCode);
-    if (response.contentLength != null && response.contentLength! > 0) {
-      final Map<String, dynamic>? reply = jsonDecode(
-        response.body,
-      );
+    if (response.body.isEmpty) {
+      return result;
+    }
+    try {
+      final dynamic decoded = jsonDecode(response.body);
+      if (decoded is! Map<String, dynamic>) {
+        return result;
+      }
+      final Map<String, dynamic> reply = decoded;
       result.raw = reply.toString();
-      if (reply != null) {
-        if (reply.containsKey('__type')) {
-          result.type = reply['__type'];
-        }
-        if (reply.containsKey('message')) {
-          result.message = reply['message'];
+      if (reply.containsKey('__type')) {
+        result.type = reply['__type'] as String?;
+      }
+      if (reply.containsKey('message')) {
+        result.message = reply['message'] as String?;
+      }
+      if (reply.containsKey('rejectedLogEventsInfo')) {
+        final dynamic info = reply['rejectedLogEventsInfo'];
+        if (info is Map<String, dynamic>) {
+          result.rejectedLogEventsInfo = info;
         }
       }
+    } catch (_) {
+      // Malformed JSON; leave minimal AwsResponse.
     }
     return result;
   }

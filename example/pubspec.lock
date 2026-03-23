@@ -15,15 +15,15 @@ packages:
       path: ".."
       relative: true
     source: path
-    version: "2.0.0"
+    version: "2.0.0+1"
   aws_request:
     dependency: transitive
     description:
       name: aws_request
-      sha256: "1c4cf80263f6c6baec9b419f1c5ea3306784d9fc4b45a250558819e426541a78"
+      sha256: e4fa932f260862d48a52faaf1c80038399d1b71141c46cd908ed0b7f9f61a9a8
       url: "https://pub.dev"
     source: hosted
-    version: "2.0.0"
+    version: "2.1.0"
   boolean_selector:
     dependency: transitive
     description:

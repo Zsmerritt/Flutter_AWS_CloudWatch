@@ -100,6 +100,16 @@ class CloudWatchLogStack {
   void addLogs(List<String> logStrings) {
     final int time = DateTime.now().toUtc().millisecondsSinceEpoch;
     for (final String msg in logStrings) {
+      // InputLogEvent.message — min length 1 (CloudWatch Logs API).
+      // https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_InputLogEvent.html
+      if (msg.isEmpty) {
+        throw CloudWatchException(
+          message:
+              'Log message must not be empty. InputLogEvent.message requires '
+              'minimum length 1 per PutLogEvents.',
+          stackTrace: StackTrace.current,
+        );
+      }
       final List<int> bytes = utf8.encode(msg);
       // AWS hard limit on message size
       if (bytes.length <= maxBytesPerMessage) {

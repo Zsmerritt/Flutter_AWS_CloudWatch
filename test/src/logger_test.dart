@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:aws_cloudwatch/src/logger.dart';
@@ -742,31 +743,46 @@ void main() {
           timeoutMultiplier: 1.2,
         );
       });
-      test('empty logs', () {
-        final String res = cloudWatch.createBody([]);
+      test('empty logEvents list throws (PutLogEvents min 1 event)', () {
         expect(
-          res,
-          '{"logEvents":[],"logGroupName":"groupName",'
-          '"logStreamName":"streamName"}',
+          () => cloudWatch.createBody([]),
+          throwsA(
+            predicate(
+              (Object e) =>
+                  e is CloudWatchException &&
+                  e.message!.contains('at least one log event'),
+            ),
+          ),
         );
       });
-      test('logs', () {
+      // InputLogEvent: timestamp (Number, ms since epoch), message (String, min 1).
+      // https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_InputLogEvent.html
+      test('createBody logEvents match InputLogEvent timestamp and message shape', () {
+        const int ts1 = 1396035378988;
+        const int ts2 = 1396035378990;
         final String res = cloudWatch.createBody([
-          {'key': 'value'}
+          {'timestamp': ts2, 'message': 'second'},
+          {'timestamp': ts1, 'message': 'first'},
         ]);
-        expect(
-          res,
-          '{"logEvents":[{"key":"value"}],"logGroupName":"groupName",'
-          '"logStreamName":"streamName"}',
-        );
-      });
-      test('empty logs', () {
-        final String res = cloudWatch.createBody([]);
-        expect(
-          res,
-          '{"logEvents":[],"logGroupName":"groupName",'
-          '"logStreamName":"streamName"}',
-        );
+        final Map<String, dynamic> decoded =
+            jsonDecode(res) as Map<String, dynamic>;
+        final List<dynamic> events = decoded['logEvents']! as List<dynamic>;
+        expect(events.length, 2);
+        for (final dynamic ev in events) {
+          final Map<String, dynamic> m = ev as Map<String, dynamic>;
+          expect(m['timestamp'], isA<int>());
+          expect(m['timestamp'], greaterThan(0));
+          expect(m['message'], isA<String>());
+          expect((m['message'] as String).isNotEmpty, isTrue);
+        }
+        // PutLogEvents: log events must be in chronological order by timestamp.
+        // https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html
+        expect(events[0]['timestamp'], ts1);
+        expect(events[0]['message'], 'first');
+        expect(events[1]['timestamp'], ts2);
+        expect(events[1]['message'], 'second');
+        expect(decoded['logGroupName'], 'groupName');
+        expect(decoded['logStreamName'], 'streamName');
       });
     });
     group('checkError', () {
@@ -971,6 +987,19 @@ void main() {
         final bool res = await cloudWatch.handleError(awsResponse);
         expect(res, false);
       });
+      test(
+        'ResourceNotFoundException log stream: message wording variant still recovers',
+        () async {
+          final AwsResponse awsResponse =
+              await AwsResponse.parseResponse(Response(
+            '{"__type": "ResourceNotFoundException", '
+            '"message":"The specified LOG STREAM does not exist."}',
+            400,
+          ));
+          final bool res = await cloudWatch.handleError(awsResponse);
+          expect(res, false);
+        },
+      );
       test('InvalidParameterException', () async {
         final AwsResponse awsResponse =
             await AwsResponse.parseResponse(Response(

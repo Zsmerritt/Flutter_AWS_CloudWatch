@@ -9,6 +9,9 @@
 .history
 .svn/
 .claude/
+.cursor/
+.vscode/
+.env*
 
 # IntelliJ related
 *.iml
